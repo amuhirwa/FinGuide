@@ -1,0 +1,1186 @@
+Date,Expenses,Category,Amount,Municipality,Province,Region,ID
+1/15/2020,Transportation,Survival,41,Quezon City,Metro Manila,National Capital Region,E2020-1
+1/15/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-2
+1/16/2020,Food/Drinks,Optional,35,Quezon City,Metro Manila,National Capital Region,E2020-3
+1/16/2020,Eating/Going Out,Optional,139,Quezon City,Metro Manila,National Capital Region,E2020-4
+1/16/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-5
+1/16/2020,Grocery,Survival,1174.93,Quezon City,Metro Manila,National Capital Region,E2020-6
+1/18/2020,Home,Obligation,300,Quezon City,Metro Manila,National Capital Region,E2020-7
+1/18/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-8
+1/19/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-9
+1/19/2020,Grocery,Survival,133.55,Quezon City,Metro Manila,National Capital Region,E2020-10
+1/19/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-11
+1/20/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-12
+1/20/2020,Grocery,Survival,77.17,Quezon City,Metro Manila,National Capital Region,E2020-13
+1/20/2020,Electricity/Water,Obligation,551,Quezon City,Metro Manila,National Capital Region,E2020-14
+1/20/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-15
+1/21/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-16
+1/21/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-17
+1/22/2020,Phone/Internet,Optional,50,Quezon City,Metro Manila,National Capital Region,E2020-18
+1/22/2020,Eating/Going Out,Optional,96,Quezon City,Metro Manila,National Capital Region,E2020-19
+1/22/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-20
+1/22/2020,Transportation,Survival,46,Quezon City,Metro Manila,National Capital Region,E2020-21
+1/23/2020,Food/Drinks,Optional,35,Quezon City,Metro Manila,National Capital Region,E2020-22
+1/23/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-23
+1/23/2020,Grocery,Survival,174.75,Quezon City,Metro Manila,National Capital Region,E2020-24
+1/24/2020,Clothing/Shoes/Personal Items,Optional,802,Quezon City,Metro Manila,National Capital Region,E2020-25
+1/25/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-26
+1/25/2020,Food/Drinks,Optional,15,Quezon City,Metro Manila,National Capital Region,E2020-27
+1/26/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-28
+1/26/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-29
+1/27/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-30
+1/27/2020,Grocery,Survival,119,Quezon City,Metro Manila,National Capital Region,E2020-31
+1/27/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-32
+1/28/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-33
+1/28/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-34
+1/29/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-35
+1/29/2020,Phone/Internet,Optional,50,Quezon City,Metro Manila,National Capital Region,E2020-36
+1/29/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-37
+1/29/2020,Eating/Going Out,Optional,139,Quezon City,Metro Manila,National Capital Region,E2020-38
+1/29/2020,Food/Drinks,Optional,15,Quezon City,Metro Manila,National Capital Region,E2020-39
+1/29/2020,Grocery,Survival,88.3,Quezon City,Metro Manila,National Capital Region,E2020-40
+1/30/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-41
+1/31/2020,Grocery,Survival,940.05,Quezon City,Metro Manila,National Capital Region,E2020-42
+1/31/2020,Electricity/Water,Obligation,130.68,Quezon City,Metro Manila,National Capital Region,E2020-43
+1/31/2020,Transportation,Survival,10,Quezon City,Metro Manila,National Capital Region,E2020-44
+1/31/2020,Food/Drinks,Optional,5,Quezon City,Metro Manila,National Capital Region,E2020-45
+2/1/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-46
+2/2/2020,Transportation,Survival,20,Quezon City,Metro Manila,National Capital Region,E2020-47
+2/2/2020,Eating/Going Out,Optional,42,Quezon City,Metro Manila,National Capital Region,E2020-48
+2/2/2020,Transportation,Survival,28,Quezon City,Metro Manila,National Capital Region,E2020-49
+2/2/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-50
+2/3/2020,Food/Drinks,Optional,30,Quezon City,Metro Manila,National Capital Region,E2020-51
+2/3/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-52
+2/3/2020,Grocery,Survival,96.35,Quezon City,Metro Manila,National Capital Region,E2020-53
+2/3/2020,Transportation,Survival,45,Quezon City,Metro Manila,National Capital Region,E2020-54
+2/4/2020,Food/Drinks,Obligation,30,Quezon City,Metro Manila,National Capital Region,E2020-55
+2/4/2020,Eating/Going Out,Optional,89,Quezon City,Metro Manila,National Capital Region,E2020-56
+2/4/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-57
+2/4/2020,Debt repayment,Obligation,18,Quezon City,Metro Manila,National Capital Region,E2020-58
+2/4/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-59
+2/5/2020,Eating/Going Out,Optional,11,Quezon City,Metro Manila,National Capital Region,E2020-60
+2/5/2020,Eating/Going Out,Optional,79,Quezon City,Metro Manila,National Capital Region,E2020-61
+2/5/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-62
+2/5/2020,Phone/Internet,Optional,50,Quezon City,Metro Manila,National Capital Region,E2020-63
+2/5/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-64
+2/6/2020,Food/Drinks,Optional,30,Quezon City,Metro Manila,National Capital Region,E2020-65
+2/6/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-66
+2/6/2020,Food/Drinks,Optional,50,Quezon City,Metro Manila,National Capital Region,E2020-67
+2/7/2020,Food/Drinks,Optional,60,Quezon City,Metro Manila,National Capital Region,E2020-68
+2/8/2020,Food/Drinks,Optional,24,Quezon City,Metro Manila,National Capital Region,E2020-69
+2/8/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-70
+2/9/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-71
+2/9/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-72
+2/9/2020,Food/Drinks,Optional,15,Quezon City,Metro Manila,National Capital Region,E2020-73
+2/10/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-74
+2/10/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-75
+2/11/2020,Eating/Going Out,Optional,30,Quezon City,Metro Manila,National Capital Region,E2020-76
+2/11/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-77
+2/11/2020,Grocery,Survival,75,Quezon City,Metro Manila,National Capital Region,E2020-78
+2/11/2020,Phone/Internet,Optional,100,Quezon City,Metro Manila,National Capital Region,E2020-79
+2/11/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-80
+2/12/2020,Food/Drinks,Optional,30,Quezon City,Metro Manila,National Capital Region,E2020-81
+2/12/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-82
+2/12/2020,Transportation,Survival,18,Quezon City,Metro Manila,National Capital Region,E2020-83
+2/13/2020,Transportation,Survival,18,Quezon City,Metro Manila,National Capital Region,E2020-84
+2/13/2020,Eating/Going Out,Optional,487,Quezon City,Metro Manila,National Capital Region,E2020-85
+2/13/2020,Hair Cut,Survival,50,Quezon City,Metro Manila,National Capital Region,E2020-86
+2/14/2020,Transportation,Survival,157,Quezon City,Metro Manila,National Capital Region,E2020-87
+2/14/2020,Eating/Going Out,Optional,170,Quezon City,Metro Manila,National Capital Region,E2020-88
+2/14/2020,Grocery,Survival,965.9,Quezon City,Metro Manila,National Capital Region,E2020-89
+2/15/2020,Food/Drinks,Optional,5,Quezon City,Metro Manila,National Capital Region,E2020-90
+2/16/2020,Transportation,Optional,40,Quezon City,Metro Manila,National Capital Region,E2020-91
+2/16/2020,Eating/Going Out,Optional,245,Quezon City,Metro Manila,National Capital Region,E2020-92
+2/17/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-93
+2/17/2020,Grocery,Survival,179.25,Quezon City,Metro Manila,National Capital Region,E2020-94
+2/17/2020,Transportation,Survival,41,Quezon City,Metro Manila,National Capital Region,E2020-95
+2/18/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-96
+2/18/2020,Food/Drinks,Optional,5,Quezon City,Metro Manila,National Capital Region,E2020-97
+2/18/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-98
+2/18/2020,Home,Obligation,200,Quezon City,Metro Manila,National Capital Region,E2020-99
+2/19/2020,Food/Drinks,Optional,35,Quezon City,Metro Manila,National Capital Region,E2020-100
+2/19/2020,Phone/Internet,Optional,100,Quezon City,Metro Manila,National Capital Region,E2020-101
+2/19/2020,Grocery,Survival,63.25,Quezon City,Metro Manila,National Capital Region,E2020-102
+2/19/2020,Clothing/Shoes/Personal Items,Optional,665.15,Quezon City,Metro Manila,National Capital Region,E2020-103
+2/20/2020,Food/Drinks,Optional,175,Quezon City,Metro Manila,National Capital Region,E2020-104
+2/20/2020,Eating/Going Out,Optional,59,Quezon City,Metro Manila,National Capital Region,E2020-105
+2/20/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-106
+2/20/2020,Food/Drinks,Optional,25,Quezon City,Metro Manila,National Capital Region,E2020-107
+2/20/2020,Garbage,Obligation,20,Quezon City,Metro Manila,National Capital Region,E2020-108
+2/21/2020,Electricity/Water,Obligation,366,Quezon City,Metro Manila,National Capital Region,E2020-109
+2/21/2020,Food/Drinks,Optional,37,Quezon City,Metro Manila,National Capital Region,E2020-110
+2/22/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-111
+2/23/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-112
+2/23/2020,Grocery,Survival,135,Quezon City,Metro Manila,National Capital Region,E2020-113
+2/23/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-114
+2/23/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-115
+2/24/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-116
+2/24/2020,Food/Drinks,Survival,20,Quezon City,Metro Manila,National Capital Region,E2020-117
+2/24/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-118
+2/25/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-119
+2/25/2020,Grocery,Survival,80.68,Quezon City,Metro Manila,National Capital Region,E2020-120
+2/25/2020,Transportation,Survival,45,Quezon City,Metro Manila,National Capital Region,E2020-121
+2/26/2020,Food/Drinks,Optional,30,Quezon City,Metro Manila,National Capital Region,E2020-122
+2/26/2020,Phone/Internet,Optional,100,Quezon City,Metro Manila,National Capital Region,E2020-123
+2/26/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-124
+2/27/2020,Eating/Going Out,Optional,89,Quezon City,Metro Manila,National Capital Region,E2020-125
+2/27/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-126
+2/27/2020,Grocery,Survival,278.41,Quezon City,Metro Manila,National Capital Region,E2020-127
+2/28/2020,Transportation,Survival,19,Quezon City,Metro Manila,National Capital Region,E2020-128
+2/28/2020,Grocery,Survival,1055,Quezon City,Metro Manila,National Capital Region,E2020-129
+2/28/2020,Electricity/Water,Obligation,130.68,Quezon City,Metro Manila,National Capital Region,E2020-130
+2/29/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-131
+3/1/2020,Eating/Going Out,Optional,100,Quezon City,Metro Manila,National Capital Region,E2020-132
+3/1/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-133
+3/1/2020,Transportation,Survival,53,Quezon City,Metro Manila,National Capital Region,E2020-134
+3/2/2020,Eating/Going Out,Optional,150,Quezon City,Metro Manila,National Capital Region,E2020-135
+3/2/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-136
+3/2/2020,Transportation,Survival,51,Quezon City,Metro Manila,National Capital Region,E2020-137
+3/3/2020,Food/Drinks,Optional,35,Quezon City,Metro Manila,National Capital Region,E2020-138
+3/3/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-139
+3/3/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-140
+3/4/2020,Eating/Going Out,Optional,118,Quezon City,Metro Manila,National Capital Region,E2020-141
+3/4/2020,Food/Drinks,Optional,15,Quezon City,Metro Manila,National Capital Region,E2020-142
+3/4/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-143
+3/4/2020,Phone/Internet,Optional,50,Quezon City,Metro Manila,National Capital Region,E2020-144
+3/4/2020,Grocery,Survival,105.6,Quezon City,Metro Manila,National Capital Region,E2020-145
+3/5/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-146
+3/5/2020,Eating/Going Out,Optional,86,Quezon City,Metro Manila,National Capital Region,E2020-147
+3/5/2020,Grocery,Survival,294.9,Quezon City,Metro Manila,National Capital Region,E2020-148
+3/7/2020,Food/Drinks,Optional,45,Quezon City,Metro Manila,National Capital Region,E2020-149
+3/7/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-150
+3/8/2020,Eating/Going Out,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-151
+3/8/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-152
+3/8/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-153
+3/9/2020,Food/Drinks,Optional,129,Quezon City,Metro Manila,National Capital Region,E2020-154
+3/9/2020,Transportation,Survival,53,Quezon City,Metro Manila,National Capital Region,E2020-155
+3/9/2020,Clothing/Shoes/Personal Items,Optional,178,Quezon City,Metro Manila,National Capital Region,E2020-156
+3/9/2020,Transportation,Survival,52,Quezon City,Metro Manila,National Capital Region,E2020-157
+3/10/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-158
+3/10/2020,Clothing/Shoes/Personal Items,Optional,175,Quezon City,Metro Manila,National Capital Region,E2020-159
+3/10/2020,Grocery,Survival,116,Quezon City,Metro Manila,National Capital Region,E2020-160
+3/10/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-161
+3/11/2020,Grocery,Survival,41,Quezon City,Metro Manila,National Capital Region,E2020-162
+3/11/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-163
+3/11/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-164
+3/12/2020,Eating/Going Out,Optional,89,Quezon City,Metro Manila,National Capital Region,E2020-165
+3/12/2020,Food/Drinks,Optional,99,Quezon City,Metro Manila,National Capital Region,E2020-166
+3/12/2020,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-167
+3/12/2020,Grocery,Survival,87,Quezon City,Metro Manila,National Capital Region,E2020-168
+3/12/2020,Food/Drinks,Optional,5,Quezon City,Metro Manila,National Capital Region,E2020-169
+3/13/2020,Transportation,Survival,18,Quezon City,Metro Manila,National Capital Region,E2020-170
+3/13/2020,Grocery,Survival,900,Quezon City,Metro Manila,National Capital Region,E2020-171
+3/13/2020,Personal care items (drugstore),Survival,827.5,Quezon City,Metro Manila,National Capital Region,E2020-172
+3/13/2020,Eating/Going Out,Optional,119,Quezon City,Metro Manila,National Capital Region,E2020-173
+3/14/2020,Food/Drinks,Optional,25,Quezon City,Metro Manila,National Capital Region,E2020-174
+3/15/2020,Transportation,Survival,54,Quezon City,Metro Manila,National Capital Region,E2020-175
+3/15/2020,Transportation,Survival,52,Quezon City,Metro Manila,National Capital Region,E2020-176
+3/15/2020,Phone/Internet,Optional,100,Quezon City,Metro Manila,National Capital Region,E2020-177
+3/17/2020,Transportation,Survival,18,Quezon City,Metro Manila,National Capital Region,E2020-178
+3/17/2020,Grocery,Survival,650,Quezon City,Metro Manila,National Capital Region,E2020-179
+3/18/2020,Phone/Internet,Optional,30,Quezon City,Metro Manila,National Capital Region,E2020-180
+3/18/2020,Home,Obligation,200,Quezon City,Metro Manila,National Capital Region,E2020-181
+3/19/2020,Entertainment/Subscriptions,Optional,159,Quezon City,Metro Manila,National Capital Region,E2020-182
+3/19/2020,Food/Drinks,Optional,25,Quezon City,Metro Manila,National Capital Region,E2020-183
+3/20/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-184
+3/21/2020,Food/Drinks,Optional,45,Quezon City,Metro Manila,National Capital Region,E2020-185
+3/23/2020,Grocery,Survival,937.35,Quezon City,Metro Manila,National Capital Region,E2020-186
+3/23/2020,Phone/Internet,Optional,103,Quezon City,Metro Manila,National Capital Region,E2020-187
+3/26/2020,Food/Drinks,Optional,23,Quezon City,Metro Manila,National Capital Region,E2020-188
+3/28/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-189
+3/28/2020,Food/Drinks,Optional,35,Quezon City,Metro Manila,National Capital Region,E2020-190
+3/29/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-191
+3/31/2020,Grocery,Survival,958.32,Quezon City,Metro Manila,National Capital Region,E2020-192
+4/1/2020,Entertainment/Subscriptions,Optional,159,Quezon City,Metro Manila,National Capital Region,E2020-193
+4/1/2020,Food/Drinks,Optional,11,Quezon City,Metro Manila,National Capital Region,E2020-194
+4/1/2020,Food/Drinks,Optional,6,Quezon City,Metro Manila,National Capital Region,E2020-195
+4/2/2020,Others,Optional,5390.4,Quezon City,Metro Manila,National Capital Region,E2020-196
+4/3/2020,Phone/Internet,Optional,100,Quezon City,Metro Manila,National Capital Region,E2020-197
+4/4/2020,Food/Drinks,Optional,5,Quezon City,Metro Manila,National Capital Region,E2020-198
+4/4/2020,Food/Drinks,Optional,5,Quezon City,Metro Manila,National Capital Region,E2020-199
+4/5/2020,Phone/Internet,Optional,140,Quezon City,Metro Manila,National Capital Region,E2020-200
+4/5/2020,Grocery,Survival,425.5,Quezon City,Metro Manila,National Capital Region,E2020-201
+4/6/2020,Phone/Internet,Optional,50,Quezon City,Metro Manila,National Capital Region,E2020-202
+4/9/2020,Phone/Internet,Optional,100,Quezon City,Metro Manila,National Capital Region,E2020-203
+4/10/2020,Food/Drinks,Optional,35,Quezon City,Metro Manila,National Capital Region,E2020-204
+4/11/2020,Grocery,Survival,666.06,Quezon City,Metro Manila,National Capital Region,E2020-205
+4/12/2020,Food/Drinks,Optional,10,Quezon City,Metro Manila,National Capital Region,E2020-206
+4/13/2020,Food/Drinks,Optional,6,Quezon City,Metro Manila,National Capital Region,E2020-207
+4/13/2020,Others,Optional,23,Quezon City,Metro Manila,National Capital Region,E2020-208
+5/2/2020,Food/Drinks,Optional,35,Quezon City,Metro Manila,National Capital Region,E2020-209
+5/3/2020,Grocery,Survival,601.83,Quezon City,Metro Manila,National Capital Region,E2020-210
+5/6/2020,Food/Drinks,Optional,23,Quezon City,Metro Manila,National Capital Region,E2020-211
+5/9/2020,Food/Drinks,Optional,23,Quezon City,Metro Manila,National Capital Region,E2020-212
+5/9/2020,Clothing/Shoes/Personal Items,Optional,469,Quezon City,Metro Manila,National Capital Region,E2020-213
+5/9/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-214
+5/10/2020,Grocery,Survival,1000,Quezon City,Metro Manila,National Capital Region,E2020-215
+5/14/2020,Food/Drinks,Optional,26,Quezon City,Metro Manila,National Capital Region,E2020-216
+5/15/2020,Grocery,Survival,1172.02,Quezon City,Metro Manila,National Capital Region,E2020-217
+5/16/2020,Phone/Internet,Optional,85,Quezon City,Metro Manila,National Capital Region,E2020-218
+5/16/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-219
+5/17/2020,Phone/Internet,Optional,99,Quezon City,Metro Manila,National Capital Region,E2020-220
+5/17/2020,Phone/Internet,Obligation,225,Quezon City,Metro Manila,National Capital Region,E2020-221
+5/17/2020,Food/Drinks,Optional,5,Quezon City,Metro Manila,National Capital Region,E2020-222
+5/17/2020,Grocery,Survival,1000,Quezon City,Metro Manila,National Capital Region,E2020-223
+5/18/2020,Phone/Internet,Optional,100,Quezon City,Metro Manila,National Capital Region,E2020-224
+5/19/2020,Grocery,Survival,793.08,Quezon City,Metro Manila,National Capital Region,E2020-225
+5/19/2020,Home,Obligation,300,Quezon City,Metro Manila,National Capital Region,E2020-226
+5/20/2020,Food/Drinks,Survival,103,Quezon City,Metro Manila,National Capital Region,E2020-227
+5/20/2020,Electricity/Water,Obligation,420,Quezon City,Metro Manila,National Capital Region,E2020-228
+5/21/2020,Phone/Internet,Optional,20,Quezon City,Metro Manila,National Capital Region,E2020-229
+5/22/2020,Clothing/Shoes/Personal Items,Optional,1044,Quezon City,Metro Manila,National Capital Region,E2020-230
+5/22/2020,Food/Drinks,Optional,25,Quezon City,Metro Manila,National Capital Region,E2020-231
+5/22/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-232
+5/23/2020,Home,Obligation,200,Quezon City,Metro Manila,National Capital Region,E2020-233
+5/23/2020,Food/Drinks,Survival,52,Quezon City,Metro Manila,National Capital Region,E2020-234
+5/24/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-235
+5/24/2020,Grocery,Survival,665.48,Quezon City,Metro Manila,National Capital Region,E2020-236
+5/24/2020,Food/Drinks,Optional,6,Quezon City,Metro Manila,National Capital Region,E2020-237
+5/25/2020,Phone/Internet,Optional,199,Quezon City,Metro Manila,National Capital Region,E2020-238
+5/28/2020,Entertainment/Subscriptions,Optional,150,Quezon City,Metro Manila,National Capital Region,E2020-239
+5/29/2020,Clothing/Shoes/Personal Items,Optional,259,Quezon City,Metro Manila,National Capital Region,E2020-240
+5/29/2020,Grocery,Survival,604.26,Quezon City,Metro Manila,National Capital Region,E2020-241
+5/29/2020,Food/Drinks,Optional,10,Quezon City,Metro Manila,National Capital Region,E2020-242
+5/30/2020,Food/Drinks,Optional,10,Quezon City,Metro Manila,National Capital Region,E2020-243
+6/1/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-244
+6/3/2020,Grocery,Survival,1038.35,Quezon City,Metro Manila,National Capital Region,E2020-245
+6/5/2020,Food/Drinks,Survival,113,Quezon City,Metro Manila,National Capital Region,E2020-246
+6/6/2020,Food/Drinks,Optional,35,Quezon City,Metro Manila,National Capital Region,E2020-247
+6/8/2020,Phone/Internet,Optional,199,Quezon City,Metro Manila,National Capital Region,E2020-248
+6/9/2020,Grocery,Survival,815,Quezon City,Metro Manila,National Capital Region,E2020-249
+6/12/2020,Food/Drinks,Optional,25,Quezon City,Metro Manila,National Capital Region,E2020-250
+6/14/2020,Phone/Internet,Optional,199,Quezon City,Metro Manila,National Capital Region,E2020-251
+6/14/2020,Grocery,Survival,850,Quezon City,Metro Manila,National Capital Region,E2020-252
+6/15/2020,Phone/Internet,Optional,15,Quezon City,Metro Manila,National Capital Region,E2020-253
+6/15/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-254
+6/21/2020,Grocery,Survival,1000,Quezon City,Metro Manila,National Capital Region,E2020-255
+6/22/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-256
+6/24/2020,Entertainment/Subscriptions,Optional,344,Quezon City,Metro Manila,National Capital Region,E2020-257
+6/24/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-258
+6/25/2020,Food/Drinks,Optional,5,Quezon City,Metro Manila,National Capital Region,E2020-259
+6/27/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-260
+6/27/2020,Grocery,Survival,610.83,Quezon City,Metro Manila,National Capital Region,E2020-261
+6/29/2020,Phone/Internet,Optional,199,Quezon City,Metro Manila,National Capital Region,E2020-262
+7/1/2020,Electricity/Water,Obligation,522.72,Quezon City,Metro Manila,National Capital Region,E2020-263
+7/2/2020,Phone/Internet,Optional,50,Quezon City,Metro Manila,National Capital Region,E2020-264
+7/2/2020,Transportation,Survival,129,Quezon City,Metro Manila,National Capital Region,E2020-265
+7/2/2020,Food/Drinks,Survival,119,Quezon City,Metro Manila,National Capital Region,E2020-266
+7/3/2020,Transportation,Survival,96,Quezon City,Metro Manila,National Capital Region,E2020-267
+7/3/2020,Others,Survival,170,Quezon City,Metro Manila,National Capital Region,E2020-268
+7/3/2020,Grocery,Survival,310.3,Quezon City,Metro Manila,National Capital Region,E2020-269
+7/3/2020,Magazines/Newspapers/Books,Optional,160,Quezon City,Metro Manila,National Capital Region,E2020-270
+7/5/2020,Grocery,Survival,437,Quezon City,Metro Manila,National Capital Region,E2020-271
+7/5/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-272
+7/6/2020,Food/Drinks,Survival,130,Quezon City,Metro Manila,National Capital Region,E2020-273
+7/7/2020,Food/Drinks,Survival,100,Quezon City,Metro Manila,National Capital Region,E2020-274
+7/8/2020,Food/Drinks,Survival,99,Quezon City,Metro Manila,National Capital Region,E2020-275
+7/8/2020,Apartment,Obligation,4000,Quezon City,Metro Manila,National Capital Region,E2020-276
+7/9/2020,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2020-277
+7/9/2020,Food/Drinks,Survival,86,Quezon City,Metro Manila,National Capital Region,E2020-278
+7/10/2020,Transportation,Survival,59,Quezon City,Metro Manila,National Capital Region,E2020-279
+7/10/2020,Food/Drinks,Survival,89,Quezon City,Metro Manila,National Capital Region,E2020-280
+7/11/2020,Transportation,Survival,81,Quezon City,Metro Manila,National Capital Region,E2020-281
+7/11/2020,Grocery,Survival,845.65,Quezon City,Metro Manila,National Capital Region,E2020-282
+7/12/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-283
+7/13/2020,Transportation,Survival,59,Quezon City,Metro Manila,National Capital Region,E2020-284
+7/13/2020,Food/Drinks,Survival,89,Quezon City,Metro Manila,National Capital Region,E2020-285
+7/14/2020,Transportation,Survival,59,Quezon City,Metro Manila,National Capital Region,E2020-286
+7/14/2020,Food/Drinks,Survival,89,Quezon City,Metro Manila,National Capital Region,E2020-287
+7/15/2020,Transportation,Survival,59,Quezon City,Metro Manila,National Capital Region,E2020-288
+7/15/2020,Food/Drinks,Survival,89,Quezon City,Metro Manila,National Capital Region,E2020-289
+7/16/2020,Transportation,Survival,59,Quezon City,Metro Manila,National Capital Region,E2020-290
+7/16/2020,Food/Drinks,Optional,45,Quezon City,Metro Manila,National Capital Region,E2020-291
+7/17/2020,Transportation,Survival,59,Quezon City,Metro Manila,National Capital Region,E2020-292
+7/20/2020,Food/Drinks,Survival,67,Quezon City,Metro Manila,National Capital Region,E2020-293
+7/20/2020,Grocery,Survival,80,Quezon City,Metro Manila,National Capital Region,E2020-294
+7/20/2020,Transportation,Survival,94,Quezon City,Metro Manila,National Capital Region,E2020-295
+7/21/2020,Food/Drinks,Survival,63,Quezon City,Metro Manila,National Capital Region,E2020-296
+7/21/2020,Transportation,Survival,94,Quezon City,Metro Manila,National Capital Region,E2020-297
+7/21/2020,Food/Drinks,Optional,198,Quezon City,Metro Manila,National Capital Region,E2020-298
+7/22/2020,Food/Drinks,Survival,89,Quezon City,Metro Manila,National Capital Region,E2020-299
+7/22/2020,Transportation,Survival,94,Quezon City,Metro Manila,National Capital Region,E2020-300
+7/23/2020,Food/Drinks,Survival,89,Quezon City,Metro Manila,National Capital Region,E2020-301
+7/24/2020,Food/Drinks,Survival,125,Quezon City,Metro Manila,National Capital Region,E2020-302
+7/24/2020,Grocery,Survival,175,Quezon City,Metro Manila,National Capital Region,E2020-303
+7/26/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-304
+7/27/2020,Food/Drinks,Survival,46,Quezon City,Metro Manila,National Capital Region,E2020-305
+7/28/2020,Transportation,Survival,450.11,Quezon City,Metro Manila,National Capital Region,E2020-306
+7/28/2020,Food/Drinks,Survival,89,Quezon City,Metro Manila,National Capital Region,E2020-307
+7/29/2020,Food/Drinks,Survival,39,Quezon City,Metro Manila,National Capital Region,E2020-308
+7/29/2020,Food/Drinks,Survival,45,Quezon City,Metro Manila,National Capital Region,E2020-309
+7/31/2020,Food/Drinks,Survival,174,Quezon City,Metro Manila,National Capital Region,E2020-310
+8/1/2020,Grocery,Survival,946,Quezon City,Metro Manila,National Capital Region,E2020-311
+8/1/2020,Transportation,Survival,26,Quezon City,Metro Manila,National Capital Region,E2020-312
+8/2/2020,Phone/Internet,Optional,199,Quezon City,Metro Manila,National Capital Region,E2020-313
+8/3/2020,Electricity/Water,Obligation,257.58,Quezon City,Metro Manila,National Capital Region,E2020-314
+8/3/2020,Food/Drinks,Optional,30,Quezon City,Metro Manila,National Capital Region,E2020-315
+8/5/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-316
+8/7/2020,Food/Drinks,Survival,30,Quezon City,Metro Manila,National Capital Region,E2020-317
+8/8/2020,Grocery,Survival,265.53,Quezon City,Metro Manila,National Capital Region,E2020-318
+8/8/2020,Food/Drinks,Survival,30,Quezon City,Metro Manila,National Capital Region,E2020-319
+8/10/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-320
+8/11/2020,Food/Drinks,Survival,30,Quezon City,Metro Manila,National Capital Region,E2020-321
+8/12/2020,Food/Drinks,Survival,30,Quezon City,Metro Manila,National Capital Region,E2020-322
+8/12/2020,Food/Drinks,Survival,85,Quezon City,Metro Manila,National Capital Region,E2020-323
+8/12/2020,Food/Drinks,Optional,10,Quezon City,Metro Manila,National Capital Region,E2020-324
+8/13/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-325
+8/15/2020,Grocery,Survival,744,Quezon City,Metro Manila,National Capital Region,E2020-326
+8/15/2020,Phone/Internet,Optional,199,Quezon City,Metro Manila,National Capital Region,E2020-327
+8/16/2020,Apartment,Obligation,3000,Quezon City,Metro Manila,National Capital Region,E2020-328
+8/16/2020,Electricity/Water,Obligation,350,Quezon City,Metro Manila,National Capital Region,E2020-329
+8/18/2020,Food/Drinks,Survival,120,Quezon City,Metro Manila,National Capital Region,E2020-330
+8/18/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-331
+8/21/2020,Food/Drinks,Survival,175,Quezon City,Metro Manila,National Capital Region,E2020-332
+8/22/2020,Grocery,Survival,909.73,Quezon City,Metro Manila,National Capital Region,E2020-333
+8/22/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-334
+8/26/2020,Grocery,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-335
+8/27/2020,Garbage,Obligation,20,Quezon City,Metro Manila,National Capital Region,E2020-336
+8/28/2020,Electricity/Water,Obligation,148.68,Quezon City,Metro Manila,National Capital Region,E2020-337
+8/29/2020,Grocery,Survival,826.42,Quezon City,Metro Manila,National Capital Region,E2020-338
+8/29/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-339
+8/29/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-340
+9/2/2020,Food/Drinks,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-341
+9/3/2020,Food/Drinks,Survival,30,Quezon City,Metro Manila,National Capital Region,E2020-342
+9/3/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-343
+9/5/2020,Grocery,Survival,616.98,Quezon City,Metro Manila,National Capital Region,E2020-344
+9/5/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-345
+9/8/2020,Food/Drinks,Survival,100,Quezon City,Metro Manila,National Capital Region,E2020-346
+9/9/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-347
+9/10/2020,Food/Drinks,Survival,40,Quezon City,Metro Manila,National Capital Region,E2020-348
+9/10/2020,Food/Drinks,Survival,60,Quezon City,Metro Manila,National Capital Region,E2020-349
+9/12/2020,Grocery,Survival,735.43,Quezon City,Metro Manila,National Capital Region,E2020-350
+9/12/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-351
+9/13/2020,Others,Unexpected,418,Quezon City,Metro Manila,National Capital Region,E2020-352
+9/14/2020,Others,Unexpected,276,Quezon City,Metro Manila,National Capital Region,E2020-353
+9/14/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-354
+9/16/2020,Food/Drinks,Survival,100,Quezon City,Metro Manila,National Capital Region,E2020-355
+9/17/2020,Food/Drinks,Survival,20,Quezon City,Metro Manila,National Capital Region,E2020-356
+9/17/2020,Garbage,Obligation,20,Quezon City,Metro Manila,National Capital Region,E2020-357
+9/18/2020,Food/Drinks,Survival,68,Quezon City,Metro Manila,National Capital Region,E2020-358
+9/18/2020,Entertainment/Subscriptions,Optional,129,Quezon City,Metro Manila,National Capital Region,E2020-359
+9/19/2020,Grocery,Survival,863.38,Quezon City,Metro Manila,National Capital Region,E2020-360
+9/19/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-361
+9/19/2020,Electricity/Water,Obligation,130.68,Quezon City,Metro Manila,National Capital Region,E2020-362
+9/20/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-363
+9/24/2020,Food/Drinks,Survival,20,Quezon City,Metro Manila,National Capital Region,E2020-364
+9/24/2020,Food/Drinks,Survival,140,Quezon City,Metro Manila,National Capital Region,E2020-365
+9/24/2020,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2020-366
+9/24/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-367
+9/25/2020,Eating/Going Out,Optional,118,Quezon City,Metro Manila,National Capital Region,E2020-368
+9/25/2020,Grocery,Survival,600,Quezon City,Metro Manila,National Capital Region,E2020-369
+9/25/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-370
+9/26/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-371
+9/29/2020,Food/Drinks,Survival,130,Quezon City,Metro Manila,National Capital Region,E2020-372
+9/29/2020,Phone/Internet,Optional,50,Quezon City,Metro Manila,National Capital Region,E2020-373
+10/1/2020,Food/Drinks,Survival,78,Quezon City,Metro Manila,National Capital Region,E2020-374
+10/2/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-375
+10/2/2020,Grocery,Survival,125,Quezon City,Metro Manila,National Capital Region,E2020-376
+10/2/2020,Grocery,Survival,756.78,Quezon City,Metro Manila,National Capital Region,E2020-377
+10/2/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-378
+10/3/2020,Phone/Internet,Optional,199,Quezon City,Metro Manila,National Capital Region,E2020-379
+10/8/2020,Food/Drinks,Survival,96,Quezon City,Metro Manila,National Capital Region,E2020-380
+10/8/2020,Food/Drinks,Survival,20,Quezon City,Metro Manila,National Capital Region,E2020-381
+10/8/2020,Food/Drinks,Survival,16,Quezon City,Metro Manila,National Capital Region,E2020-382
+10/9/2020,Grocery,Survival,883.18,Quezon City,Metro Manila,National Capital Region,E2020-383
+10/9/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-384
+10/9/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-385
+10/13/2020,Food/Drinks,Survival,85,Quezon City,Metro Manila,National Capital Region,E2020-386
+10/15/2020,Garbage,Obligation,20,Quezon City,Metro Manila,National Capital Region,E2020-387
+10/15/2020,Food/Drinks,Survival,48,Quezon City,Metro Manila,National Capital Region,E2020-388
+10/16/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-389
+10/16/2020,Grocery,Survival,489.6,Quezon City,Metro Manila,National Capital Region,E2020-390
+10/16/2020,Grocery,Survival,135,Quezon City,Metro Manila,National Capital Region,E2020-391
+10/16/2020,Food/Drinks,Survival,96,Quezon City,Metro Manila,National Capital Region,E2020-392
+10/16/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-393
+10/16/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-394
+10/22/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-395
+10/23/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-396
+10/23/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-397
+10/23/2020,Grocery,Survival,649.88,Quezon City,Metro Manila,National Capital Region,E2020-398
+10/23/2020,Home,Obligation,800,Quezon City,Metro Manila,National Capital Region,E2020-399
+10/25/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-400
+10/25/2020,Electricity/Water,Obligation,130.68,Quezon City,Metro Manila,National Capital Region,E2020-401
+10/29/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-402
+10/29/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-403
+10/30/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-404
+10/30/2020,Grocery,Survival,684.1,Quezon City,Metro Manila,National Capital Region,E2020-405
+10/30/2020,Food/Drinks,Survival,96,Quezon City,Metro Manila,National Capital Region,E2020-406
+10/30/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-407
+10/30/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-408
+11/3/2020,Clothing/Shoes/Personal Items,Optional,945.45,Quezon City,Metro Manila,National Capital Region,E2020-409
+11/4/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-410
+11/5/2020,Food/Drinks,Survival,27,Quezon City,Metro Manila,National Capital Region,E2020-411
+11/6/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-412
+11/6/2020,Grocery,Survival,695.68,Quezon City,Metro Manila,National Capital Region,E2020-413
+11/6/2020,Food/Drinks,Survival,96,Quezon City,Metro Manila,National Capital Region,E2020-414
+11/6/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-415
+11/8/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-416
+11/11/2020,Clothing/Shoes/Personal Items,Optional,1931.35,Quezon City,Metro Manila,National Capital Region,E2020-417
+11/13/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-418
+11/13/2020,Grocery,Survival,759.05,Quezon City,Metro Manila,National Capital Region,E2020-419
+11/13/2020,Food/Drinks,Survival,96,Quezon City,Metro Manila,National Capital Region,E2020-420
+11/13/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-421
+11/14/2020,Electricity/Water,Obligation,448.5,Quezon City,Metro Manila,National Capital Region,E2020-422
+11/15/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-423
+11/17/2020,Food/Drinks,Survival,84,Quezon City,Metro Manila,National Capital Region,E2020-424
+11/19/2020,Food/Drinks,Survival,34,Quezon City,Metro Manila,National Capital Region,E2020-425
+11/20/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-426
+11/20/2020,Grocery,Survival,690.41,Quezon City,Metro Manila,National Capital Region,E2020-427
+11/22/2020,Entertainment/Subscriptions,Optional,149,Quezon City,Metro Manila,National Capital Region,E2020-428
+11/22/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-429
+11/24/2020,Food/Drinks,Survival,93,Quezon City,Metro Manila,National Capital Region,E2020-430
+11/27/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-431
+11/27/2020,Grocery,Survival,611.12,Quezon City,Metro Manila,National Capital Region,E2020-432
+11/27/2020,Food/Drinks,Survival,96,Quezon City,Metro Manila,National Capital Region,E2020-433
+11/27/2020,Bank fees,Obligation,380,Quezon City,Metro Manila,National Capital Region,E2020-434
+11/28/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-435
+11/28/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-436
+11/28/2020,Clothing/Shoes/Personal Items,Optional,2128.82,Quezon City,Metro Manila,National Capital Region,E2020-437
+11/30/2020,Electricity/Water,Obligation,130.68,Quezon City,Metro Manila,National Capital Region,E2020-438
+12/1/2020,Food/Drinks,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-439
+12/4/2020,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2020-440
+12/4/2020,Hair Cut,Optional,60,Quezon City,Metro Manila,National Capital Region,E2020-441
+12/4/2020,Grocery,Survival,557.9,Quezon City,Metro Manila,National Capital Region,E2020-442
+12/5/2020,Food/Drinks,Survival,96,Quezon City,Metro Manila,National Capital Region,E2020-443
+12/5/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-444
+12/8/2020,Food/Drinks,Survival,100,Quezon City,Metro Manila,National Capital Region,E2020-445
+12/9/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-446
+12/11/2020,Grocery,Survival,789.77,Quezon City,Metro Manila,National Capital Region,E2020-447
+12/11/2020,Transportation,Survival,30,Quezon City,Metro Manila,National Capital Region,E2020-448
+12/11/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-449
+12/12/2020,Clothing/Shoes/Personal Items,Optional,773.09,Quezon City,Metro Manila,National Capital Region,E2020-450
+12/12/2020,Transportation,Survival,179,Quezon City,Metro Manila,National Capital Region,E2020-451
+12/12/2020,Food/Drinks,Optional,165,Quezon City,Metro Manila,National Capital Region,E2020-452
+12/15/2020,Food/Drinks,Survival,65,Quezon City,Metro Manila,National Capital Region,E2020-453
+12/16/2020,Electricity/Water,Obligation,330,Quezon City,Metro Manila,National Capital Region,E2020-454
+12/17/2020,Garbage,Obligation,20,Quezon City,Metro Manila,National Capital Region,E2020-455
+12/18/2020,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2020-456
+12/18/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-457
+12/18/2020,Grocery,Survival,777.05,Quezon City,Metro Manila,National Capital Region,E2020-458
+12/20/2020,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2020-459
+12/22/2020,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2020-460
+12/22/2020,Food/Drinks,Survival,90,Quezon City,Metro Manila,National Capital Region,E2020-461
+12/23/2020,Electricity/Water,Obligation,130.68,Quezon City,Metro Manila,National Capital Region,E2020-462
+12/23/2020,Entertainment/Subscriptions,Optional,1250,Quezon City,Metro Manila,National Capital Region,E2020-463
+12/24/2020,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2020-464
+12/24/2020,Others,Unexpected,100,Quezon City,Metro Manila,National Capital Region,E2020-465
+12/25/2020,Grocery,Survival,1000,Quezon City,Metro Manila,National Capital Region,E2020-466
+12/25/2020,Magazines/Newspapers/Books,Optional,400,Quezon City,Metro Manila,National Capital Region,E2020-467
+12/25/2020,Transportation,Survival,100,Quezon City,Metro Manila,National Capital Region,E2020-468
+12/29/2020,Phone/Internet,Optional,70,Quezon City,Metro Manila,National Capital Region,E2020-469
+12/29/2020,Food/Drinks,Survival,72,Quezon City,Metro Manila,National Capital Region,E2020-470
+12/29/2020,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-1
+12/29/2020,Debt repayment,Obligation,1130,Quezon City,Metro Manila,National Capital Region,E2021-2
+12/30/2020,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-3
+12/31/2020,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-4
+1/1/2021,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2021-5
+1/2/2021,Phone/Internet,Obligation,90,Quezon City,Metro Manila,National Capital Region,E2021-6
+1/4/2021,Food/Drinks,Survival,94,Quezon City,Metro Manila,National Capital Region,E2021-7
+1/5/2021,Grocery,Survival,443.7,Quezon City,Metro Manila,National Capital Region,E2021-8
+1/5/2021,Magazines/Newspapers/Books,Optional,207.75,Quezon City,Metro Manila,National Capital Region,E2021-9
+1/5/2021,Transportation,Survival,75,Quezon City,Metro Manila,National Capital Region,E2021-10
+1/7/2021,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-11
+1/8/2021,Grocery,Survival,720,Quezon City,Metro Manila,National Capital Region,E2021-12
+1/8/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-13
+1/8/2021,Bank fees,Obligation,15,Quezon City,Metro Manila,National Capital Region,E2021-14
+1/9/2021,Phone/Internet,Optional,100,Quezon City,Metro Manila,National Capital Region,E2021-15
+1/10/2021,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2021-16
+1/12/2021,Transportation,Survival,80,Quezon City,Metro Manila,National Capital Region,E2021-17
+1/13/2021,Electricity/Water,Obligation,500,Quezon City,Metro Manila,National Capital Region,E2021-18
+1/13/2021,Food/Drinks,Survival,95,Quezon City,Metro Manila,National Capital Region,E2021-19
+1/15/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-20
+1/15/2021,Grocery,Survival,792.06,Quezon City,Metro Manila,National Capital Region,E2021-21
+1/15/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-22
+1/15/2021,Bank fees,Unexpected,5,Quezon City,Metro Manila,National Capital Region,E2021-23
+1/16/2021,Food/Drinks,Survival,100,Quezon City,Metro Manila,National Capital Region,E2021-24
+1/16/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-25
+1/17/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-26
+1/18/2021,Phone/Internet,Unexpected,50,Quezon City,Metro Manila,National Capital Region,E2021-27
+1/19/2021,Pension Fund,Obligation,1200,Makati City,Metro Manila,National Capital Region,E2021-28
+1/21/2021,Debt repayment,Obligation,8.03,Quezon City,Metro Manila,National Capital Region,E2021-29
+1/22/2021,Grocery,Survival,572.25,Quezon City,Metro Manila,National Capital Region,E2021-30
+1/22/2021,Electricity/Water,Obligation,130.65,Quezon City,Metro Manila,National Capital Region,E2021-31
+1/22/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-32
+1/23/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-33
+1/24/2021,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2021-34
+1/25/2021,Food/Drinks,Survival,110,Quezon City,Metro Manila,National Capital Region,E2021-35
+1/27/2021,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2021-36
+1/28/2021,Food/Drinks,Survival,140,Quezon City,Metro Manila,National Capital Region,E2021-37
+1/28/2021,Garbage,Obligation,30,Quezon City,Metro Manila,National Capital Region,E2021-38
+1/29/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-39
+1/29/2021,Debt repayment,Obligation,1130,Quezon City,Metro Manila,National Capital Region,E2021-40
+1/29/2021,Grocery,Survival,657.3,Quezon City,Metro Manila,National Capital Region,E2021-41
+1/29/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-42
+1/29/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-43
+1/30/2021,Hair Cut,Optional,60,Quezon City,Metro Manila,National Capital Region,E2021-44
+1/30/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-45
+1/31/2021,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2021-46
+2/1/2021,Food/Drinks,Survival,100,Quezon City,Metro Manila,National Capital Region,E2021-47
+2/2/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-48
+2/3/2021,Food/Drinks,Survival,96,Pontevedra,Capiz,Western Visayas,E2021-49
+2/3/2021,Phone/Internet,Optional,60,Quezon City,Metro Manila,National Capital Region,E2021-50
+2/3/2021,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-51
+2/5/2021,Grocery,Survival,361.5,Quezon City,Metro Manila,National Capital Region,E2021-52
+2/5/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-53
+2/8/2021,Food/Drinks,Survival,43,Quezon City,Metro Manila,National Capital Region,E2021-54
+2/8/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-55
+2/10/2021,Food/Drinks,Survival,190,Quezon City,Metro Manila,National Capital Region,E2021-56
+2/10/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-57
+2/11/2021,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-58
+2/12/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-59
+2/12/2021,Grocery,Survival,379.93,Quezon City,Metro Manila,National Capital Region,E2021-60
+2/12/2021,Eating/Going Out,Optional,126,Quezon City,Metro Manila,National Capital Region,E2021-61
+2/12/2021,Eating/Going Out,Optional,92,Quezon City,Metro Manila,National Capital Region,E2021-62
+2/12/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-63
+2/12/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-64
+2/13/2021,Bank fees,Unexpected,15,Quezon City,Metro Manila,National Capital Region,E2021-65
+2/14/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-66
+2/15/2021,Pension Fund,Obligation,1200,Makati City,Metro Manila,National Capital Region,E2021-67
+2/17/2021,Food/Drinks,Survival,76,Quezon City,Metro Manila,National Capital Region,E2021-68
+2/18/2021,Phone/Internet,Optional,100,Quezon City,Metro Manila,National Capital Region,E2021-69
+2/18/2021,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-70
+2/19/2021,Grocery,Survival,328.29,Quezon City,Metro Manila,National Capital Region,E2021-71
+2/19/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-72
+2/19/2021,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2021-73
+2/22/2021,Electricity/Water,Obligation,130.63,Quezon City,Metro Manila,National Capital Region,E2021-74
+2/22/2021,Food/Drinks,Survival,96,Quezon City,Metro Manila,National Capital Region,E2021-75
+2/22/2021,Food/Drinks,Survival,30,Quezon City,Metro Manila,National Capital Region,E2021-76
+2/24/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-77
+2/24/2021,Food/Drinks,Survival,89,Quezon City,Metro Manila,National Capital Region,E2021-78
+2/24/2021,Debt repayment,Obligation,1.52,Quezon City,Metro Manila,National Capital Region,E2021-79
+2/25/2021,Food/Drinks,Obligation,32,Quezon City,Metro Manila,National Capital Region,E2021-80
+2/26/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-81
+2/26/2021,Grocery,Survival,669.53,Quezon City,Metro Manila,National Capital Region,E2021-82
+2/26/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-83
+2/26/2021,Bank fees,Obligation,15,Quezon City,Metro Manila,National Capital Region,E2021-84
+2/27/2021,Home,Obligation,3200,Pontevedra,Capiz,Western Visayas,E2021-85
+2/27/2021,Food/Drinks,Survival,99,Quezon City,Metro Manila,National Capital Region,E2021-86
+2/28/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-87
+3/1/2021,Debt repayment,Obligation,1130,Quezon City,Metro Manila,National Capital Region,E2021-88
+3/2/2021,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2021-89
+3/3/2021,Food/Drinks,Optional,73,Quezon City,Metro Manila,National Capital Region,E2021-90
+3/4/2021,Garbage,Obligation,20,Quezon City,Metro Manila,National Capital Region,E2021-91
+3/5/2021,Grocery,Survival,654.44,Quezon City,Metro Manila,National Capital Region,E2021-92
+3/5/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-93
+3/6/2021,Home,Optional,1000,Pontevedra,Capiz,Western Visayas,E2021-94
+3/7/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-95
+3/8/2021,Food/Drinks,Optional,23,Quezon City,Metro Manila,National Capital Region,E2021-96
+3/9/2021,Grocery,Survival,638.28,Quezon City,Metro Manila,National Capital Region,E2021-97
+3/9/2021,Magazines/Newspapers/Books,Optional,305,Quezon City,Metro Manila,National Capital Region,E2021-98
+3/9/2021,Transportation,Survival,80,Quezon City,Metro Manila,National Capital Region,E2021-99
+3/13/2021,Food/Drinks,Survival,128,Quezon City,Metro Manila,National Capital Region,E2021-100
+3/14/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-101
+3/15/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-102
+3/15/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-103
+3/15/2021,Pension Fund,Obligation,1300,Makati City,Metro Manila,National Capital Region,E2021-104
+3/16/2021,Grocery,Survival,699.45,Quezon City,Metro Manila,National Capital Region,E2021-105
+3/16/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-106
+3/19/2021,Food/Drinks,Optional,30,Quezon City,Metro Manila,National Capital Region,E2021-107
+3/20/2021,Home,Unexpected,10000,Roxas City,Capiz,Western Visayas,E2021-108
+3/20/2021,Electricity/Water,Obligation,510,Quezon City,Metro Manila,National Capital Region,E2021-109
+3/20/2021,Food/Drinks,Survival,108,Quezon City,Metro Manila,National Capital Region,E2021-110
+3/20/2021,Home,Unexpected,90,Roxas City,Capiz,Western Visayas,E2021-111
+3/20/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-112
+3/21/2021,Home,Unexpected,5000,Roxas City,Capiz,Western Visayas,E2021-113
+3/22/2021,Electricity/Water,Obligation,130.63,Quezon City,Metro Manila,National Capital Region,E2021-114
+3/22/2021,Food/Drinks,Survival,34,Quezon City,Metro Manila,National Capital Region,E2021-115
+3/22/2021,Debt repayment,Obligation,18.81,Quezon City,Metro Manila,National Capital Region,E2021-116
+3/23/2021,Grocery,Survival,617.83,Quezon City,Metro Manila,National Capital Region,E2021-117
+3/23/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-118
+3/24/2021,Home,Unexpected,5000,Roxas City,Capiz,Western Visayas,E2021-119
+3/28/2021,Food/Drinks,Survival,92,Quezon City,Metro Manila,National Capital Region,E2021-120
+3/28/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-121
+3/30/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-122
+3/30/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-123
+3/30/2021,Debt repayment,Obligation,1130,Quezon City,Metro Manila,National Capital Region,E2021-124
+3/30/2021,Grocery,Survival,470.64,Quezon City,Metro Manila,National Capital Region,E2021-125
+3/30/2021,Home,Obligation,300,Pontevedra,Capiz,Western Visayas,E2021-126
+3/30/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-127
+3/30/2021,Bank fees,Optional,15,Quezon City,Metro Manila,National Capital Region,E2021-128
+3/31/2021,Food/Drinks,Survival,95,Quezon City,Metro Manila,National Capital Region,E2021-129
+4/3/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-130
+4/3/2021,Food/Drinks,Survival,80,Quezon City,Metro Manila,National Capital Region,E2021-131
+4/4/2021,Food/Drinks,Optional,49,Quezon City,Metro Manila,National Capital Region,E2021-132
+4/5/2021,Others,Unexpected,2000,Pontevedra,Capiz,Western Visayas,E2021-133
+4/6/2021,Grocery,Survival,593.04,Quezon City,Metro Manila,National Capital Region,E2021-134
+4/6/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-135
+4/7/2021,Home,Unexpected,3000,Roxas City,Capiz,Western Visayas,E2021-136
+4/7/2021,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2021-137
+4/7/2021,Food/Drinks,Survival,119,Quezon City,Metro Manila,National Capital Region,E2021-138
+4/13/2021,Grocery,Survival,477.2,Quezon City,Metro Manila,National Capital Region,E2021-139
+4/13/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-140
+4/14/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-141
+4/14/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-142
+4/14/2021,Pension Fund,Obligation,1300,Makati City,Metro Manila,National Capital Region,E2021-143
+4/15/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-144
+4/15/2021,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-145
+4/17/2021,Food/Drinks,Survival,117,Quezon City,Metro Manila,National Capital Region,E2021-146
+4/17/2021,Food/Drinks,Survival,10,Quezon City,Metro Manila,National Capital Region,E2021-147
+4/19/2021,Food/Drinks,Survival,44,Quezon City,Metro Manila,National Capital Region,E2021-148
+4/20/2021,Grocery,Survival,562.88,Quezon City,Metro Manila,National Capital Region,E2021-149
+4/20/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-150
+4/20/2021,Debt repayment,Obligation,15.2,Quezon City,Metro Manila,National Capital Region,E2021-151
+4/21/2021,Food/Drinks,Survival,95,Quezon City,Metro Manila,National Capital Region,E2021-152
+4/21/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-153
+4/24/2021,Food/Drinks,Survival,90,Quezon City,Metro Manila,National Capital Region,E2021-154
+4/24/2021,Food/Drinks,Optional,24,Quezon City,Metro Manila,National Capital Region,E2021-155
+4/25/2021,Electricity/Water,Obligation,415.5,Quezon City,Metro Manila,National Capital Region,E2021-156
+4/26/2021,Electricity/Water,Obligation,130.61,Quezon City,Metro Manila,National Capital Region,E2021-157
+4/27/2021,Grocery,Survival,625.3,Quezon City,Metro Manila,National Capital Region,E2021-158
+4/27/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-159
+4/27/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-160
+4/30/2021,Grocery,Survival,255.15,Quezon City,Metro Manila,National Capital Region,E2021-161
+4/30/2021,Home,Obligation,200,Quezon City,Metro Manila,National Capital Region,E2021-162
+4/30/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-163
+5/1/2021,Debt repayment,Obligation,1130,Quezon City,Metro Manila,National Capital Region,E2021-164
+5/2/2021,Food/Drinks,Survival,71,Quezon City,Metro Manila,National Capital Region,E2021-165
+5/2/2021,Food/Drinks,Optional,10,Quezon City,Metro Manila,National Capital Region,E2021-166
+5/3/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-167
+5/4/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-168
+5/4/2021,Grocery,Survival,508.23,Quezon City,Metro Manila,National Capital Region,E2021-169
+5/4/2021,Clothing/Shoes/Personal Items,Optional,212.77,Quezon City,Metro Manila,National Capital Region,E2021-170
+5/4/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-171
+5/4/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-172
+5/5/2021,Clothing/Shoes/Personal Items,Optional,931.68,Quezon City,Metro Manila,National Capital Region,E2021-173
+5/6/2021,Food/Drinks,Survival,90,Quezon City,Metro Manila,National Capital Region,E2021-174
+5/6/2021,Food/Drinks,Optional,10,Quezon City,Metro Manila,National Capital Region,E2021-175
+5/7/2021,Grocery,Survival,280.06,Quezon City,Metro Manila,National Capital Region,E2021-176
+5/7/2021,Clothing/Shoes/Personal Items,Optional,105.99,Quezon City,Metro Manila,National Capital Region,E2021-177
+5/7/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-178
+5/8/2021,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2021-179
+5/9/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-180
+5/10/2021,Food/Drinks,Survival,48,Quezon City,Metro Manila,National Capital Region,E2021-181
+5/11/2021,Grocery,Survival,449.5,Quezon City,Metro Manila,National Capital Region,E2021-182
+5/11/2021,Transportation,Survival,20,Quezon City,Metro Manila,National Capital Region,E2021-183
+5/12/2021,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2021-184
+5/15/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-185
+5/15/2021,Pension Fund,Obligation,650,Makati City,Metro Manila,National Capital Region,E2021-186
+5/15/2021,Grocery,Survival,408.29,Quezon City,Metro Manila,National Capital Region,E2021-187
+5/15/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-188
+5/15/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-189
+5/16/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-190
+5/18/2021,Grocery,Survival,339.95,Quezon City,Metro Manila,National Capital Region,E2021-191
+5/18/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-192
+5/20/2021,Food/Drinks,Optional,23,Quezon City,Metro Manila,National Capital Region,E2021-193
+5/20/2021,Debt repayment,Obligation,3.92,Quezon City,Metro Manila,National Capital Region,E2021-194
+5/22/2021,Grocery,Survival,195.29,Quezon City,Metro Manila,National Capital Region,E2021-195
+5/22/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-196
+5/23/2021,Electricity/Water,Obligation,420,Quezon City,Metro Manila,National Capital Region,E2021-197
+5/24/2021,Food/Drinks,Optional,100,Quezon City,Metro Manila,National Capital Region,E2021-198
+5/24/2021,Hair Cut,Optional,70,Quezon City,Metro Manila,National Capital Region,E2021-199
+5/24/2021,Transportation,Survival,20,Quezon City,Metro Manila,National Capital Region,E2021-200
+5/25/2021,Grocery,Survival,399.49,Quezon City,Metro Manila,National Capital Region,E2021-201
+5/25/2021,Transportation,Survival,20,Quezon City,Metro Manila,National Capital Region,E2021-202
+5/26/2021,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2021-203
+5/27/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-204
+5/27/2021,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-205
+5/28/2021,Phone/Internet,Unexpected,100,Quezon City,Metro Manila,National Capital Region,E2021-206
+5/28/2021,Food/Drinks,Optional,30,Quezon City,Metro Manila,National Capital Region,E2021-207
+5/29/2021,Grocery,Survival,164.87,Quezon City,Metro Manila,National Capital Region,E2021-208
+5/29/2021,Transportation,Survival,20,Quezon City,Metro Manila,National Capital Region,E2021-209
+5/30/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-210
+5/30/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-211
+5/31/2021,Home,Obligation,300,Quezon City,Metro Manila,National Capital Region,E2021-212
+5/31/2021,Food/Drinks,Survival,50,Quezon City,Metro Manila,National Capital Region,E2021-213
+5/31/2021,Bank fees,Unexpected,15,Quezon City,Metro Manila,National Capital Region,E2021-214
+6/1/2021,Debt repayment,Obligation,1130,Quezon City,Metro Manila,National Capital Region,E2021-215
+6/1/2021,Grocery,Survival,749.3,Quezon City,Metro Manila,National Capital Region,E2021-216
+6/1/2021,Transportation,Survival,20,Quezon City,Metro Manila,National Capital Region,E2021-217
+6/2/2021,Electricity/Water,Obligation,130.61,Quezon City,Metro Manila,National Capital Region,E2021-218
+6/2/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-219
+6/3/2021,Garbage,Obligation,15,Quezon City,Metro Manila,National Capital Region,E2021-220
+6/3/2021,Food/Drinks,Optional,10,Quezon City,Metro Manila,National Capital Region,E2021-221
+6/3/2021,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2021-222
+6/4/2021,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2021-223
+6/5/2021,Grocery,Survival,207,Quezon City,Metro Manila,National Capital Region,E2021-224
+6/5/2021,Transportation,Survival,20,Quezon City,Metro Manila,National Capital Region,E2021-225
+6/8/2021,Grocery,Survival,368.94,Quezon City,Metro Manila,National Capital Region,E2021-226
+6/8/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-227
+6/8/2021,Transportation,Survival,20,Quezon City,Metro Manila,National Capital Region,E2021-228
+6/9/2021,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2021-229
+6/12/2021,Grocery,Survival,373.7,Quezon City,Metro Manila,National Capital Region,E2021-230
+6/12/2021,Transportation,Survival,20,Quezon City,Metro Manila,National Capital Region,E2021-231
+6/15/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-232
+6/15/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-233
+6/15/2021,Pension Fund,Obligation,650,Makati City,Metro Manila,National Capital Region,E2021-234
+6/15/2021,Grocery,Survival,284.77,Quezon City,Metro Manila,National Capital Region,E2021-235
+6/15/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-236
+6/15/2021,Transportation,Survival,20,Quezon City,Metro Manila,National Capital Region,E2021-237
+6/16/2021,Personal care items (drugstore),Survival,212.5,Quezon City,Metro Manila,National Capital Region,E2021-238
+6/16/2021,Others,Unexpected,104,Quezon City,Metro Manila,National Capital Region,E2021-239
+6/16/2021,Grocery,Survival,104,Quezon City,Metro Manila,National Capital Region,E2021-240
+6/16/2021,Transportation,Survival,85,Quezon City,Metro Manila,National Capital Region,E2021-241
+6/17/2021,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-242
+6/17/2021,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2021-243
+6/19/2021,Electricity/Water,Obligation,385,Quezon City,Metro Manila,National Capital Region,E2021-244
+6/19/2021,Grocery,Survival,358,Quezon City,Metro Manila,National Capital Region,E2021-245
+6/19/2021,Transportation,Survival,20,Quezon City,Metro Manila,National Capital Region,E2021-246
+6/20/2021,Debt repayment,Obligation,17.3,Quezon City,Metro Manila,National Capital Region,E2021-247
+6/22/2021,Grocery,Survival,420.51,Quezon City,Metro Manila,National Capital Region,E2021-248
+6/22/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-249
+6/22/2021,Transportation,Survival,20,Quezon City,Metro Manila,National Capital Region,E2021-250
+6/23/2021,Electricity/Water,Obligation,130.61,Quezon City,Metro Manila,National Capital Region,E2021-251
+6/24/2021,Food/Drinks,Optional,20,Quezon City,Metro Manila,National Capital Region,E2021-252
+6/25/2021,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2021-253
+6/26/2021,Grocery,Survival,412,Quezon City,Metro Manila,National Capital Region,E2021-254
+6/26/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-255
+6/26/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-256
+6/29/2021,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2021-257
+6/29/2021,Grocery,Survival,433.85,Quezon City,Metro Manila,National Capital Region,E2021-258
+6/29/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-259
+6/30/2021,Home,Optional,5000,Pontevedra,Capiz,Western Visayas,E2021-260
+6/30/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-261
+6/30/2021,Debt repayment,Obligation,2800,Makati City,Metro Manila,National Capital Region,E2021-262
+6/30/2021,Home,Obligation,300,Pontevedra,Capiz,Western Visayas,E2021-263
+6/30/2021,Hair Cut,Survival,255.15,Quezon City,Metro Manila,National Capital Region,E2021-264
+6/30/2021,Food/Drinks,Survival,65,Quezon City,Metro Manila,National Capital Region,E2021-265
+6/30/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-266
+7/1/2021,Food/Drinks,Optional,23,Quezon City,Metro Manila,National Capital Region,E2021-267
+7/2/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-268
+7/3/2021,Food/Drinks,Survival,162,Quezon City,Metro Manila,National Capital Region,E2021-269
+7/4/2021,Home,Obligation,200,Pontevedra,Capiz,Western Visayas,E2021-270
+7/5/2021,Food/Drinks,Survival,64,Quezon City,Metro Manila,National Capital Region,E2021-271
+7/6/2021,Grocery,Survival,662.12,Quezon City,Metro Manila,National Capital Region,E2021-272
+7/6/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-273
+7/8/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-274
+7/8/2021,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-275
+7/8/2021,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2021-276
+7/9/2021,Food/Drinks,Survival,164,Quezon City,Metro Manila,National Capital Region,E2021-277
+7/11/2021,Food/Drinks,Survival,94,Quezon City,Metro Manila,National Capital Region,E2021-278
+7/11/2021,Food/Drinks,Optional,23,Quezon City,Metro Manila,National Capital Region,E2021-279
+7/12/2021,Bank fees,Obligation,25,Quezon City,Metro Manila,National Capital Region,E2021-280
+7/13/2021,Grocery,Survival,498.3,Quezon City,Metro Manila,National Capital Region,E2021-281
+7/13/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-282
+7/14/2021,Magazines/Newspapers/Books,Optional,435,Quezon City,Metro Manila,National Capital Region,E2021-283
+7/14/2021,Transportation,Survival,111,Quezon City,Metro Manila,National Capital Region,E2021-284
+7/14/2021,Food/Drinks,Optional,110,Quezon City,Metro Manila,National Capital Region,E2021-285
+7/14/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-286
+7/14/2021,Food/Drinks,Survival,18,Quezon City,Metro Manila,National Capital Region,E2021-287
+7/15/2021,Home,Optional,5000,Pontevedra,Capiz,Western Visayas,E2021-288
+7/15/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-289
+7/15/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-290
+7/15/2021,Pension Fund,Obligation,1300,Makati City,Metro Manila,National Capital Region,E2021-291
+7/16/2021,Food/Drinks,Survival,165,Quezon City,Metro Manila,National Capital Region,E2021-292
+7/18/2021,Personal care items (drugstore),Survival,700,Quezon City,Metro Manila,National Capital Region,E2021-293
+7/18/2021,Electricity/Water,Obligation,368,Quezon City,Metro Manila,National Capital Region,E2021-294
+7/18/2021,Food/Drinks,Survival,109,Quezon City,Metro Manila,National Capital Region,E2021-295
+7/18/2021,Bank fees,Unexpected,30,Quezon City,Metro Manila,National Capital Region,E2021-296
+7/19/2021,Food/Drinks,Optional,30,Quezon City,Metro Manila,National Capital Region,E2021-297
+7/20/2021,Grocery,Survival,745.74,Quezon City,Metro Manila,National Capital Region,E2021-298
+7/20/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-299
+7/21/2021,Debt repayment,Obligation,5.04,Quezon City,Metro Manila,National Capital Region,E2021-300
+7/23/2021,Food/Drinks,Survival,93,Quezon City,Metro Manila,National Capital Region,E2021-301
+7/27/2021,Grocery,Survival,521.9,Quezon City,Metro Manila,National Capital Region,E2021-302
+7/27/2021,Personal care items (drugstore),Survival,221.5,Quezon City,Metro Manila,National Capital Region,E2021-303
+7/27/2021,Food/Drinks,Survival,100,Quezon City,Metro Manila,National Capital Region,E2021-304
+7/27/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-305
+7/27/2021,Hair Cut,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-306
+7/27/2021,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2021-307
+7/27/2021,Bank fees,Obligation,25,Quezon City,Metro Manila,National Capital Region,E2021-308
+7/28/2021,Electricity/Water,Obligation,130.61,Quezon City,Metro Manila,National Capital Region,E2021-309
+7/29/2021,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2021-310
+7/30/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-311
+7/30/2021,Debt repayment,Obligation,2800,Makati City,Metro Manila,National Capital Region,E2021-312
+7/31/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-313
+8/2/2021,Phone/Internet,Optional,99,Quezon City,Metro Manila,National Capital Region,E2021-314
+8/4/2021,Grocery,Survival,639.05,Quezon City,Metro Manila,National Capital Region,E2021-315
+8/4/2021,Home,Obligation,300,Quezon City,Metro Manila,National Capital Region,E2021-316
+8/4/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-317
+8/6/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-318
+8/8/2021,Food/Drinks,Survival,74,Quezon City,Metro Manila,National Capital Region,E2021-319
+8/10/2021,Grocery,Survival,731.25,Quezon City,Metro Manila,National Capital Region,E2021-320
+8/10/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-321
+8/11/2021,Electricity/Water,Obligation,376.5,Quezon City,Metro Manila,National Capital Region,E2021-322
+8/12/2021,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-323
+8/12/2021,Food/Drinks,Survival,10,Quezon City,Metro Manila,National Capital Region,E2021-324
+8/13/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-325
+8/14/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-326
+8/14/2021,Bank fees,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-327
+8/15/2021,Home,Optional,5000,Pontevedra,Capiz,Western Visayas,E2021-328
+8/15/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-329
+8/15/2021,Food/Drinks,Survival,143,Quezon City,Metro Manila,National Capital Region,E2021-330
+8/17/2021,Grocery,Survival,603,Quezon City,Metro Manila,National Capital Region,E2021-331
+8/17/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-332
+8/18/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-333
+8/19/2021,Pension Fund,Obligation,1300,Makati City,Metro Manila,National Capital Region,E2021-334
+8/20/2021,Debt repayment,Obligation,9.05,Quezon City,Metro Manila,National Capital Region,E2021-335
+8/22/2021,Food/Drinks,Survival,150,Quezon City,Metro Manila,National Capital Region,E2021-336
+8/24/2021,Grocery,Survival,409.4,Quezon City,Metro Manila,National Capital Region,E2021-337
+8/24/2021,Food/Drinks,Survival,65,Quezon City,Metro Manila,National Capital Region,E2021-338
+8/24/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-339
+8/25/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-340
+8/27/2021,Electricity/Water,Obligation,130.61,Quezon City,Metro Manila,National Capital Region,E2021-341
+8/28/2021,Home,Optional,5000,Pontevedra,Capiz,Western Visayas,E2021-342
+8/28/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-343
+8/28/2021,Apartment,Obligation,3000,Quezon City,Metro Manila,National Capital Region,E2021-344
+8/28/2021,Debt repayment,Obligation,2800,Makati City,Metro Manila,National Capital Region,E2021-345
+8/28/2021,Bank fees,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-346
+8/29/2021,Food/Drinks,Survival,43,Quezon City,Metro Manila,National Capital Region,E2021-347
+8/30/2021,Grocery,Survival,500.6,Quezon City,Metro Manila,National Capital Region,E2021-348
+8/30/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-349
+8/30/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-350
+9/2/2021,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-351
+9/2/2021,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2021-352
+9/4/2021,Apartment,Obligation,3000,Quezon City,Metro Manila,National Capital Region,E2021-353
+9/4/2021,Home,Obligation,300,Quezon City,Metro Manila,National Capital Region,E2021-354
+9/5/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-355
+9/5/2021,Food/Drinks,Survival,60,Quezon City,Metro Manila,National Capital Region,E2021-356
+9/6/2021,Food/Drinks,Survival,118,Quezon City,Metro Manila,National Capital Region,E2021-357
+9/7/2021,Grocery,Survival,561.81,Quezon City,Metro Manila,National Capital Region,E2021-358
+9/7/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-359
+9/7/2021,Food/Drinks,Survival,23,Quezon City,Metro Manila,National Capital Region,E2021-360
+9/8/2021,Food/Drinks,Survival,27,Quezon City,Metro Manila,National Capital Region,E2021-361
+9/9/2021,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2021-362
+9/10/2021,Food/Drinks,Survival,128,Quezon City,Metro Manila,National Capital Region,E2021-363
+9/11/2021,Home,Optional,100,Quezon City,Metro Manila,National Capital Region,E2021-364
+9/12/2021,Food/Drinks,Survival,96,Quezon City,Metro Manila,National Capital Region,E2021-365
+9/12/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-366
+9/14/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-367
+9/14/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-368
+9/14/2021,Pension Fund,Obligation,1300,Makati City,Metro Manila,National Capital Region,E2021-369
+9/14/2021,Bank fees,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-370
+9/15/2021,Grocery,Survival,419.51,Quezon City,Metro Manila,National Capital Region,E2021-371
+9/15/2021,Phone/Internet,Optional,199,Quezon City,Metro Manila,National Capital Region,E2021-372
+9/16/2021,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-373
+9/17/2021,Electricity/Water,Obligation,400,Quezon City,Metro Manila,National Capital Region,E2021-374
+9/18/2021,Food/Drinks,Survival,267,Quezon City,Metro Manila,National Capital Region,E2021-375
+9/18/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-376
+9/20/2021,Food/Drinks,Survival,88,Quezon City,Metro Manila,National Capital Region,E2021-377
+9/20/2021,Debt repayment,Obligation,4.86,Quezon City,Metro Manila,National Capital Region,E2021-378
+9/21/2021,Grocery,Survival,713.67,Quezon City,Metro Manila,National Capital Region,E2021-379
+9/21/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-380
+9/22/2021,Phone/Internet,Optional,199,Quezon City,Metro Manila,National Capital Region,E2021-381
+9/24/2021,Grocery,Survival,429.4,Quezon City,Metro Manila,National Capital Region,E2021-382
+9/24/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-383
+9/25/2021,Home,Unexpected,125,Pontevedra,Capiz,Western Visayas,E2021-384
+9/26/2021,Electricity/Water,Obligation,130.61,Quezon City,Metro Manila,National Capital Region,E2021-385
+9/27/2021,Healthcare,Optional,2000,Pontevedra,Capiz,Western Visayas,E2021-386
+9/27/2021,Phone/Internet,Unexpected,90,Quezon City,Metro Manila,National Capital Region,E2021-387
+9/27/2021,Food/Drinks,Survival,89,Quezon City,Metro Manila,National Capital Region,E2021-388
+9/28/2021,Others,Unexpected,1540,Quezon City,Metro Manila,National Capital Region,E2021-389
+9/28/2021,Grocery,Survival,317,Quezon City,Metro Manila,National Capital Region,E2021-390
+9/28/2021,Transportation,Survival,80,Quezon City,Metro Manila,National Capital Region,E2021-391
+9/28/2021,Food/Drinks,Survival,20,Quezon City,Metro Manila,National Capital Region,E2021-392
+9/29/2021,Home,Optional,5500,Pontevedra,Capiz,Western Visayas,E2021-393
+9/29/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-394
+9/29/2021,Debt repayment,Obligation,2800,Makati City,Metro Manila,National Capital Region,E2021-395
+9/30/2021,Bank fees,Obligation,600,Quezon City,Metro Manila,National Capital Region,E2021-396
+9/30/2021,Grocery,Survival,401.71,Quezon City,Metro Manila,National Capital Region,E2021-397
+9/30/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-398
+9/30/2021,Bank fees,Obligation,40,Quezon City,Metro Manila,National Capital Region,E2021-399
+10/1/2021,Home,Obligation,6800,Pontevedra,Capiz,Western Visayas,E2021-400
+10/2/2021,Phone/Internet,Optional,199,Quezon City,Metro Manila,National Capital Region,E2021-401
+10/3/2021,Food/Drinks,Survival,104,Quezon City,Metro Manila,National Capital Region,E2021-402
+10/4/2021,Home,Obligation,2500,Pontevedra,Capiz,Western Visayas,E2021-403
+10/5/2021,Grocery,Survival,592.75,Quezon City,Metro Manila,National Capital Region,E2021-404
+10/5/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-405
+10/6/2021,Home,Obligation,2000,Pontevedra,Capiz,Western Visayas,E2021-406
+10/6/2021,Home,Obligation,200,Quezon City,Metro Manila,National Capital Region,E2021-407
+10/7/2021,Home,Obligation,15000,Pontevedra,Capiz,Western Visayas,E2021-408
+10/7/2021,Food/Drinks,Survival,96,Quezon City,Metro Manila,National Capital Region,E2021-409
+10/8/2021,Home,Obligation,1500,Pontevedra,Capiz,Western Visayas,E2021-410
+10/8/2021,Phone/Internet,Optional,199,Quezon City,Metro Manila,National Capital Region,E2021-411
+10/8/2021,Food/Drinks,Obligation,59,Quezon City,Metro Manila,National Capital Region,E2021-412
+10/9/2021,Grocery,Survival,236.5,Quezon City,Metro Manila,National Capital Region,E2021-413
+10/9/2021,Personal care items (drugstore),Survival,220,Quezon City,Metro Manila,National Capital Region,E2021-414
+10/9/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-415
+10/9/2021,Bank fees,Obligation,18,Quezon City,Metro Manila,National Capital Region,E2021-416
+10/12/2021,Home,Obligation,15000,Pontevedra,Capiz,Western Visayas,E2021-417
+10/12/2021,Grocery,Survival,481.75,Quezon City,Metro Manila,National Capital Region,E2021-418
+10/12/2021,Bank fees,Obligation,50,Quezon City,Metro Manila,National Capital Region,E2021-419
+10/12/2021,Transportation,Survival,40,Quezon City,Metro Manila,National Capital Region,E2021-420
+10/14/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-421
+10/14/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-422
+10/14/2021,Pension Fund,Obligation,1300,Makati City,Metro Manila,National Capital Region,E2021-423
+10/14/2021,Debt repayment,Obligation,1150,Quezon City,Metro Manila,National Capital Region,E2021-424
+10/14/2021,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-425
+10/14/2021,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2021-426
+10/16/2021,Home,Obligation,8000,Pontevedra,Capiz,Western Visayas,E2021-427
+10/16/2021,Home,Optional,100,Quezon City,Metro Manila,National Capital Region,E2021-428
+10/16/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-429
+10/17/2021,Grocery,Survival,409.75,Quezon City,Metro Manila,National Capital Region,E2021-430
+10/17/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-431
+10/18/2021,Food/Drinks,Survival,99,Quezon City,Metro Manila,National Capital Region,E2021-432
+10/18/2021,Phone/Internet,Optional,99,Quezon City,Metro Manila,National Capital Region,E2021-433
+10/19/2021,Electricity/Water,Obligation,527,Quezon City,Metro Manila,National Capital Region,E2021-434
+10/19/2021,Grocery,Survival,344.53,Quezon City,Metro Manila,National Capital Region,E2021-435
+10/19/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-436
+10/21/2021,Food/Drinks,Optional,3,Quezon City,Metro Manila,National Capital Region,E2021-437
+10/22/2021,Food/Drinks,Survival,160,Quezon City,Metro Manila,National Capital Region,E2021-438
+10/22/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-439
+10/24/2021,Eating/Going Out,Optional,255,Quezon City,Metro Manila,National Capital Region,E2021-440
+10/25/2021,Food/Drinks,Survival,136,Quezon City,Metro Manila,National Capital Region,E2021-441
+10/26/2021,Grocery,Survival,416,Quezon City,Metro Manila,National Capital Region,E2021-442
+10/29/2021,Debt repayment,Obligation,1150,Quezon City,Metro Manila,National Capital Region,E2021-443
+10/29/2021,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2021-444
+10/29/2021,Phone/Internet,Optional,99,Quezon City,Metro Manila,National Capital Region,E2021-445
+10/29/2021,Food/Drinks,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-446
+10/30/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-447
+10/30/2021,Debt repayment,Obligation,1130,Quezon City,Metro Manila,National Capital Region,E2021-448
+10/30/2021,Bank fees,Unexpected,300,Quezon City,Metro Manila,National Capital Region,E2021-449
+10/30/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-450
+10/30/2021,Food/Drinks,Optional,24,Quezon City,Metro Manila,National Capital Region,E2021-451
+10/30/2021,Debt repayment,Obligation,6.62,Quezon City,Metro Manila,National Capital Region,E2021-452
+11/2/2021,Grocery,Survival,447.4,Quezon City,Metro Manila,National Capital Region,E2021-453
+11/2/2021,Hair Cut,Optional,70,Quezon City,Metro Manila,National Capital Region,E2021-454
+11/2/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-455
+11/3/2021,Electricity/Water,Obligation,130.59,Quezon City,Metro Manila,National Capital Region,E2021-456
+11/4/2021,Phone/Internet,Optional,99,Quezon City,Metro Manila,National Capital Region,E2021-457
+11/5/2021,Food/Drinks,Survival,60,Quezon City,Metro Manila,National Capital Region,E2021-458
+11/6/2021,Home,Obligation,2000,Pontevedra,Capiz,Western Visayas,E2021-459
+11/6/2021,Home,Obligation,200,Pontevedra,Capiz,Western Visayas,E2021-460
+11/6/2021,Food/Drinks,Survival,46,Quezon City,Metro Manila,National Capital Region,E2021-461
+11/7/2021,Grocery,Survival,573.75,Quezon City,Metro Manila,National Capital Region,E2021-462
+11/7/2021,Transportation,Survival,20,Quezon City,Metro Manila,National Capital Region,E2021-463
+11/9/2021,Grocery,Survival,300,Quezon City,Metro Manila,National Capital Region,E2021-464
+11/9/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-465
+11/11/2021,Clothing/Shoes/Personal Items,Optional,4000,Quezon City,Metro Manila,National Capital Region,E2021-466
+11/13/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-467
+11/13/2021,Pension Fund,Obligation,1300,Makati City,Metro Manila,National Capital Region,E2021-468
+11/14/2021,Food/Drinks,Survival,270,Quezon City,Metro Manila,National Capital Region,E2021-469
+11/14/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-470
+11/16/2021,Grocery,Survival,360.65,Quezon City,Metro Manila,National Capital Region,E2021-471
+11/16/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-472
+11/17/2021,Healthcare,Survival,2499,Quezon City,Metro Manila,National Capital Region,E2021-473
+11/17/2021,Magazines/Newspapers/Books,Optional,190,Quezon City,Metro Manila,National Capital Region,E2021-474
+11/17/2021,Transportation,Survival,65,Quezon City,Metro Manila,National Capital Region,E2021-475
+11/18/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-476
+11/19/2021,Grocery,Survival,512.1,Quezon City,Metro Manila,National Capital Region,E2021-477
+11/19/2021,Others,Optional,31.48,Quezon City,Metro Manila,National Capital Region,E2021-478
+11/19/2021,Transportation,Survival,20,Quezon City,Metro Manila,National Capital Region,E2021-479
+11/20/2021,Debt repayment,Obligation,3.35,Quezon City,Metro Manila,National Capital Region,E2021-480
+11/21/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-481
+11/22/2021,Home,Optional,500,Pontevedra,Capiz,Western Visayas,E2021-482
+11/22/2021,Food/Drinks,Survival,40,Quezon City,Metro Manila,National Capital Region,E2021-483
+11/24/2021,Grocery,Survival,335.68,Quezon City,Metro Manila,National Capital Region,E2021-484
+11/24/2021,Transportation,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-485
+11/26/2021,Others,Optional,725,Quezon City,Metro Manila,National Capital Region,E2021-486
+11/27/2021,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2021-487
+11/27/2021,Electricity/Water,Obligation,390,Quezon City,Metro Manila,National Capital Region,E2021-488
+11/28/2021,Debt repayment,Obligation,2300,Quezon City,Metro Manila,National Capital Region,E2021-489
+11/28/2021,Grocery,Survival,367.43,Quezon City,Metro Manila,National Capital Region,E2021-490
+11/29/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-491
+11/29/2021,Debt repayment,Obligation,1670,Makati City,Metro Manila,National Capital Region,E2021-492
+11/29/2021,Grocery,Survival,629.1,Quezon City,Metro Manila,National Capital Region,E2021-493
+11/29/2021,Transportation,Survival,110,Quezon City,Metro Manila,National Capital Region,E2021-494
+11/29/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-495
+11/29/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-496
+11/30/2021,Food/Drinks,Optional,137,Quezon City,Metro Manila,National Capital Region,E2021-497
+12/2/2021,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-498
+12/3/2021,Food/Drinks,Survival,130,Quezon City,Metro Manila,National Capital Region,E2021-499
+12/4/2021,Debt repayment,Obligation,72.5,Quezon City,Metro Manila,National Capital Region,E2021-500
+12/5/2021,Home,Obligation,3500,Pontevedra,Capiz,Western Visayas,E2021-501
+12/5/2021,Food/Drinks,Survival,148,Quezon City,Metro Manila,National Capital Region,E2021-502
+12/5/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-503
+12/7/2021,Grocery,Survival,600.96,Quezon City,Metro Manila,National Capital Region,E2021-504
+12/7/2021,Home,Obligation,300,Pontevedra,Capiz,Western Visayas,E2021-505
+12/7/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-506
+12/9/2021,Food/Drinks,Survival,70,Quezon City,Metro Manila,National Capital Region,E2021-507
+12/9/2021,Garbage,Obligation,10,Quezon City,Metro Manila,National Capital Region,E2021-508
+12/10/2021,Grocery,Survival,344.35,Quezon City,Metro Manila,National Capital Region,E2021-509
+12/10/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-510
+12/11/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-511
+12/13/2021,Clothing/Shoes/Personal Items,Optional,1000,Quezon City,Metro Manila,National Capital Region,E2021-512
+12/14/2021,Home,Obligation,5500,Pontevedra,Capiz,Western Visayas,E2021-513
+12/14/2021,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2021-514
+12/14/2021,Debt repayment,Obligation,2284.67,Quezon City,Metro Manila,National Capital Region,E2021-515
+12/14/2021,Debt repayment,Obligation,1500,Makati City,Metro Manila,National Capital Region,E2021-516
+12/14/2021,Pension Fund,Obligation,1300,Makati City,Metro Manila,National Capital Region,E2021-517
+12/14/2021,Debt repayment,Obligation,1150,Quezon City,Metro Manila,National Capital Region,E2021-518
+12/14/2021,Others,Optional,461.5,Quezon City,Metro Manila,National Capital Region,E2021-519
+12/14/2021,Grocery,Survival,270.51,Quezon City,Metro Manila,National Capital Region,E2021-520
+12/14/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-521
+12/15/2021,Transportation,Optional,470,Manila City,Metro Manila,National Capital Region,E2021-522
+12/15/2021,Electricity/Water,Obligation,450,Quezon City,Metro Manila,National Capital Region,E2021-523
+12/15/2021,Others,Optional,250,Quezon City,Metro Manila,National Capital Region,E2021-524
+12/15/2021,Others,Optional,250,Jamindan,Capiz,Western Visayas,E2021-525
+12/15/2021,Food/Drinks,Survival,135,Manila City,Metro Manila,National Capital Region,E2021-526
+12/15/2021,Home,Optional,100,Quezon City,Metro Manila,National Capital Region,E2021-527
+12/15/2021,Bank fees,Obligation,26,Quezon City,Metro Manila,National Capital Region,E2021-528
+12/15/2021,Bank fees,Optional,15,Quezon City,Metro Manila,National Capital Region,E2021-529
+12/17/2021,Food/Drinks,Survival,40,Quezon City,Metro Manila,National Capital Region,E2021-530
+12/18/2021,Grocery,Survival,562.25,Quezon City,Metro Manila,National Capital Region,E2021-531
+12/18/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-532
+12/18/2021,Personal care items (drugstore),Survival,42.5,Quezon City,Metro Manila,National Capital Region,E2021-533
+12/18/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-534
+12/20/2021,Others,Optional,286,Quezon City,Metro Manila,National Capital Region,E2021-535
+12/20/2021,Debt repayment,Obligation,10.01,Quezon City,Metro Manila,National Capital Region,E2021-536
+12/21/2021,Grocery,Survival,538.25,Quezon City,Metro Manila,National Capital Region,E2021-537
+12/21/2021,Transportation,Survival,35,Quezon City,Metro Manila,National Capital Region,E2021-538
+12/22/2021,Health Insurance,Optional,125,Quezon City,Metro Manila,National Capital Region,E2021-539
+12/22/2021,Others,Optional,50,Quezon City,Metro Manila,National Capital Region,E2021-540
+12/26/2021,Phone/Internet,Optional,90,Quezon City,Metro Manila,National Capital Region,E2021-541
+12/27/2021,Apartment,Obligation,3000,Quezon City,Metro Manila,National Capital Region,E2021-542
+12/27/2021,Eating/Going Out,Optional,194,Quezon City,Metro Manila,National Capital Region,E2021-543
+12/27/2021,Transportation,Survival,55,Quezon City,Metro Manila,National Capital Region,E2021-544
+12/28/2021,Grocery,Survival,4985.05,Roxas City,Capiz,Western Visayas,E2021-545
+12/28/2021,Home,Obligation,3810,Roxas City,Capiz,Western Visayas,E2021-546
+12/28/2021,Transportation,Survival,694,Quezon City,Metro Manila,National Capital Region,E2021-547
+12/29/2021,Debt repayment,Obligation,3600,Pontevedra,Capiz,Western Visayas,E2022-1
+12/29/2021,Bank fees,Obligation,10,Pontevedra,Capiz,Western Visayas,E2022-2
+12/30/2021,Home,Optional,3500,Pontevedra,Capiz,Western Visayas,E2022-3
+12/30/2021,Phone/Internet,Optional,199,Pontevedra,Capiz,Western Visayas,E2022-4
+1/5/2022,Phone/Internet,Optional,99,Pontevedra,Capiz,Western Visayas,E2022-5
+1/5/2022,Phone/Internet,Optional,1337.78,Pontevedra,Capiz,Western Visayas,E2022-6
+1/5/2022,Debt repayment,Obligation,209.75,Pontevedra,Capiz,Western Visayas,E2022-7
+1/5/2022,Eating/Going Out,Optional,753,President Roxas,Capiz,Western Visayas,E2022-8
+1/7/2022,Home,Obligation,200,Pontevedra,Capiz,Western Visayas,E2022-9
+1/9/2022,Phone/Internet,Optional,199,Pontevedra,Capiz,Western Visayas,E2022-10
+1/11/2022,Others,Optional,2000,Pontevedra,Capiz,Western Visayas,E2022-11
+1/11/2022,Bank fees,Obligation,15,Pontevedra,Capiz,Western Visayas,E2022-12
+1/15/2022,Debt repayment,Obligation,2350,Makati City,Metro Manila,National Capital Region,E2022-13
+1/15/2022,Pension Fund,Obligation,1300,Makati City,Metro Manila,National Capital Region,E2022-14
+1/15/2022,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2022-15
+1/15/2022,Debt repayment,Obligation,389.25,Pontevedra,Capiz,Western Visayas,E2022-16
+1/15/2022,Debt repayment,Obligation,2284.67,Pontevedra,Capiz,Western Visayas,E2022-17
+1/15/2022,Bank fees,Optional,10,Pontevedra,Capiz,Western Visayas,E2022-18
+1/16/2022,Phone/Internet,Optional,199,Pontevedra,Capiz,Western Visayas,E2022-19
+1/17/2022,Bank fees,Obligation,25,Pontevedra,Capiz,Western Visayas,E2022-20
+1/19/2022,Health Insurance,Obligation,900,Makati City,Metro Manila,National Capital Region,E2022-21
+1/20/2022,Debt repayment,Obligation,16.22,Pontevedra,Capiz,Western Visayas,E2022-22
+1/23/2022,Phone/Internet,Optional,199,Pontevedra,Capiz,Western Visayas,E2022-23
+1/23/2022,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2022-24
+1/25/2022,Transportation,Survival,310,Roxas City,Capiz,Western Visayas,E2022-25
+1/25/2022,Grocery,Survival,1070.5,Roxas City,Capiz,Western Visayas,E2022-26
+1/25/2022,Electricity/Water,Obligation,1000,Pontevedra,Capiz,Western Visayas,E2022-27
+1/25/2022,Phone/Internet,Optional,50,Roxas City,Capiz,Western Visayas,E2022-28
+1/29/2022,Bank fees,Optional,10,Pontevedra,Capiz,Western Visayas,E2022-29
+1/29/2022,Debt repayment,Obligation,3480,Pontevedra,Capiz,Western Visayas,E2022-30
+1/29/2022,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2022-31
+1/29/2022,Others,Unexpected,250,Quezon City,Metro Manila,National Capital Region,E2022-32
+1/30/2022,Phone/Internet,Optional,199,Pontevedra,Capiz,Western Visayas,E2022-33
+2/6/2022,Phone/Internet,Optional,199,Pontevedra,Capiz,Western Visayas,E2022-34
+2/6/2022,Bank fees,Optional,15,Pontevedra,Capiz,Western Visayas,E2022-35
+2/6/2022,Home,Optional,2000,Pontevedra,Capiz,Western Visayas,E2022-36
+2/7/2022,Home,Obligation,300,Pontevedra,Capiz,Western Visayas,E2022-37
+2/12/2022,Bank fees,Optional,15,Pontevedra,Capiz,Western Visayas,E2022-38
+2/13/2022,Home,Obligation,4500,Pontevedra,Capiz,Western Visayas,E2022-39
+2/14/2022,Debt repayment,Obligation,2284.67,Pontevedra,Capiz,Western Visayas,E2022-40
+2/14/2022,Debt repayment,Obligation,2350,Makati City,Metro Manila,National Capital Region,E2022-41
+2/14/2022,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2022-42
+2/14/2022,Pension Fund,Obligation,1300,Makati City,Metro Manila,National Capital Region,E2022-43
+2/14/2022,Bank fees,Optional,10,Pontevedra,Capiz,Western Visayas,E2022-44
+2/17/2022,Phone/Internet,Optional,199,Pontevedra,Capiz,Western Visayas,E2022-45
+2/17/2022,Home,Obligation,1000,Pontevedra,Capiz,Western Visayas,E2022-46
+2/17/2022,Others,Unexpected,1000,Pontevedra,Capiz,Western Visayas,E2022-47
+2/22/2022,Phone/Internet,Optional,199,Pontevedra,Capiz,Western Visayas,E2022-48
+2/22/2022,Health Insurance,Optional,125,Pontevedra,Capiz,Western Visayas,E2022-49
+2/23/2022,Home,Obligation,1000,Pontevedra,Capiz,Western Visayas,E2022-50
+2/28/2022,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2022-51
+2/28/2022,Others,Optional,800,Pontevedra,Capiz,Western Visayas,E2022-52
+2/28/2022,Bank fees,Optional,15,Pontevedra,Capiz,Western Visayas,E2022-53
+2/28/2022,Phone/Internet,Optional,1000,Pontevedra,Capiz,Western Visayas,E2022-54
+2/28/2022,Others,Optional,500,Pontevedra,Capiz,Western Visayas,E2022-55
+3/1/2022,Debt repayment,Obligation,2350,Makati City,Metro Manila,National Capital Region,E2022-56
+3/1/2022,Debt repayment,Obligation,1130,Pontevedra,Capiz,Western Visayas,E2022-57
+3/1/2022,Bank fees,Optional,15,Pontevedra,Capiz,Western Visayas,E2022-58
+3/1/2022,Hair Cut,Optional,200,Pontevedra,Capiz,Western Visayas,E2022-59
+3/8/2022,Food/Drinks,Optional,1000,Pontevedra,Capiz,Western Visayas,E2022-60
+3/8/2022,Bank fees,Optional,25,Pontevedra,Capiz,Western Visayas,E2022-61
+3/10/2022,Home,Optional,215,Pontevedra,Capiz,Western Visayas,E2022-62
+3/14/2022,Bank fees,Optional,40,Pontevedra,Capiz,Western Visayas,E2022-63
+3/15/2022,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2022-64
+3/15/2022,Debt repayment,Obligation,1700,Makati City,Metro Manila,National Capital Region,E2022-65
+3/15/2022,Pension Fund,Obligation,1300,Pontevedra,Capiz,Western Visayas,E2022-66
+3/15/2022,Debt repayment,Obligation,43.9,Pontevedra,Capiz,Western Visayas,E2022-67
+3/15/2022,Eating/Going Out,Optional,3000,Pontevedra,Capiz,Western Visayas,E2022-68
+3/22/2022,Home,Obligation,2500,Pontevedra,Capiz,Western Visayas,E2022-69
+3/22/2022,Bank fees,Optional,15,Pontevedra,Capiz,Western Visayas,E2022-70
+3/24/2022,Phone/Internet,Optional,20,Pontevedra,Capiz,Western Visayas,E2022-71
+3/31/2022,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2022-72
+3/31/2022,Debt repayment,Obligation,2284.67,Pontevedra,Capiz,Western Visayas,E2022-73
+3/31/2022,Home,Obligation,2000,Pontevedra,Capiz,Western Visayas,E2022-74
+3/30/2022,Eating/Going Out,Optional,700,Roxas City,Capiz,Western Visayas,E2022-75
+3/31/2022,Phone/Internet,Optional,199,Pontevedra,Capiz,Western Visayas,E2022-76
+3/31/2022,Bank fees,Optional,10,Pontevedra,Capiz,Western Visayas,E2022-77
+3/31/2022,Bank fees,Optional,10,Pontevedra,Capiz,Western Visayas,E2022-78
+4/1/2022,Bank fees,Optional,25,Pontevedra,Capiz,Western Visayas,E2022-79
+4/3/2022,Bank fees,Unexpected,525,Pontevedra,Capiz,Western Visayas,E2022-80
+4/4/2022,Home,Obligation,2000,Pontevedra,Capiz,Western Visayas,E2022-81
+4/6/2022,Phone/Internet,Optional,199,Pontevedra,Capiz,Western Visayas,E2022-82
+4/8/2022,Phone/Internet,Optional,499,Pontevedra,Capiz,Western Visayas,E2022-83
+4/10/2022,Home,Obligation,200,Pontevedra,Capiz,Western Visayas,E2022-84
+4/15/2022,Debt repayment,Obligation,3150,Pontevedra,Capiz,Western Visayas,E2022-85
+4/15/2022,Bank fees,Optional,45,Pontevedra,Capiz,Western Visayas,E2022-86
+4/15/2022,Grocery,Survival,2264.75,Roxas City,Capiz,Western Visayas,E2022-87
+4/15/2022,Phone/Internet,Optional,740,Makati City,Metro Manila,National Capital Region,E2022-88
+4/15/2022,Pension Fund,Obligation,1300,Makati City,Metro Manila,National Capital Region,E2022-89
+4/15/2022,Health Insurance,Obligation,900,Makati City,Metro Manila,National Capital Region,E2022-90
+4/15/2022,Health Insurance,Obligation,125,Pontevedra,Capiz,Western Visayas,E2022-91
+4/15/2022,Debt repayment,Obligation,1700,Makati City,Metro Manila,Western Visayas,E2022-92
+4/19/2022,Phone/Internet,Unexpected,299,Pontevedra,Capiz,Western Visayas,E2022-93
+4/26/2022,Food/Drinks,Optional,500,President Roxas,Capiz,Western Visayas,E2022-94
+4/29/2022,Debt repayment,Obligation,2284.67,Pontevedra,Capiz,Western Visayas,E2022-95
+4/30/2022,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2022-96
+4/30/2022,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2022-97
+4/30/2022,Bank fees,Optional,15,Pontevedra,Capiz,Western Visayas,E2022-98
+5/4/2022,Bank fees,Optional,18,Roxas City,Capiz,Western Visayas,E2022-99
+5/10/2022,Home,Optional,1300,Pilar,Capiz,Western Visayas,E2022-100
+5/11/2022,Home,Obligation,200,Pontevedra,Capiz,Western Visayas,E2022-101
+5/12/2022,Healthcare,Unexpected,1000,Roxas City,Capiz,Western Visayas,E2022-102
+5/13/2022,Phone/Internet,Optional,299,Pontevedra,Capiz,Western Visayas,E2022-103
+5/15/2022,Debt repayment,Obligation,1700,Pontevedra,Capiz,Western Visayas,E2022-104
+5/15/2022,Debt repayment,Obligation,3150,Pontevedra,Capiz,Western Visayas,E2022-105
+5/15/2022,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2022-106
+5/15/2022,Pension Fund,Obligation,1300,Makati City,Metro Manila,National Capital Region,E2022-107
+5/18/2022,Eating/Going Out,Unexpected,1000,Pilar,Capiz,Western Visayas,E2022-108
+5/19/2022,Phone/Internet,Optional,299,Pontevedra,Capiz,Western Visayas,E2022-109
+5/20/2022,Phone/Internet,Optional,499,Pontevedra,Capiz,Western Visayas,E2022-110
+5/31/2022,Electricity/Water,Obligation,1000,Pontevedra,Capiz,Western Visayas,E2022-111
+5/31/2022,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2022-112
+5/31/2022,Food/Drinks,Optional,500,Pontevedra,Capiz,Western Visayas,E2022-113
+5/31/2022,Phone/Internet,Optional,100,Pontevedra,Capiz,Western Visayas,E2022-114
+5/31/2022,Debt repayment,Obligation,2284.67,Pontevedra,Capiz,Western Visayas,E2022-115
+5/31/2022,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2022-116
+5/31/2022,Debt repayment,Obligation,7225.01,Makati City,Metro Manila,National Capital Region,E2022-117
+6/11/2022,Home,Optional,215,Pontevedra,Capiz,Western Visayas,E2022-117
+6/15/2022,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2022-118
+6/15/2022,Debt repayment,Obligation,3150,Pontevedra,Capiz,Western Visayas,E2022-119
+6/15/2022,Health Insurance,Optional,125,Pontevedra,Capiz,Western Visayas,E2022-120
+6/15/2022,Pension Fund,Obligation,1300,Pontevedra,Capiz,Western Visayas,E2022-121
+6/15/2022,Phone/Internet,Optional,549,Pontevedra,Capiz,Western Visayas,E2022-122
+6/23/2022,Home,Optional,2020,Pontevedra,Capiz,Western Visayas,E2022-123
+6/28/2022,Phone/Internet,Optional,50,Roxas City,Capiz,Western Visayas,E2022-126
+6/28/2022,Electricity/Water,Obligation,1500,Pontevedra,Capiz,Western Visayas,E2022-127
+6/30/2022,Debt repayment,Obligation,2284.67,Pontevedra,Capiz,Western Visayas,E2022-124
+6/30/2022,Bank fees,Optional,30,Pontevedra,Capiz,Western Visayas,E2022-125
+6/30/2022,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2022-128
+6/30/2022,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2022-129
+7/5/2022,Phone/Internet,Optional,66,Pontevedra,Capiz,Western Visayas,E2022-133
+7/6/2022,Phone/Internet,Optional,50,President Roxas,Capiz,Western Visayas,E2022-130
+7/6/2022,Food/Drinks,Optional,1100,Pontevedra,Capiz,Western Visayas,E2022-131
+7/12/2022,Transportation,Survival,190,Roxas City,Capiz,Western Visayas,E2022-132
+7/12/2022,Cable,Optional,300,Pontevedra,Capiz,Western Visayas,E2022-134
+7/14/2022,Phone/Internet,Optional,179,Pontevedra,Capiz,Western Visayas,E2022-135
+7/15/2022,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2022-136
+7/15/2022,SSS,Obligation,1300,Makati City,Metro Manila,National Capital Region,E2022-137
+7/15/2022,PhilHealth,Obligation,1200,Makati City,Metro Manila,National Capital Region,E2022-138
+7/15/2022,Debt repayment,Obligation,2284.67,Pontevedra,Capiz,Western Visayas,E2022-139
+7/15/2022,Debt repayment,Obligation,3149.14,Pontevedra,Capiz,Western Visayas,E2022-140
+7/20/2022,Bank fees,Optional,10,Pontevedra,Capiz,Western Visayas,E2022-141
+7/23/2022,Food/Drinks,Optional,2000,Pontevedra,Capiz,Western Visayas,E2022-142
+7/25/2022,Electricity/Water,Obligation,1000,Pontevedra,Capiz,Western Visayas,E2022-143
+7/25/2022,Grocery,Survival,1000,Pontevedra,Capiz,Western Visayas,E2022-144
+7/29/2022,Bank fees,Optional,25,Pontevedra,Capiz,Western Visayas,E2022-145
+7/29/2022,Credit Card Payment,Obligation,8124.25,Makati City,Metro Manila,National Capital Region,E2022-146
+7/29/2022,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2022-147
+7/29/2022,Apartment,Obligation,1000,Quezon City,Metro Manila,National Capital Region,E2022-148
+8/1/2022,Food/Drinks,Optional,47,Pontevedra,Capiz,Western Visayas,E2022-149
+8/2/2022,Bank fees,Optional,12,Pontevedra,Capiz,Western Visayas,E2022-150
+8/4/2022,Bank fees,Optional,20,Pontevedra,Capiz,Western Visayas,E2022-151
+8/15/2022,Revi Credit,Obligation,5000,Pontevedra,Capiz,Western Visayas,E2022-152
+8/15/2022,Debt repayment,Obligation,3149.14,Pontevedra,Capiz,Western Visayas,E2022-140
+8/15/2022,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2022-154
+8/15/2022,Cable,Optional,200,Pontevedra,Capiz,Western Visayas,E2022-155
+8/16/2022,Bank fees,Optional,10,Pontevedra,Capiz,Western Visayas,E2022-156
+8/16/2022,Debt repayment,Obligation,3163,Makati City,Metro Manila,National Capital Region,E2022-157
+8/16/2022,SSS,Obligation,1300,Makati City,Metro Manila,National Capital Region,E2022-158
+8/16/2022,Debt repayment,Obligation,2284.67,Pontevedra,Capiz,Western Visayas,E2022-159
+8/16/2022,Transportation,Survival,600,Roxas City,Capiz,Western Visayas,E2022-160
+8/17/2022,Food/Drinks,Optional,200,Pontevedra,Capiz,Western Visayas,E2022-161
+8/23/2022,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2022-162
+8/30/2022,Eating/Going Out,Optional,3000,Pilar,Capiz,Western Visayas,E2022-163
+8/31/2022,Credit Card Payment,Obligation,1193.59,Pontevedra,Capiz,Western Visayas,E2022-164
+8/31/2022,Credit Card Payment,Obligation,1863,Makati City,Metro Manila,National Capital Region,E2022-165
+8/31/2022,Home,Obligation,3000,Pontevedra,Capiz,Western Visayas,E2022-166
+8/31/2022,Apartment,Obligation,1000,Quezon City,Metro Manila,Western Visayas,E2022-167
