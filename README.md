@@ -12,7 +12,7 @@ An AI-powered mobile financial management tool designed for Rwandan youth with i
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://python.org)
 [![License](https://img.shields.io/badge/License-Academic-lightgrey)]()
 
-**[View Repository](https://github.com/amuhirwa/FinGuide)** · **[Figma Designs](https://www.figma.com/design/48ScW9g2fObg5LVhjp9rmo/FinGuide?node-id=0-1&p=f&t=77iwLCNf1JpMJS3b-0)**
+**[View Repository](https://github.com/amuhirwa/FinGuide)** · **[Figma Designs](https://www.figma.com/design/48ScW9g2fObg5LVhjp9rmo/FinGuide?node-id=0-1&p=f&t=77iwLCNf1JpMJS3b-0)** . **[View Initial Demo Video](https://youtu.be/P9i4J9AEc8U)**
 
 </div>
 
@@ -59,7 +59,7 @@ Input (30 daily vectors) ──► Category Embedding (8-dim)
 |----------|-----|
 | **GitHub Repository** | [github.com/amuhirwa/FinGuide](https://github.com/amuhirwa/FinGuide) |
 | **Figma Designs** | [FinGuide on Figma](https://www.figma.com/design/48ScW9g2fObg5LVhjp9rmo/FinGuide?node-id=0-1&p=f&t=77iwLCNf1JpMJS3b-0) |
-| **Initial Product Demo** | [Watch on YouTube](https://youtu.be/HZ2LCJU5sOI) |
+| **Initial Product Demo** | [Watch on YouTube](https://youtu.be/P9i4J9AEc8U) |
 | **API Docs (local)** | `http://localhost:8000/docs` (Swagger UI) |
 
 ---
