@@ -59,6 +59,7 @@ Input (30 daily vectors) ──► Category Embedding (8-dim)
 |----------|-----|
 | **GitHub Repository** | [github.com/amuhirwa/FinGuide](https://github.com/amuhirwa/FinGuide) |
 | **Figma Designs** | [FinGuide on Figma](https://www.figma.com/design/48ScW9g2fObg5LVhjp9rmo/FinGuide?node-id=0-1&p=f&t=77iwLCNf1JpMJS3b-0) |
+| **Initial Product Demo** | [Watch on YouTube](https://youtu.be/HZ2LCJU5sOI) |
 | **API Docs (local)** | `http://localhost:8000/docs` (Swagger UI) |
 
 ---
