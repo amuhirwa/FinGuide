@@ -24,9 +24,8 @@ class InvestmentRepository {
         investmentType: investmentType,
       );
 
-      final investments = (response as List)
-          .map((i) => InvestmentModel.fromJson(i))
-          .toList();
+      final investments =
+          (response as List).map((i) => InvestmentModel.fromJson(i)).toList();
 
       return Right(investments);
     } catch (e) {
@@ -56,9 +55,8 @@ class InvestmentRepository {
   Future<Either<String, List<InvestmentAdvice>>> getInvestmentAdvice() async {
     try {
       final response = await _apiClient.getInvestmentAdvice();
-      final advice = (response as List)
-          .map((a) => InvestmentAdvice.fromJson(a))
-          .toList();
+      final advice =
+          (response as List).map((a) => InvestmentAdvice.fromJson(a)).toList();
       return Right(advice);
     } catch (e) {
       return Left(e.toString());
@@ -109,9 +107,8 @@ class InvestmentRepository {
     try {
       final response =
           await _apiClient.getInvestmentContributions(investmentId);
-      final contributions = (response as List)
-          .map((c) => ContributionModel.fromJson(c))
-          .toList();
+      final contributions =
+          (response as List).map((c) => ContributionModel.fromJson(c)).toList();
       return Right(contributions);
     } catch (e) {
       return Left(e.toString());

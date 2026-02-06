@@ -27,6 +27,10 @@ import '../../features/goals/presentation/pages/goals_page.dart';
 import '../../features/insights/presentation/bloc/insights_bloc.dart';
 import '../../features/insights/presentation/pages/insights_pages.dart';
 
+// Investments
+import '../../features/investments/presentation/bloc/investment_bloc.dart';
+import '../../features/investments/presentation/pages/investments_page.dart';
+
 /// Application route names
 class Routes {
   Routes._();
@@ -50,6 +54,10 @@ class Routes {
   static const String financialHealth = '/insights/health';
   static const String predictions = '/insights/predictions';
   static const String investmentSimulator = '/insights/simulator';
+
+  // Investments
+  static const String investments = '/investments';
+  static const String addInvestment = '/investments/add';
 }
 
 /// GoRouter configuration
@@ -160,6 +168,24 @@ class AppRouter {
         builder: (context, state) => BlocProvider(
           create: (_) => getIt<InsightsBloc>(),
           child: const InvestmentSimulatorPage(),
+        ),
+      ),
+
+      // ==================== Investments ====================
+      GoRoute(
+        path: Routes.investments,
+        name: 'investments',
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<InvestmentBloc>(),
+          child: const InvestmentsPage(),
+        ),
+      ),
+      GoRoute(
+        path: Routes.addInvestment,
+        name: 'addInvestment',
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<InvestmentBloc>(),
+          child: const AddInvestmentPage(),
         ),
       ),
     ],

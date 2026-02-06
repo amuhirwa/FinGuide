@@ -19,7 +19,8 @@ class ApiClient {
   // static const String baseUrl =
   // 'http://10.0.2.2:8000/api/v1'; // Android emulator
   // static const String baseUrl = 'http://localhost:8000/api/v1'; // iOS simulator
-  static const String baseUrl = 'http://192.168.1.66:8000/api/v1'; // iOS simulator
+  static const String baseUrl =
+      'http://192.168.1.66:8000/api/v1'; // iOS simulator
 
   // ==================== Auth Endpoints ====================
 
@@ -342,8 +343,7 @@ class ApiClient {
 
   /// Get investment contributions
   Future<List<dynamic>> getInvestmentContributions(int investmentId) async {
-    final response =
-        await _dio.get('/investments/$investmentId/contributions');
+    final response = await _dio.get('/investments/$investmentId/contributions');
     return response.data;
   }
 

@@ -1051,6 +1051,57 @@ class _InsightsContent extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+            // My Investments Card
+            GestureDetector(
+              onTap: () => context.push(Routes.investments),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.teal.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.teal.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.teal,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.trending_up, color: Colors.white),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'My Investments',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              color: const Color(0xFF1E293B),
+                            ),
+                          ),
+                          Text(
+                            'Track & manage your portfolio',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios,
+                        color: Colors.teal, size: 18),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

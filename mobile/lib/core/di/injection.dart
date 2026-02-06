@@ -32,6 +32,10 @@ import '../../features/goals/presentation/bloc/goals_bloc.dart';
 import '../../features/insights/data/repositories/insights_repository.dart';
 import '../../features/insights/presentation/bloc/insights_bloc.dart';
 
+// Investments
+import '../../features/investments/data/repositories/investment_repository.dart';
+import '../../features/investments/presentation/bloc/investment_bloc.dart';
+
 final GetIt getIt = GetIt.instance;
 
 /// Initialize all dependencies
@@ -125,5 +129,14 @@ Future<void> configureDependencies() async {
 
   getIt.registerFactory<InsightsBloc>(
     () => InsightsBloc(getIt<InsightsRepository>()),
+  );
+
+  // ==================== Investments Feature ====================
+  getIt.registerLazySingleton<InvestmentRepository>(
+    () => InvestmentRepository(getIt<ApiClient>()),
+  );
+
+  getIt.registerFactory<InvestmentBloc>(
+    () => InvestmentBloc(getIt<InvestmentRepository>()),
   );
 }

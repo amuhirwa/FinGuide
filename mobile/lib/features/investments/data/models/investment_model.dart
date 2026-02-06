@@ -169,32 +169,36 @@ class InvestmentModel extends Equatable {
 
 class InvestmentSummary {
   final double totalInvested;
-  final double totalCurrentValue;
+  final double totalValue;
   final double totalGain;
-  final double overallReturnPercentage;
+  final double totalGainPercentage;
+  final double monthlyContribution;
   final int investmentsCount;
-  final int activeInvestments;
+  final int activeCount;
   final Map<String, dynamic> byType;
 
   InvestmentSummary({
     required this.totalInvested,
-    required this.totalCurrentValue,
+    required this.totalValue,
     required this.totalGain,
-    required this.overallReturnPercentage,
+    required this.totalGainPercentage,
+    required this.monthlyContribution,
     required this.investmentsCount,
-    required this.activeInvestments,
+    required this.activeCount,
     required this.byType,
   });
 
   factory InvestmentSummary.fromJson(Map<String, dynamic> json) {
     return InvestmentSummary(
-      totalInvested: (json['total_invested'] as num).toDouble(),
-      totalCurrentValue: (json['total_current_value'] as num).toDouble(),
-      totalGain: (json['total_gain'] as num).toDouble(),
-      overallReturnPercentage:
-          (json['overall_return_percentage'] as num).toDouble(),
-      investmentsCount: json['investments_count'],
-      activeInvestments: json['active_investments'],
+      totalInvested: (json['total_invested'] as num?)?.toDouble() ?? 0,
+      totalValue: (json['total_current_value'] as num?)?.toDouble() ?? 0,
+      totalGain: (json['total_gain'] as num?)?.toDouble() ?? 0,
+      totalGainPercentage:
+          (json['overall_return_percentage'] as num?)?.toDouble() ?? 0,
+      monthlyContribution:
+          (json['monthly_contribution'] as num?)?.toDouble() ?? 0,
+      investmentsCount: json['investments_count'] ?? 0,
+      activeCount: json['active_investments'] ?? 0,
       byType: json['by_type'] ?? {},
     );
   }
@@ -202,25 +206,28 @@ class InvestmentSummary {
 
 class InvestmentAdvice {
   final String title;
-  final String message;
-  final String adviceType;
+  final String description;
+  final String type;
   final String priority;
+  final String? actionLabel;
   final String? actionUrl;
 
   InvestmentAdvice({
     required this.title,
-    required this.message,
-    required this.adviceType,
+    required this.description,
+    required this.type,
     required this.priority,
+    this.actionLabel,
     this.actionUrl,
   });
 
   factory InvestmentAdvice.fromJson(Map<String, dynamic> json) {
     return InvestmentAdvice(
-      title: json['title'],
-      message: json['message'],
-      adviceType: json['advice_type'],
-      priority: json['priority'],
+      title: json['title'] ?? '',
+      description: json['message'] ?? json['description'] ?? '',
+      type: json['advice_type'] ?? json['type'] ?? 'info',
+      priority: json['priority'] ?? 'low',
+      actionLabel: json['action_label'],
       actionUrl: json['action_url'],
     );
   }
