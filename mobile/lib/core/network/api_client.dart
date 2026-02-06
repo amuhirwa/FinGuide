@@ -279,6 +279,74 @@ class ApiClient {
     return response.data;
   }
 
+  // ==================== Investments ====================
+
+  /// Get all investments
+  Future<List<dynamic>> getInvestments({
+    String? status,
+    String? investmentType,
+  }) async {
+    final queryParams = <String, dynamic>{};
+    if (status != null) queryParams['status'] = status;
+    if (investmentType != null) queryParams['investment_type'] = investmentType;
+
+    final response =
+        await _dio.get('/investments', queryParameters: queryParams);
+    return response.data;
+  }
+
+  /// Create an investment
+  Future<Map<String, dynamic>> createInvestment(
+      Map<String, dynamic> data) async {
+    final response = await _dio.post('/investments', data: data);
+    return response.data;
+  }
+
+  /// Get investment summary
+  Future<Map<String, dynamic>> getInvestmentSummary() async {
+    final response = await _dio.get('/investments/summary');
+    return response.data;
+  }
+
+  /// Get investment advice
+  Future<List<dynamic>> getInvestmentAdvice() async {
+    final response = await _dio.get('/investments/advice');
+    return response.data;
+  }
+
+  /// Get investment detail
+  Future<Map<String, dynamic>> getInvestmentDetail(int id) async {
+    final response = await _dio.get('/investments/$id');
+    return response.data;
+  }
+
+  /// Update investment
+  Future<Map<String, dynamic>> updateInvestment(
+      int id, Map<String, dynamic> data) async {
+    final response = await _dio.patch('/investments/$id', data: data);
+    return response.data;
+  }
+
+  /// Delete investment
+  Future<void> deleteInvestment(int id) async {
+    await _dio.delete('/investments/$id');
+  }
+
+  /// Add contribution to investment
+  Future<Map<String, dynamic>> addInvestmentContribution(
+      int investmentId, Map<String, dynamic> data) async {
+    final response =
+        await _dio.post('/investments/$investmentId/contribute', data: data);
+    return response.data;
+  }
+
+  /// Get investment contributions
+  Future<List<dynamic>> getInvestmentContributions(int investmentId) async {
+    final response =
+        await _dio.get('/investments/$investmentId/contributions');
+    return response.data;
+  }
+
   // ==================== Health Check ====================
 
   /// Check API health

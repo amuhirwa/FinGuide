@@ -561,3 +561,115 @@ async def get_irregularities(
         ))
     
     return alerts
+
+
+# ==================== ADDITIONAL ENDPOINTS (for mobile compatibility) ====================
+
+@router.get("/predictions")
+async def get_combined_predictions(
+    days: int = 30,
+    current_user: TokenPayload = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get combined income and expense predictions."""
+    user_id = int(current_user.sub)
+    
+    income_predictions = mock_income_predictions(user_id, db)
+    expense_predictions = mock_expense_predictions(user_id, db)
+    
+    return {
+        "period_days": days,
+        "income_predictions": income_predictions,
+        "expense_predictions": expense_predictions,
+        "summary": {
+            "expected_income": sum(p["predicted_amount"] for p in income_predictions),
+            "expected_expenses": sum(p["predicted_amount"] for p in expense_predictions),
+            "predicted_net": sum(p["predicted_amount"] for p in income_predictions) - sum(p["predicted_amount"] for p in expense_predictions)
+        }
+    }
+
+
+@router.get("/financial-health")
+async def get_financial_health(
+    current_user: TokenPayload = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get comprehensive financial health analysis."""
+    user_id = int(current_user.sub)
+    health_data = calculate_health_score(user_id, db)
+    
+    # Add additional insights
+    health_data["insights"] = [
+        {
+            "category": "savings",
+            "status": "good" if health_data["savings_rate"] >= 20 else "needs_attention",
+            "message": f"Your savings rate is {health_data['savings_rate']}%"
+        },
+        {
+            "category": "emergency_fund",
+            "status": "good" if health_data["emergency_buffer_days"] >= 14 else "needs_attention",
+            "message": f"You have {health_data['emergency_buffer_days']} days of emergency buffer"
+        },
+        {
+            "category": "spending",
+            "status": "good" if health_data["spending_discipline_score"] >= 60 else "needs_attention",
+            "message": "Your spending is within healthy limits" if health_data["spending_discipline_score"] >= 60 else "Consider reducing discretionary spending"
+        }
+    ]
+    
+    health_data["recommendations"] = [
+        "Aim to save at least 20% of your income",
+        "Build an emergency fund covering 30 days of expenses",
+        "Track your needs vs wants spending"
+    ]
+    
+    return health_data
+
+
+@router.get("/spending-by-category")
+async def get_spending_by_category(
+    start_date: datetime = None,
+    end_date: datetime = None,
+    current_user: TokenPayload = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get spending breakdown by category."""
+    user_id = int(current_user.sub)
+    now = datetime.now()
+    
+    if not start_date:
+        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if not end_date:
+        end_date = now
+    
+    # Get expense transactions
+    transactions = db.query(Transaction).filter(
+        and_(
+            Transaction.user_id == user_id,
+            Transaction.transaction_type == ModelTransactionType.EXPENSE,
+            Transaction.transaction_date >= start_date,
+            Transaction.transaction_date <= end_date
+        )
+    ).all()
+    
+    # Group by category
+    category_totals = {}
+    for t in transactions:
+        cat = t.category.value if t.category else "other"
+        if cat not in category_totals:
+            category_totals[cat] = {"amount": 0, "count": 0}
+        category_totals[cat]["amount"] += t.amount
+        category_totals[cat]["count"] += 1
+    
+    total_spending = sum(t.amount for t in transactions)
+    
+    result = []
+    for cat, data in sorted(category_totals.items(), key=lambda x: x[1]["amount"], reverse=True):
+        result.append({
+            "category": cat,
+            "amount": round(data["amount"], 2),
+            "count": data["count"],
+            "percentage": round((data["amount"] / total_spending * 100) if total_spending > 0 else 0, 1)
+        })
+    
+    return result

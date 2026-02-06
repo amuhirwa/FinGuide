@@ -84,7 +84,12 @@ class _GoalsPageState extends State<GoalsPage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const CreateGoalPage()),
+          MaterialPageRoute(
+            builder: (_) => BlocProvider(
+              create: (_) => getIt<GoalsBloc>(),
+              child: const CreateGoalPage(),
+            ),
+          ),
         ).then((_) => context.read<GoalsBloc>().add(LoadGoals())),
         backgroundColor: AppColors.secondary,
         icon: const Icon(Icons.add, color: Colors.white),

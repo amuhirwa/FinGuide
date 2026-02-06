@@ -89,6 +89,7 @@ class User(Base):
     expense_predictions = relationship("ExpensePrediction", back_populates="user", cascade="all, delete-orphan")
     health_scores = relationship("FinancialHealthScore", back_populates="user", cascade="all, delete-orphan")
     recommendations = relationship("Recommendation", back_populates="user", cascade="all, delete-orphan")
+    investments = relationship("Investment", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self) -> str:
         return f"<User(id={self.id}, phone={self.phone_number}, name={self.full_name})>"
