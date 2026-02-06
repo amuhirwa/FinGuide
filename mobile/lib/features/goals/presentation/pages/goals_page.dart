@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/savings_goal_model.dart';
 import '../bloc/goals_bloc.dart';
@@ -288,7 +289,12 @@ class _GoalsPageState extends State<GoalsPage> {
   void _openGoalDetail(SavingsGoalModel goal) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => GoalDetailPage(goal: goal)),
+      MaterialPageRoute(
+        builder: (_) => BlocProvider(
+          create: (_) => getIt<GoalsBloc>(),
+          child: GoalDetailPage(goal: goal),
+        ),
+      ),
     ).then((_) => context.read<GoalsBloc>().add(LoadGoals()));
   }
 
@@ -857,7 +863,10 @@ class GoalDetailPage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => CreateGoalPage(goal: goal),
+                    builder: (_) => BlocProvider(
+                      create: (_) => getIt<GoalsBloc>(),
+                      child: CreateGoalPage(goal: goal),
+                    ),
                   ),
                 );
               } else if (value == 'delete') {

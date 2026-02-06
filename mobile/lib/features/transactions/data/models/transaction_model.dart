@@ -6,24 +6,36 @@
 
 import 'package:equatable/equatable.dart';
 
-enum TransactionType { income, expense }
+enum TransactionType { income, expense, transfer }
 
 enum TransactionCategory {
+  // Income
   salary,
   freelance,
   business,
-  gift,
-  rent,
-  utilities,
-  food,
+  gift_received,
+  refund,
+  other_income,
+  // Expense - Needs
+  food_groceries,
   transport,
-  health,
+  utilities,
+  rent,
+  healthcare,
   education,
+  // Expense - Wants
   entertainment,
   shopping,
+  dining_out,
+  airtime_data,
+  subscriptions,
+  // Savings
   savings,
+  ejo_heza,
   investment,
-  airtime,
+  // Other
+  transfer_out,
+  fees,
   other,
 }
 
@@ -107,30 +119,44 @@ class TransactionModel extends Equatable {
         return 'Freelance';
       case TransactionCategory.business:
         return 'Business';
-      case TransactionCategory.gift:
+      case TransactionCategory.gift_received:
         return 'Gift';
-      case TransactionCategory.rent:
-        return 'Rent';
-      case TransactionCategory.utilities:
-        return 'Utilities';
-      case TransactionCategory.food:
+      case TransactionCategory.refund:
+        return 'Refund';
+      case TransactionCategory.other_income:
+        return 'Other Income';
+      case TransactionCategory.food_groceries:
         return 'Food & Groceries';
       case TransactionCategory.transport:
         return 'Transport';
-      case TransactionCategory.health:
-        return 'Health';
+      case TransactionCategory.utilities:
+        return 'Utilities';
+      case TransactionCategory.rent:
+        return 'Rent';
+      case TransactionCategory.healthcare:
+        return 'Healthcare';
       case TransactionCategory.education:
         return 'Education';
       case TransactionCategory.entertainment:
         return 'Entertainment';
       case TransactionCategory.shopping:
         return 'Shopping';
+      case TransactionCategory.dining_out:
+        return 'Dining Out';
+      case TransactionCategory.airtime_data:
+        return 'Airtime/Data';
+      case TransactionCategory.subscriptions:
+        return 'Subscriptions';
       case TransactionCategory.savings:
         return 'Savings';
+      case TransactionCategory.ejo_heza:
+        return 'Ejo Heza';
       case TransactionCategory.investment:
         return 'Investment';
-      case TransactionCategory.airtime:
-        return 'Airtime/Data';
+      case TransactionCategory.transfer_out:
+        return 'Transfer';
+      case TransactionCategory.fees:
+        return 'Fees';
       case TransactionCategory.other:
         return 'Other';
     }

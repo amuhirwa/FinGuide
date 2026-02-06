@@ -492,21 +492,36 @@ class _TransactionTile extends StatelessWidget {
       case TransactionCategory.salary:
       case TransactionCategory.freelance:
       case TransactionCategory.business:
+      case TransactionCategory.gift_received:
+      case TransactionCategory.refund:
+      case TransactionCategory.other_income:
         return Colors.green;
-      case TransactionCategory.food:
+      case TransactionCategory.food_groceries:
+      case TransactionCategory.dining_out:
         return Colors.orange;
       case TransactionCategory.transport:
         return Colors.blue;
       case TransactionCategory.utilities:
+      case TransactionCategory.rent:
         return Colors.purple;
       case TransactionCategory.entertainment:
+      case TransactionCategory.subscriptions:
         return Colors.pink;
       case TransactionCategory.savings:
+      case TransactionCategory.ejo_heza:
       case TransactionCategory.investment:
         return Colors.teal;
-      case TransactionCategory.airtime:
+      case TransactionCategory.airtime_data:
         return Colors.indigo;
-      default:
+      case TransactionCategory.healthcare:
+        return Colors.red;
+      case TransactionCategory.education:
+        return Colors.cyan;
+      case TransactionCategory.shopping:
+        return Colors.amber;
+      case TransactionCategory.transfer_out:
+      case TransactionCategory.fees:
+      case TransactionCategory.other:
         return Colors.grey;
     }
   }
@@ -519,25 +534,45 @@ class _TransactionTile extends StatelessWidget {
         return Icons.laptop;
       case TransactionCategory.business:
         return Icons.store;
-      case TransactionCategory.food:
+      case TransactionCategory.gift_received:
+        return Icons.card_giftcard;
+      case TransactionCategory.refund:
+        return Icons.replay;
+      case TransactionCategory.other_income:
+        return Icons.attach_money;
+      case TransactionCategory.food_groceries:
         return Icons.restaurant;
+      case TransactionCategory.dining_out:
+        return Icons.local_dining;
       case TransactionCategory.transport:
         return Icons.directions_bus;
       case TransactionCategory.utilities:
         return Icons.flash_on;
+      case TransactionCategory.rent:
+        return Icons.home;
       case TransactionCategory.entertainment:
         return Icons.movie;
+      case TransactionCategory.subscriptions:
+        return Icons.subscriptions;
       case TransactionCategory.savings:
         return Icons.savings;
+      case TransactionCategory.ejo_heza:
+        return Icons.account_balance;
       case TransactionCategory.investment:
         return Icons.trending_up;
-      case TransactionCategory.airtime:
+      case TransactionCategory.airtime_data:
         return Icons.phone_android;
-      case TransactionCategory.health:
+      case TransactionCategory.healthcare:
         return Icons.local_hospital;
       case TransactionCategory.education:
         return Icons.school;
-      default:
+      case TransactionCategory.shopping:
+        return Icons.shopping_bag;
+      case TransactionCategory.transfer_out:
+        return Icons.swap_horiz;
+      case TransactionCategory.fees:
+        return Icons.receipt_long;
+      case TransactionCategory.other:
         return Icons.receipt;
     }
   }
@@ -891,7 +926,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                       items: TransactionCategory.values
                           .map((c) => DropdownMenuItem(
                                 value: c,
-                                child: Text(c.name.toUpperCase()),
+                                child: Text(_getCategoryDisplayName(c)),
                               ))
                           .toList(),
                       onChanged: (value) {
@@ -1005,6 +1040,57 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     );
     if (picked != null) {
       setState(() => _date = picked);
+    }
+  }
+
+  String _getCategoryDisplayName(TransactionCategory category) {
+    switch (category) {
+      case TransactionCategory.salary:
+        return 'Salary';
+      case TransactionCategory.freelance:
+        return 'Freelance';
+      case TransactionCategory.business:
+        return 'Business';
+      case TransactionCategory.gift_received:
+        return 'Gift Received';
+      case TransactionCategory.refund:
+        return 'Refund';
+      case TransactionCategory.other_income:
+        return 'Other Income';
+      case TransactionCategory.food_groceries:
+        return 'Food & Groceries';
+      case TransactionCategory.transport:
+        return 'Transport';
+      case TransactionCategory.utilities:
+        return 'Utilities';
+      case TransactionCategory.rent:
+        return 'Rent';
+      case TransactionCategory.healthcare:
+        return 'Healthcare';
+      case TransactionCategory.education:
+        return 'Education';
+      case TransactionCategory.entertainment:
+        return 'Entertainment';
+      case TransactionCategory.shopping:
+        return 'Shopping';
+      case TransactionCategory.dining_out:
+        return 'Dining Out';
+      case TransactionCategory.airtime_data:
+        return 'Airtime/Data';
+      case TransactionCategory.subscriptions:
+        return 'Subscriptions';
+      case TransactionCategory.savings:
+        return 'Savings';
+      case TransactionCategory.ejo_heza:
+        return 'Ejo Heza';
+      case TransactionCategory.investment:
+        return 'Investment';
+      case TransactionCategory.transfer_out:
+        return 'Transfer Out';
+      case TransactionCategory.fees:
+        return 'Fees';
+      case TransactionCategory.other:
+        return 'Other';
     }
   }
 
