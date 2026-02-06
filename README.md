@@ -31,7 +31,7 @@ FinGuide is a mobile-first financial advisor built for young Rwandans living on 
 | **Safe-to-Spend** | Calculates how much the user can spend without jeopardising upcoming expenses or savings goals |
 | **Savings Goals** | Users set targets with priority levels and timeframes; the app computes daily/weekly savings amounts |
 | **Financial Health Score** | A single score summarising income volatility, savings behaviour, and liquidity buffer |
-| **Investment Simulation** | Simulates potential returns for local investment options (e.g. RNIT) |
+| **Investments** | Simulates potential returns for local investment options (e.g. RNIT), and tracks users investments progress |
 | **Context-Aware Nudges** | Saving/investing prompts triggered only when the model predicts surplus cash |
 | **Forecast Confidence Bands** | Predictions displayed as a range (best / worst case) rather than a single number |
 
@@ -220,7 +220,6 @@ The design system follows these brand guidelines:
 
 </div>
 
-> **Note**: Replace the placeholder paths above with actual screenshots. Save them to `mobile/assets/images/`.
 
 ### System Architecture
 
