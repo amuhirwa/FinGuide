@@ -61,6 +61,8 @@ class _SplashPageState extends State<SplashPage>
   void _navigateBasedOnState(AuthState state) {
     if (state is AuthShowOnboarding) {
       context.go(Routes.onboarding);
+    } else if (state is AuthShowSmsConsent) {
+      context.go(Routes.smsConsent);
     } else if (state is AuthAuthenticated) {
       context.go(Routes.dashboard);
     } else if (state is AuthUnauthenticated) {
