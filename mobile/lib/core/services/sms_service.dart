@@ -24,7 +24,7 @@ const List<String> _momoSenders = [
   'MTN',
   'MobileMoney',
   'momo',
-  '8199',   // Common MTN MoMo short code in Rwanda
+  '8199', // Common MTN MoMo short code in Rwanda
   '162',
   '164',
   '165',
@@ -80,8 +80,7 @@ class SmsService {
   // ─── Consent persistence ──────────────────────────────────────────
 
   /// Whether the user has already given SMS consent.
-  bool get hasConsented =>
-      _prefs.getBool(StorageKeys.smsConsentGiven) ?? false;
+  bool get hasConsented => _prefs.getBool(StorageKeys.smsConsentGiven) ?? false;
 
   /// Persist the user's consent choice.
   Future<void> setConsent(bool value) async {
@@ -91,7 +90,7 @@ class SmsService {
   // ─── Read historical SMS ─────────────────────────────────────────
 
   /// Read all existing MoMo SMS from the device inbox.
-  /// 
+  ///
   /// Returns a list of raw message bodies that matched MoMo patterns.
   Future<List<String>> readHistoricalMessages() async {
     try {
