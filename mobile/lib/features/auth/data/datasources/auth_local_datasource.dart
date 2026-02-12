@@ -39,6 +39,12 @@ abstract class AuthLocalDataSource {
   /// Set onboarding as seen
   Future<void> setOnboardingSeen();
 
+  /// Check if SMS consent flow has been completed (accepted OR declined)
+  Future<bool> hasSmsConsentCompleted();
+
+  /// Set SMS consent as completed
+  Future<void> setSmsConsentCompleted();
+
   /// Clear all auth data
   Future<void> clearAll();
 }
@@ -144,6 +150,18 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> setOnboardingSeen() async {
     await _sharedPreferences.setBool(StorageKeys.hasSeenOnboarding, true);
+  }
+
+  @override
+  Future<bool> hasSmsConsentCompleted() async {
+    return _sharedPreferences.containsKey(StorageKeys.smsConsentGiven);
+  }
+
+  @override
+  Future<void> setSmsConsentCompleted() async {
+    // Just marks the flow as done — actual consent value is in smsConsentGiven
+    await _sharedPreferences.setBool(StorageKeys.smsConsentGiven,
+        _sharedPreferences.getBool(StorageKeys.smsConsentGiven) ?? false);
   }
 
   @override
