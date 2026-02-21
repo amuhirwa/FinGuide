@@ -17,6 +17,9 @@ class AuthLoading extends AuthState {}
 /// Show onboarding state (first time user)
 class AuthShowOnboarding extends AuthState {}
 
+/// Show SMS consent flow (after first login/register)
+class AuthShowSmsConsent extends AuthState {}
+
 /// Authenticated state
 class AuthAuthenticated extends AuthState {
   final User user;

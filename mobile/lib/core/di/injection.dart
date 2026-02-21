@@ -8,9 +8,11 @@ import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:telephony/telephony.dart';
 
 import '../network/api_client.dart';
 import '../network/api_interceptor.dart';
+import '../services/sms_service.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
@@ -35,6 +37,9 @@ import '../../features/insights/presentation/bloc/insights_bloc.dart';
 // Investments
 import '../../features/investments/data/repositories/investment_repository.dart';
 import '../../features/investments/presentation/bloc/investment_bloc.dart';
+
+// SMS Consent
+import '../../features/sms_consent/presentation/bloc/sms_consent_bloc.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -139,4 +144,28 @@ Future<void> configureDependencies() async {
   getIt.registerFactory<InvestmentBloc>(
     () => InvestmentBloc(getIt<InvestmentRepository>()),
   );
+
+  // ==================== SMS Service ====================
+  getIt.registerLazySingleton<Telephony>(() => Telephony.instance);
+
+  getIt.registerLazySingleton<SmsService>(
+    () => SmsService(
+      telephony: getIt<Telephony>(),
+      apiClient: getIt<ApiClient>(),
+      prefs: getIt<SharedPreferences>(),
+    ),
+  );
+
+  getIt.registerFactory<SmsConsentBloc>(
+    () => SmsConsentBloc(
+      smsService: getIt<SmsService>(),
+      localDataSource: getIt<AuthLocalDataSource>(),
+    ),
+  );
+
+  // Auto-start SMS listener if user previously gave consent
+  final smsService = getIt<SmsService>();
+  if (smsService.hasConsented) {
+    smsService.startListening();
+  }
 }

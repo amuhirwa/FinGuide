@@ -28,11 +28,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required RegisterUseCase registerUseCase,
     required CheckAuthUseCase checkAuthUseCase,
     required AuthLocalDataSource localDataSource,
-  }) : _loginUseCase = loginUseCase,
-       _registerUseCase = registerUseCase,
-       _checkAuthUseCase = checkAuthUseCase,
-       _localDataSource = localDataSource,
-       super(AuthInitial()) {
+  })  : _loginUseCase = loginUseCase,
+        _registerUseCase = registerUseCase,
+        _checkAuthUseCase = checkAuthUseCase,
+        _localDataSource = localDataSource,
+        super(AuthInitial()) {
     on<AuthCheckRequested>(_onAuthCheckRequested);
     on<AuthLoginRequested>(_onLoginRequested);
     on<AuthRegisterRequested>(_onRegisterRequested);
@@ -59,7 +59,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     result.fold(
       (failure) => emit(AuthUnauthenticated()),
-      (user) => emit(AuthAuthenticated(user)),
+      (user) async {
+        // Check if SMS consent flow has been completed
+        final hasSmsConsent = await _localDataSource.hasSmsConsentCompleted();
+        if (!hasSmsConsent) {
+          emit(AuthShowSmsConsent());
+        } else {
+          emit(AuthAuthenticated(user));
+        }
+      },
     );
   }
 
@@ -76,7 +84,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (user) => emit(AuthAuthenticated(user)),
+      (user) async {
+        final hasSmsConsent = await _localDataSource.hasSmsConsentCompleted();
+        if (!hasSmsConsent) {
+          emit(AuthShowSmsConsent());
+        } else {
+          emit(AuthAuthenticated(user));
+        }
+      },
     );
   }
 
@@ -99,7 +114,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (user) => emit(AuthAuthenticated(user)),
+      (user) async {
+        final hasSmsConsent = await _localDataSource.hasSmsConsentCompleted();
+        if (!hasSmsConsent) {
+          emit(AuthShowSmsConsent());
+        } else {
+          emit(AuthAuthenticated(user));
+        }
+      },
     );
   }
 

@@ -6,7 +6,7 @@ Main router aggregating all v1 API endpoints.
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, transactions, savings_goals, predictions, investments
+from app.api.v1.endpoints import auth, users, transactions, savings_goals, predictions, investments, reports
 
 api_router = APIRouter()
 
@@ -50,4 +50,11 @@ api_router.include_router(
     investments.router,
     prefix="/investments",
     tags=["Investments"]
+)
+
+# Reports / Export endpoints
+api_router.include_router(
+    reports.router,
+    prefix="/reports",
+    tags=["Reports"]
 )
