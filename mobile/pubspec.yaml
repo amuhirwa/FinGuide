@@ -48,6 +48,13 @@ dependencies:
   telephony: ^0.2.0
   permission_handler: ^11.3.0
 
+  # File Sharing & Export
+  share_plus: ^10.1.0
+  path_provider: ^2.1.5
+
+  # Charts & Data Visualization
+  fl_chart: ^0.69.0
+
   # Icons
   cupertino_icons: ^1.0.6
 

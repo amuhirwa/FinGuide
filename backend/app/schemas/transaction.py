@@ -84,12 +84,14 @@ class TransactionUpdate(BaseModel):
 class TransactionResponse(TransactionBase):
     """Transaction response schema."""
     id: int
+    # Override amount to allow zero for legacy records saved by old parser
+    amount: float = Field(..., ge=0, description="Transaction amount in RWF")
     reference: Optional[str] = None
     is_recurring: bool = False
     is_verified: bool = False
     confidence_score: float = 1.0
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 

@@ -164,6 +164,7 @@ class SmsService {
       if (body != null && body.isNotEmpty) {
         _apiClient.parseSmsMessages([body]).catchError((e) {
           _log.e('Failed to push live SMS to backend', error: e);
+          return <String, dynamic>{'error': e.toString()};
         });
       }
     }

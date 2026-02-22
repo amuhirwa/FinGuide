@@ -39,11 +39,11 @@ class _LoginPageState extends State<LoginPage> {
   void _onLogin() {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<AuthBloc>().add(
-        AuthLoginRequested(
-          phoneNumber: _phoneController.text.trim(),
-          password: _passwordController.text,
-        ),
-      );
+            AuthLoginRequested(
+              phoneNumber: _phoneController.text.trim(),
+              password: _passwordController.text,
+            ),
+          );
     }
   }
 
@@ -53,6 +53,8 @@ class _LoginPageState extends State<LoginPage> {
       listener: (context, state) {
         if (state is AuthAuthenticated) {
           context.go(Routes.dashboard);
+        } else if (state is AuthShowSmsConsent) {
+          context.go(Routes.smsConsent);
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

@@ -137,6 +137,17 @@ class UserLogin(BaseModel):
         description="Account password"
     )
 
+    @field_validator("phone_number")
+    @classmethod
+    def normalize_phone_number(cls, v: str) -> str:
+        """Normalize phone number to local format, matching registration behaviour."""
+        cleaned = re.sub(r"[\s\-]", "", v)
+        if cleaned.startswith("+250"):
+            cleaned = "0" + cleaned[4:]
+        elif cleaned.startswith("250"):
+            cleaned = "0" + cleaned[3:]
+        return cleaned
+
 
 class UserResponse(UserBase):
     """

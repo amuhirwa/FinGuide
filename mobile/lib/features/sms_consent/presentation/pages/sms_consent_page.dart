@@ -188,7 +188,7 @@ class _ConsentFormView extends StatelessWidget {
                     description:
                         'After the initial import, FinGuide will automatically '
                         'capture new MoMo messages as they arrive so your data '
-                        'is always up to date.',
+                        'is always up to date. The app will access SMS messages even when the app is not open.',
                   ),
                 ],
               ),

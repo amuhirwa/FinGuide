@@ -27,11 +27,13 @@ class _FinancialHealthPageState extends State<FinancialHealthPage> {
   @override
   void initState() {
     super.initState();
-    context.read<InsightsBloc>().add(LoadFinancialHealth());
+    context.read<InsightsBloc>().add(LoadHealthScore());
   }
 
   @override
   Widget build(BuildContext context) {
+    final format = NumberFormat('#,###', 'en_US');
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FD),
       appBar: AppBar(
@@ -45,6 +47,14 @@ class _FinancialHealthPageState extends State<FinancialHealthPage> {
             color: const Color(0xFF1E293B),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.primary),
+            onPressed: () {
+              context.read<InsightsBloc>().add(LoadHealthScore());
+            },
+          ),
+        ],
       ),
       body: BlocBuilder<InsightsBloc, InsightsState>(
         builder: (context, state) {
@@ -61,10 +71,13 @@ class _FinancialHealthPageState extends State<FinancialHealthPage> {
                   const SizedBox(height: 16),
                   Text('Failed to load health score',
                       style: GoogleFonts.inter(color: Colors.grey[600])),
+                  Text(state.message,
+                      style: GoogleFonts.inter(
+                          fontSize: 12, color: Colors.grey[500])),
                   const SizedBox(height: 8),
                   ElevatedButton(
                     onPressed: () =>
-                        context.read<InsightsBloc>().add(LoadFinancialHealth()),
+                        context.read<InsightsBloc>().add(LoadHealthScore()),
                     child: const Text('Retry'),
                   ),
                 ],
@@ -72,8 +85,239 @@ class _FinancialHealthPageState extends State<FinancialHealthPage> {
             );
           }
 
-          if (state is FinancialHealthLoaded) {
-            return _buildHealthContent(state.health);
+          if (state is HealthScoreLoaded) {
+            final score = state.healthScore;
+            final overallScore = (score['overall_score'] as num?)?.toInt() ?? 0;
+            final grade = score['grade'] as String? ?? 'N/A';
+            final summary = score['summary'] as String? ?? '';
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Main Score Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppColors.primary,
+                          AppColors.primary.withOpacity(0.8),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Your Financial Health',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Score Circle
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox(
+                              width: 180,
+                              height: 180,
+                              child: CircularProgressIndicator(
+                                value: overallScore / 100,
+                                strokeWidth: 12,
+                                backgroundColor: Colors.white.withOpacity(0.2),
+                                valueColor: const AlwaysStoppedAnimation(
+                                  Colors.white,
+                                ),
+                              ),
+                            ),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  overallScore.toString(),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 56,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                Text(
+                                  'of 100',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        // Grade Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Grade: ',
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              Text(
+                                grade,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: _getGradeColor(grade),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          summary,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Score Breakdown
+                  Text(
+                    'Component Scores',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _ScoreComponentCard(
+                    icon: Icons.trending_up,
+                    label: 'Income Stability',
+                    score:
+                        (score['income_stability_score'] as num?)?.toInt() ?? 0,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(height: 12),
+                  _ScoreComponentCard(
+                    icon: Icons.savings,
+                    label: 'Savings Rate',
+                    score: (score['savings_rate_score'] as num?)?.toInt() ?? 0,
+                    color: AppColors.success,
+                    subtitle:
+                        '${score['savings_rate']?.toStringAsFixed(1) ?? '0'}% of income saved',
+                  ),
+                  const SizedBox(height: 12),
+                  _ScoreComponentCard(
+                    icon: Icons.security,
+                    label: 'Emergency Buffer',
+                    score:
+                        (score['emergency_buffer_score'] as num?)?.toInt() ?? 0,
+                    color: AppColors.warning,
+                    subtitle:
+                        '${score['emergency_buffer_days'] ?? 0} days of expenses covered',
+                  ),
+                  const SizedBox(height: 12),
+                  _ScoreComponentCard(
+                    icon: Icons.flag,
+                    label: 'Goal Progress',
+                    score: (score['goal_progress_score'] as num?)?.toInt() ?? 0,
+                    color: AppColors.secondary,
+                  ),
+                  const SizedBox(height: 12),
+                  _ScoreComponentCard(
+                    icon: Icons.account_balance_wallet,
+                    label: 'Spending Discipline',
+                    score:
+                        (score['spending_discipline_score'] as num?)?.toInt() ??
+                            0,
+                    color: AppColors.info,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Financial Summary
+                  Text(
+                    'Monthly Summary',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: AppShadows.small,
+                    ),
+                    child: Column(
+                      children: [
+                        _SummaryRow(
+                          icon: Icons.arrow_downward,
+                          label: 'Average Income',
+                          value:
+                              '${format.format((score['monthly_income_avg'] as num?)?.toInt() ?? 0)} RWF',
+                          color: AppColors.success,
+                        ),
+                        const Divider(height: 24),
+                        _SummaryRow(
+                          icon: Icons.arrow_upward,
+                          label: 'Average Expenses',
+                          value:
+                              '${format.format((score['monthly_expense_avg'] as num?)?.toInt() ?? 0)} RWF',
+                          color: AppColors.error,
+                        ),
+                        const Divider(height: 24),
+                        _SummaryRow(
+                          icon: Icons.timeline,
+                          label: 'Score Change',
+                          value:
+                              '${((score['score_change'] as num?)?.toInt() ?? 0) > 0 ? '+' : ''}${score['score_change']} points',
+                          color:
+                              ((score['score_change'] as num?)?.toInt() ?? 0) >
+                                      0
+                                  ? AppColors.success
+                                  : AppColors.error,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
 
           return const SizedBox();
@@ -82,155 +326,149 @@ class _FinancialHealthPageState extends State<FinancialHealthPage> {
     );
   }
 
-  Widget _buildHealthContent(FinancialHealth health) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Score Card
-          _buildScoreCard(health),
-          const SizedBox(height: 24),
-
-          // Breakdown
-          Text(
-            'Score Breakdown',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF1E293B),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildBreakdownCard(health.breakdown),
-          const SizedBox(height: 24),
-
-          // Recommendations
-          if (health.recommendations.isNotEmpty) ...[
-            Text(
-              'Recommendations',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF1E293B),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...health.recommendations.map((r) => _RecommendationCard(rec: r)),
-          ],
-        ],
-      ),
-    );
+  Color _getGradeColor(String grade) {
+    switch (grade) {
+      case 'A':
+        return AppColors.success;
+      case 'B':
+        return AppColors.primary;
+      case 'C':
+        return AppColors.warning;
+      case 'D':
+      case 'F':
+        return AppColors.error;
+      default:
+        return AppColors.textSecondary;
+    }
   }
+}
 
-  Widget _buildScoreCard(FinancialHealth health) {
-    final color = _getScoreColor(health.overallScore);
+class _ScoreComponentCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final int score;
+  final Color color;
+  final String? subtitle;
 
+  const _ScoreComponentCard({
+    required this.icon,
+    required this.label,
+    required this.score,
+    required this.color,
+    this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Circular Score
-          SizedBox(
-            width: 160,
-            height: 160,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 160,
-                  height: 160,
-                  child: CustomPaint(
-                    painter: _ScoreArcPainter(
-                      score: health.overallScore / 100,
-                      color: color,
-                    ),
-                  ),
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      health.overallScore.toString(),
-                      style: GoogleFonts.poppins(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      ),
-                    ),
-                    Text(
-                      'of 100',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              health.category,
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBreakdownCard(BreakdownScores breakdown) {
-    return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: AppShadows.small,
       ),
       child: Column(
         children: [
-          _ScoreRow(label: 'Savings Rate', score: breakdown.savingsRate),
-          const Divider(height: 24),
-          _ScoreRow(
-              label: 'Needs/Wants Balance', score: breakdown.needsWantsBalance),
-          const Divider(height: 24),
-          _ScoreRow(
-              label: 'Income Stability', score: breakdown.incomeStability),
-          const Divider(height: 24),
-          _ScoreRow(label: 'Goal Progress', score: breakdown.goalProgress),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle!,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Text(
+                '$score',
+                style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: score / 100,
+              minHeight: 8,
+              backgroundColor: color.withOpacity(0.1),
+              valueColor: AlwaysStoppedAnimation(color),
+            ),
+          ),
         ],
       ),
     );
   }
+}
 
-  Color _getScoreColor(int score) {
-    if (score >= 80) return Colors.green;
-    if (score >= 60) return AppColors.secondary;
-    if (score >= 40) return Colors.orange;
-    return Colors.red;
+class _SummaryRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _SummaryRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -410,7 +648,7 @@ class _PredictionsPageState extends State<PredictionsPage> {
   @override
   void initState() {
     super.initState();
-    context.read<InsightsBloc>().add(LoadPredictions(days: 30));
+    context.read<InsightsBloc>().add(Load7DayForecast());
   }
 
   @override
@@ -423,13 +661,21 @@ class _PredictionsPageState extends State<PredictionsPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          'AI Predictions',
+          'AI Expense Forecast',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF1E293B),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.primary),
+            onPressed: () {
+              context.read<InsightsBloc>().add(Load7DayForecast());
+            },
+          ),
+        ],
       ),
       body: BlocBuilder<InsightsBloc, InsightsState>(
         builder: (context, state) {
@@ -444,13 +690,15 @@ class _PredictionsPageState extends State<PredictionsPage> {
                 children: [
                   Icon(Icons.error_outline, size: 64, color: Colors.grey[300]),
                   const SizedBox(height: 16),
-                  Text('Failed to load predictions',
+                  Text('Failed to load forecast',
                       style: GoogleFonts.inter(color: Colors.grey[600])),
+                  Text(state.message,
+                      style: GoogleFonts.inter(
+                          fontSize: 12, color: Colors.grey[500])),
                   const SizedBox(height: 8),
                   ElevatedButton(
-                    onPressed: () => context
-                        .read<InsightsBloc>()
-                        .add(LoadPredictions(days: 30)),
+                    onPressed: () =>
+                        context.read<InsightsBloc>().add(Load7DayForecast()),
                     child: const Text('Retry'),
                   ),
                 ],
@@ -458,90 +706,389 @@ class _PredictionsPageState extends State<PredictionsPage> {
             );
           }
 
-          if (state is PredictionsLoaded) {
-            if (state.predictions.isEmpty) {
+          if (state is Forecast7DayLoaded) {
+            final status = state.forecast['status'] as String?;
+
+            if (status == 'insufficient_data') {
               return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.insights, size: 64, color: Colors.grey[300]),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Not enough data for predictions',
-                      style: GoogleFonts.inter(
-                          fontSize: 16, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Add more transactions to enable AI predictions',
-                      style: GoogleFonts.inter(
-                          fontSize: 14, color: Colors.grey[500]),
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.insights, size: 64, color: Colors.grey[300]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Not Enough Data Yet',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        state.forecast['message'] as String? ??
+                            'Add more transactions to enable AI predictions',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        state.forecast['nudge'] as String? ?? '',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }
 
-            return ListView.builder(
+            if (status != 'success' || state.forecast['forecast'] == null) {
+              return Center(
+                child: Text(
+                  'Unable to generate forecast',
+                  style: GoogleFonts.inter(color: Colors.grey[600]),
+                ),
+              );
+            }
+
+            final forecast = state.forecast['forecast'] as Map<String, dynamic>;
+            final amount = forecast['total_amount_rwf'] as num? ?? 0;
+            final category =
+                forecast['likely_top_expense'] as String? ?? 'Other';
+            final confidence = forecast['confidence_score'] as num? ?? 0;
+            final isHighRisk = forecast['is_high_risk'] as bool? ?? false;
+            final nudge = state.forecast['nudge'] as String? ?? '';
+
+            return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
-              itemCount: state.predictions.length + 1,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  // Header
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.primary,
-                            AppColors.primary.withOpacity(0.8)
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // AI Header Card
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.primary,
+                          AppColors.primary.withOpacity(0.8)
+                        ],
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.auto_awesome,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.auto_awesome,
-                                  color: Colors.white),
-                              const SizedBox(width: 8),
                               Text(
-                                'AI-Powered Forecasts',
+                                '7-Day Forecast',
                                 style: GoogleFonts.poppins(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white,
                                 ),
                               ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Powered by BiLSTM Neural Network',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: Colors.white70,
+                                ),
+                              ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Based on your spending patterns and income history',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: Colors.white70,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Main Prediction Card
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Expected Expenses',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${format.format(amount.round())} RWF',
+                          style: GoogleFonts.poppins(
+                            fontSize: 36,
+                            fontWeight: FontWeight.bold,
+                            color: isHighRisk
+                                ? AppColors.error
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            _InfoChip(
+                              icon: Icons.category,
+                              label: category,
+                              color: AppColors.secondary,
+                            ),
+                            const SizedBox(width: 8),
+                            _InfoChip(
+                              icon: Icons.speed,
+                              label: '${confidence.toInt()}% Confident',
+                              color: confidence > 70
+                                  ? AppColors.success
+                                  : AppColors.warning,
+                            ),
+                          ],
+                        ),
+                        if (isHighRisk) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.errorSurface,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.warning,
+                                  color: AppColors.error,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'High volatility detected - expenses may vary significantly',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: AppColors.error,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Insight Explanation
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySurface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.2),
                       ),
                     ),
-                  );
-                }
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.lightbulb_outline,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Why am I seeing this?',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          nudge,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
 
-                final prediction = state.predictions[index - 1];
-                return _PredictionCard(prediction: prediction, format: format);
-              },
+                  // Model Info
+                  Text(
+                    'About This Forecast',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        _ModelInfoRow(
+                          icon: Icons.psychology,
+                          title: 'Model Type',
+                          value: 'Bidirectional LSTM',
+                        ),
+                        const Divider(height: 24),
+                        _ModelInfoRow(
+                          icon: Icons.timelapse,
+                          title: 'Training Window',
+                          value: 'Last 30 days',
+                        ),
+                        const Divider(height: 24),
+                        _ModelInfoRow(
+                          icon: Icons.update,
+                          title: 'Updates',
+                          value: 'Real-time with new transactions',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             );
           }
 
           return const SizedBox();
         },
       ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _InfoChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModelInfoRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+
+  const _ModelInfoRow({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: AppColors.primary),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

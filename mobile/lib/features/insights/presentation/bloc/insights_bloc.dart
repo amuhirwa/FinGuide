@@ -18,6 +18,12 @@ abstract class InsightsEvent extends Equatable {
 
 class LoadFinancialHealth extends InsightsEvent {}
 
+class LoadHealthScore extends InsightsEvent {}
+
+class Load7DayForecast extends InsightsEvent {}
+
+class LoadSafeToSpend extends InsightsEvent {}
+
 class LoadPredictions extends InsightsEvent {
   final int? days;
 
@@ -74,6 +80,33 @@ class FinancialHealthLoaded extends InsightsState {
   List<Object?> get props => [health];
 }
 
+class HealthScoreLoaded extends InsightsState {
+  final Map<String, dynamic> healthScore;
+
+  HealthScoreLoaded(this.healthScore);
+
+  @override
+  List<Object?> get props => [healthScore];
+}
+
+class Forecast7DayLoaded extends InsightsState {
+  final Map<String, dynamic> forecast;
+
+  Forecast7DayLoaded(this.forecast);
+
+  @override
+  List<Object?> get props => [forecast];
+}
+
+class SafeToSpendLoaded extends InsightsState {
+  final Map<String, dynamic> safeToSpend;
+
+  SafeToSpendLoaded(this.safeToSpend);
+
+  @override
+  List<Object?> get props => [safeToSpend];
+}
+
 class PredictionsLoaded extends InsightsState {
   final List<PredictionModel> predictions;
 
@@ -116,6 +149,9 @@ class InsightsBloc extends Bloc<InsightsEvent, InsightsState> {
 
   InsightsBloc(this._repository) : super(InsightsInitial()) {
     on<LoadFinancialHealth>(_onLoadHealth);
+    on<LoadHealthScore>(_onLoadHealthScore);
+    on<Load7DayForecast>(_onLoad7DayForecast);
+    on<LoadSafeToSpend>(_onLoadSafeToSpend);
     on<LoadPredictions>(_onLoadPredictions);
     on<LoadSpendingAnalysis>(_onLoadSpending);
     on<RunInvestmentSimulation>(_onRunSimulation);
@@ -132,6 +168,48 @@ class InsightsBloc extends Bloc<InsightsEvent, InsightsState> {
     result.fold(
       (error) => emit(InsightsError(error)),
       (health) => emit(FinancialHealthLoaded(health)),
+    );
+  }
+
+  Future<void> _onLoadHealthScore(
+    LoadHealthScore event,
+    Emitter<InsightsState> emit,
+  ) async {
+    emit(InsightsLoading());
+
+    final result = await _repository.getHealthScore();
+
+    result.fold(
+      (error) => emit(InsightsError(error)),
+      (score) => emit(HealthScoreLoaded(score)),
+    );
+  }
+
+  Future<void> _onLoad7DayForecast(
+    Load7DayForecast event,
+    Emitter<InsightsState> emit,
+  ) async {
+    emit(InsightsLoading());
+
+    final result = await _repository.get7DayForecast();
+
+    result.fold(
+      (error) => emit(InsightsError(error)),
+      (forecast) => emit(Forecast7DayLoaded(forecast)),
+    );
+  }
+
+  Future<void> _onLoadSafeToSpend(
+    LoadSafeToSpend event,
+    Emitter<InsightsState> emit,
+  ) async {
+    emit(InsightsLoading());
+
+    final result = await _repository.getSafeToSpend();
+
+    result.fold(
+      (error) => emit(InsightsError(error)),
+      (safeToSpend) => emit(SafeToSpendLoaded(safeToSpend)),
     );
   }
 

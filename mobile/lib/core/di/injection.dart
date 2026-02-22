@@ -13,6 +13,7 @@ import 'package:telephony/telephony.dart';
 import '../network/api_client.dart';
 import '../network/api_interceptor.dart';
 import '../services/sms_service.dart';
+import '../services/report_service.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
@@ -41,6 +42,10 @@ import '../../features/investments/presentation/bloc/investment_bloc.dart';
 // SMS Consent
 import '../../features/sms_consent/presentation/bloc/sms_consent_bloc.dart';
 
+// Reports
+import '../../features/reports/data/repositories/reports_repository.dart';
+import '../../features/reports/presentation/bloc/report_bloc.dart';
+
 final GetIt getIt = GetIt.instance;
 
 /// Initialize all dependencies
@@ -59,8 +64,8 @@ Future<void> configureDependencies() async {
     final dio = Dio(
       BaseOptions(
         baseUrl: ApiClient.baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
+        connectTimeout: const Duration(seconds: 8),
+        receiveTimeout: const Duration(seconds: 8),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -143,6 +148,19 @@ Future<void> configureDependencies() async {
 
   getIt.registerFactory<InvestmentBloc>(
     () => InvestmentBloc(getIt<InvestmentRepository>()),
+  );
+
+  // ==================== Reports Feature ====================
+  getIt.registerLazySingleton<ReportService>(
+    () => ReportService(),
+  );
+
+  getIt.registerLazySingleton<ReportsRepository>(
+    () => ReportsRepository(getIt<ApiClient>(), getIt<ReportService>()),
+  );
+
+  getIt.registerFactory<ReportBloc>(
+    () => ReportBloc(getIt<ReportsRepository>()),
   );
 
   // ==================== SMS Service ====================

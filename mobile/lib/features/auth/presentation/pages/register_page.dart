@@ -47,14 +47,14 @@ class _RegisterPageState extends State<RegisterPage> {
   void _onRegister() {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<AuthBloc>().add(
-        AuthRegisterRequested(
-          phoneNumber: _phoneController.text.trim(),
-          fullName: _nameController.text.trim(),
-          password: _passwordController.text,
-          ubudeheCategory: _selectedUbudehe,
-          incomeFrequency: _selectedIncomeFrequency,
-        ),
-      );
+            AuthRegisterRequested(
+              phoneNumber: _phoneController.text.trim(),
+              fullName: _nameController.text.trim(),
+              password: _passwordController.text,
+              ubudeheCategory: _selectedUbudehe,
+              incomeFrequency: _selectedIncomeFrequency,
+            ),
+          );
     }
   }
 
@@ -64,6 +64,8 @@ class _RegisterPageState extends State<RegisterPage> {
       listener: (context, state) {
         if (state is AuthAuthenticated) {
           context.go(Routes.dashboard);
+        } else if (state is AuthShowSmsConsent) {
+          context.go(Routes.smsConsent);
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

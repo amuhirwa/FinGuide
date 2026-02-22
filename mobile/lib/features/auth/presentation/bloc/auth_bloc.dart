@@ -57,8 +57,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // Check authentication status
     final result = await _checkAuthUseCase();
 
-    result.fold(
-      (failure) => emit(AuthUnauthenticated()),
+    await result.fold(
+      (failure) async => emit(AuthUnauthenticated()),
       (user) async {
         // Check if SMS consent flow has been completed
         final hasSmsConsent = await _localDataSource.hasSmsConsentCompleted();
@@ -82,8 +82,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       LoginParams(phoneNumber: event.phoneNumber, password: event.password),
     );
 
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
+    await result.fold(
+      (failure) async => emit(AuthError(failure.message)),
       (user) async {
         final hasSmsConsent = await _localDataSource.hasSmsConsentCompleted();
         if (!hasSmsConsent) {
@@ -112,8 +112,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ),
     );
 
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
+    await result.fold(
+      (failure) async => emit(AuthError(failure.message)),
       (user) async {
         final hasSmsConsent = await _localDataSource.hasSmsConsentCompleted();
         if (!hasSmsConsent) {

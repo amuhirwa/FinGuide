@@ -35,6 +35,9 @@ import '../../features/insights/presentation/pages/insights_pages.dart';
 import '../../features/investments/presentation/bloc/investment_bloc.dart';
 import '../../features/investments/presentation/pages/investments_page.dart';
 
+// Reports
+import '../../features/reports/presentation/pages/reports_page.dart';
+
 /// Application route names
 class Routes {
   Routes._();
@@ -63,6 +66,9 @@ class Routes {
   // Investments
   static const String investments = '/investments';
   static const String addInvestment = '/investments/add';
+
+  // Reports
+  static const String reports = '/reports';
 }
 
 /// GoRouter configuration
@@ -202,6 +208,13 @@ class AppRouter {
           create: (_) => getIt<InvestmentBloc>(),
           child: const AddInvestmentPage(),
         ),
+      ),
+
+      // ==================== Reports ====================
+      GoRoute(
+        path: Routes.reports,
+        name: 'reports',
+        builder: (context, state) => const ReportsPage(),
       ),
     ],
 
