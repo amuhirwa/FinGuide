@@ -19,18 +19,18 @@ class FinGuidePredictor:
         print(f"Loading FinGuide AI from {model_dir}...")
         
         try:
-            # 1. Load the BiLSTM Model
-            self.model = tf.keras.models.load_model(f'{model_dir}/finguide_bilstm_production.h5')
+            # 1. Load the BiLSTM 7-Day Model
+            self.model = tf.keras.models.load_model(f'{model_dir}/bilstm_7day_best.h5')
             
             # 2. Load Scalers (Crucial for normalizing input data)
-            self.amount_scaler = joblib.load(f'{model_dir}/production_amount_scaler.joblib')
-            self.feature_scaler = joblib.load(f'{model_dir}/production_feature_scaler.joblib')
+            self.amount_scaler = joblib.load(f'{model_dir}/bilstm_7day_target_scaler.joblib')
+            self.feature_scaler = joblib.load(f'{model_dir}/bilstm_7day_feature_scaler.joblib')
             
             # 3. Load Category Encoder (To decode the predicted category ID)
-            self.category_encoder = joblib.load(f'{model_dir}/production_category_encoder.joblib')
+            self.category_encoder = joblib.load(f'{model_dir}/bilstm_7day_category_encoder.joblib')
             
             # 4. Load Metadata (To know which features imply what)
-            self.metadata = joblib.load(f'{model_dir}/production_metadata.joblib')
+            self.metadata = joblib.load(f'{model_dir}/bilstm_7day_metadata.joblib')
             
             print("✓ Model and artifacts loaded successfully.")
             

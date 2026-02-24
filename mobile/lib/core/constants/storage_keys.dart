@@ -21,4 +21,8 @@ class StorageKeys {
   static const String incomeFrequency = 'income_frequency';
   static const String themeMode = 'theme_mode';
   static const String languageCode = 'language_code';
+
+  // SMS Consent
+  static const String smsConsentGiven = 'sms_consent_given';
+  static const String smsInitialImportDone = 'sms_initial_import_done';
 }

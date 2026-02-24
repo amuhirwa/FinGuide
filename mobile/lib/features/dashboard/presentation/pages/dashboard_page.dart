@@ -18,7 +18,7 @@ import '../../../transactions/presentation/pages/transactions_page.dart';
 import '../../../goals/presentation/bloc/goals_bloc.dart';
 import '../../../goals/presentation/pages/goals_page.dart';
 import '../../../insights/presentation/bloc/insights_bloc.dart';
-import '../../../insights/presentation/pages/insights_pages.dart';
+import '../../../profile/presentation/pages/profile_page.dart';
 
 /// Dashboard page widget
 class DashboardPage extends StatefulWidget {
@@ -64,7 +64,7 @@ class _DashboardPageState extends State<DashboardPage> {
       case 3:
         return const _InsightsContent();
       case 4:
-        return const _ProfileContent();
+        return const ProfilePage();
       default:
         return const _HomeContent();
     }
@@ -283,6 +283,11 @@ class _HomeContent extends StatelessWidget {
               ],
             ),
           ),
+
+          const SizedBox(height: 32),
+
+          // Safe to Spend Section
+          const _SafeToSpendSection(),
 
           const SizedBox(height: 32),
 
@@ -519,6 +524,231 @@ class _ActionButton extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// AI Insights Section
+/// Safe to Spend Section
+class _SafeToSpendSection extends StatelessWidget {
+  const _SafeToSpendSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => getIt<InsightsBloc>()..add(LoadSafeToSpend()),
+      child: BlocBuilder<InsightsBloc, InsightsState>(
+        builder: (context, state) {
+          if (state is InsightsLoading) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.grey.shade100),
+                ),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+            );
+          }
+
+          if (state is SafeToSpendLoaded) {
+            final data = state.safeToSpend;
+            final safeAmount =
+                (data['safe_to_spend'] as num?)?.toDouble() ?? 0.0;
+            final totalBalance =
+                (data['total_balance'] as num?)?.toDouble() ?? 0.0;
+            final reservedExpenses =
+                (data['reserved_for_expenses'] as num?)?.toDouble() ?? 0.0;
+            final reservedGoals =
+                (data['reserved_for_goals'] as num?)?.toDouble() ?? 0.0;
+            final emergencyBuffer =
+                (data['emergency_buffer'] as num?)?.toDouble() ?? 0.0;
+            final explanation = data['explanation'] as String? ?? '';
+
+            final isPositive = safeAmount > 0;
+            final isLow = safeAmount < 10000 && safeAmount > 0;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Safe to Spend',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isPositive
+                              ? const Color(0xFFE8F5E9)
+                              : const Color(0xFFFFEBEE),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              isPositive ? Icons.check_circle : Icons.warning,
+                              size: 14,
+                              color: isPositive
+                                  ? const Color(0xFF2E7D32)
+                                  : const Color(0xFFC62828),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isPositive ? 'Available' : 'Over Budget',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isPositive
+                                    ? const Color(0xFF2E7D32)
+                                    : const Color(0xFFC62828),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isPositive
+                            ? [const Color(0xFF2E7D32), const Color(0xFF43A047)]
+                            : isLow
+                                ? [
+                                    const Color(0xFFF57C00),
+                                    const Color(0xFFFB8C00)
+                                  ]
+                                : [
+                                    const Color(0xFFC62828),
+                                    const Color(0xFFD32F2F)
+                                  ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isPositive
+                                  ? Colors.green
+                                  : isLow
+                                      ? Colors.orange
+                                      : Colors.red)
+                              .withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Amount
+                        Text(
+                          'RWF ${safeAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 36,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          explanation.isNotEmpty
+                              ? explanation
+                              : 'After covering all expenses, goals, and emergencies',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.9),
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Breakdown
+                        _buildBreakdownRow(
+                          'Total Balance',
+                          totalBalance,
+                          Icons.account_balance_wallet,
+                          Colors.white,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildBreakdownRow(
+                          'Reserved for Expenses',
+                          reservedExpenses,
+                          Icons.receipt_long,
+                          Colors.white.withOpacity(0.8),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildBreakdownRow(
+                          'Reserved for Goals',
+                          reservedGoals,
+                          Icons.flag,
+                          Colors.white.withOpacity(0.8),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildBreakdownRow(
+                          'Emergency Buffer',
+                          emergencyBuffer,
+                          Icons.security,
+                          Colors.white.withOpacity(0.8),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Error or initial state - show placeholder
+          return const SizedBox.shrink();
+        },
+      ),
+    );
+  }
+
+  Widget _buildBreakdownRow(
+      String label, double amount, IconData icon, Color color) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Text(
+          'RWF ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1105,231 +1335,6 @@ class _InsightsContent extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ProfileContent extends StatelessWidget {
-  const _ProfileContent();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-        if (state is! AuthAuthenticated) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final user = state.user;
-
-        return SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Profile',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1E293B),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // User Card
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            user.fullName.isNotEmpty
-                                ? user.fullName[0].toUpperCase()
-                                : 'U',
-                            style: GoogleFonts.poppins(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              user.fullName,
-                              style: GoogleFonts.poppins(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF1E293B),
-                              ),
-                            ),
-                            Text(
-                              user.phoneNumber,
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Financial Profile
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Financial Profile',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1E293B),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _ProfileRow(
-                        label: 'Ubudehe Category',
-                        value: user.ubudeheCategoryDisplay,
-                      ),
-                      const SizedBox(height: 12),
-                      _ProfileRow(
-                        label: 'Income Frequency',
-                        value: user.incomeFrequencyDisplay,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Logout Button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () => _showLogoutDialog(context),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.red),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: Text(
-                      'Logout',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.red,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.read<AuthBloc>().add(AuthLogoutRequested());
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProfileRow extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _ProfileRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            value,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

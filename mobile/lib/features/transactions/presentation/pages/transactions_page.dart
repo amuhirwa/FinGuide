@@ -326,7 +326,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => TransactionDetailPage(transaction: tx),
+        builder: (_) => BlocProvider.value(
+          value: context.read<TransactionBloc>(),
+          child: TransactionDetailPage(transaction: tx),
+        ),
       ),
     );
   }
@@ -1216,6 +1219,24 @@ class TransactionDetailPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FD),
+      floatingActionButton: transaction.counterparty != null
+          ? FloatingActionButton.extended(
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (sheetCtx) => BlocProvider.value(
+                  value: context.read<TransactionBloc>(),
+                  child: _SetRuleSheet(transaction: transaction),
+                ),
+              ),
+              icon: const Icon(Icons.auto_fix_high),
+              label: const Text('Set Rule'),
+              backgroundColor: AppColors.primary,
+            )
+          : null,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -1380,6 +1401,164 @@ class _DetailRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ==================== Counterparty Rule Sheet ====================
+
+class _SetRuleSheet extends StatefulWidget {
+  final TransactionModel transaction;
+
+  const _SetRuleSheet({required this.transaction});
+
+  @override
+  State<_SetRuleSheet> createState() => _SetRuleSheetState();
+}
+
+class _SetRuleSheetState extends State<_SetRuleSheet> {
+  late TransactionCategory _category;
+  late NeedWantCategory _needWant;
+
+  @override
+  void initState() {
+    super.initState();
+    _category = widget.transaction.category;
+    _needWant = widget.transaction.needWant;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final name =
+        widget.transaction.counterpartyName ?? widget.transaction.counterparty!;
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text(
+              'Set Rule for "$name"',
+              style: GoogleFonts.poppins(
+                  fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Future transactions with this party will use these settings automatically.',
+              style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Category',
+              style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w500, color: Colors.grey[700]),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: TransactionCategory.values.map((c) {
+                final selected = _category == c;
+                return GestureDetector(
+                  onTap: () => setState(() => _category = c),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: selected ? AppColors.primary : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      c.name.replaceAll('_', ' '),
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: selected ? Colors.white : Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Need / Want',
+              style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w500, color: Colors.grey[700]),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              children: NeedWantCategory.values.map((nw) {
+                final selected = _needWant == nw;
+                return GestureDetector(
+                  onTap: () => setState(() => _needWant = nw),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: selected ? AppColors.primary : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      nw.name[0].toUpperCase() + nw.name.substring(1),
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: selected ? Colors.white : Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  context.read<TransactionBloc>().add(
+                        UpdateTransaction(widget.transaction.id, {
+                          'category': _category.name,
+                          'need_want': _needWant.name,
+                        }),
+                      );
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Rule saved for "$name"'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Save Rule'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

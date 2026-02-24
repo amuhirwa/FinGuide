@@ -137,6 +137,17 @@ class UserLogin(BaseModel):
         description="Account password"
     )
 
+    @field_validator("phone_number")
+    @classmethod
+    def normalize_phone_number(cls, v: str) -> str:
+        """Normalize phone number to local format, matching registration behaviour."""
+        cleaned = re.sub(r"[\s\-]", "", v)
+        if cleaned.startswith("+250"):
+            cleaned = "0" + cleaned[4:]
+        elif cleaned.startswith("250"):
+            cleaned = "0" + cleaned[3:]
+        return cleaned
+
 
 class UserResponse(UserBase):
     """
@@ -151,6 +162,28 @@ class UserResponse(UserBase):
     
     class Config:
         from_attributes = True
+
+
+class UserUpdate(BaseModel):
+    """
+    Schema for updating user profile.
+    
+    All fields are optional to allow partial updates.
+    """
+    full_name: Optional[str] = Field(
+        None,
+        min_length=2,
+        max_length=100,
+        description="User's full name"
+    )
+    ubudehe_category: Optional[UbudheCategory] = Field(
+        None,
+        description="Rwandan Ubudehe socioeconomic category"
+    )
+    income_frequency: Optional[IncomeFrequency] = Field(
+        None,
+        description="How frequently the user receives income"
+    )
 
 
 class Token(BaseModel):

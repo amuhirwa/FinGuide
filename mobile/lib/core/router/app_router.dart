@@ -15,6 +15,10 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 
+// SMS Consent
+import '../../features/sms_consent/presentation/bloc/sms_consent_bloc.dart';
+import '../../features/sms_consent/presentation/pages/sms_consent_page.dart';
+
 // Transactions
 import '../../features/transactions/presentation/bloc/transaction_bloc.dart';
 import '../../features/transactions/presentation/pages/transactions_page.dart';
@@ -31,6 +35,9 @@ import '../../features/insights/presentation/pages/insights_pages.dart';
 import '../../features/investments/presentation/bloc/investment_bloc.dart';
 import '../../features/investments/presentation/pages/investments_page.dart';
 
+// Reports
+import '../../features/reports/presentation/pages/reports_page.dart';
+
 /// Application route names
 class Routes {
   Routes._();
@@ -39,6 +46,7 @@ class Routes {
   static const String onboarding = '/onboarding';
   static const String login = '/login';
   static const String register = '/register';
+  static const String smsConsent = '/sms-consent';
   static const String dashboard = '/dashboard';
 
   // Transactions
@@ -58,6 +66,9 @@ class Routes {
   // Investments
   static const String investments = '/investments';
   static const String addInvestment = '/investments/add';
+
+  // Reports
+  static const String reports = '/reports';
 }
 
 /// GoRouter configuration
@@ -92,6 +103,16 @@ class AppRouter {
         path: Routes.register,
         name: 'register',
         builder: (context, state) => const RegisterPage(),
+      ),
+
+      // SMS Consent (shown once after first login/register)
+      GoRoute(
+        path: Routes.smsConsent,
+        name: 'smsConsent',
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<SmsConsentBloc>(),
+          child: const SmsConsentPage(),
+        ),
       ),
 
       // Dashboard
@@ -187,6 +208,13 @@ class AppRouter {
           create: (_) => getIt<InvestmentBloc>(),
           child: const AddInvestmentPage(),
         ),
+      ),
+
+      // ==================== Reports ====================
+      GoRoute(
+        path: Routes.reports,
+        name: 'reports',
+        builder: (context, state) => const ReportsPage(),
       ),
     ],
 

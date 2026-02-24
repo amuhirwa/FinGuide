@@ -20,7 +20,7 @@ class ApiClient {
   // 'http://10.0.2.2:8000/api/v1'; // Android emulator
   // static const String baseUrl = 'http://localhost:8000/api/v1'; // iOS simulator
   static const String baseUrl =
-      'http://192.168.1.66:8000/api/v1'; // iOS simulator
+      'http://192.168.1.73:8000/api/v1'; // iOS simulator
 
   // ==================== Auth Endpoints ====================
 
@@ -178,21 +178,33 @@ class ApiClient {
 
   // ==================== Predictions & Insights ====================
 
+  /// Get 7-day expense forecast (AI BiLSTM model)
+  Future<Map<String, dynamic>> get7DayForecast() async {
+    final response = await _dio.get('/predictions/forecast-7day');
+    return response.data;
+  }
+
   /// Get income predictions
   Future<List<dynamic>> getIncomePredictions() async {
-    final response = await _dio.get('/insights/income');
+    final response = await _dio.get('/predictions/income');
     return response.data;
   }
 
   /// Get expense predictions
   Future<List<dynamic>> getExpensePredictions() async {
-    final response = await _dio.get('/insights/expenses');
+    final response = await _dio.get('/predictions/expenses');
     return response.data;
   }
 
   /// Get financial health score
   Future<Map<String, dynamic>> getHealthScore() async {
-    final response = await _dio.get('/insights/health-score');
+    final response = await _dio.get('/predictions/health-score');
+    return response.data;
+  }
+
+  /// Get safe-to-spend calculation
+  Future<Map<String, dynamic>> getSafeToSpend() async {
+    final response = await _dio.get('/predictions/safe-to-spend');
     return response.data;
   }
 
@@ -224,12 +236,6 @@ class ApiClient {
 
     final response = await _dio.get('/insights/spending-by-category',
         queryParameters: queryParams);
-    return response.data;
-  }
-
-  /// Get safe to spend amount
-  Future<Map<String, dynamic>> getSafeToSpend() async {
-    final response = await _dio.get('/insights/safe-to-spend');
     return response.data;
   }
 
@@ -357,5 +363,42 @@ class ApiClient {
     } catch (e) {
       return false;
     }
+  }
+
+  // ==================== Reports / Export ====================
+
+  /// Export transactions report
+  Future<Map<String, dynamic>> exportTransactions({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final queryParams = <String, dynamic>{};
+    if (startDate != null)
+      queryParams['start_date'] = startDate.toIso8601String();
+    if (endDate != null) queryParams['end_date'] = endDate.toIso8601String();
+
+    final response =
+        await _dio.get('/reports/transactions', queryParameters: queryParams);
+    return response.data;
+  }
+
+  /// Export goals report
+  Future<Map<String, dynamic>> exportGoals() async {
+    final response = await _dio.get('/reports/goals');
+    return response.data;
+  }
+
+  /// Export investments report
+  Future<Map<String, dynamic>> exportInvestments() async {
+    final response = await _dio.get('/reports/investments');
+    return response.data;
+  }
+
+  // ==================== Profile ====================
+
+  /// Update user profile
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
+    final response = await _dio.patch('/users/me', data: data);
+    return response.data;
   }
 }

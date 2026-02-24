@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 import random
+import os
 
 from app.models.base import get_db
 from app.models.transaction import Transaction, TransactionType as ModelTransactionType
@@ -26,53 +27,154 @@ from app.schemas.prediction import (
 )
 from app.schemas.user import TokenPayload
 from app.core.deps import get_current_active_user
+from app.core.finguide_inference import FinGuidePredictor
 
 router = APIRouter()
 
+# ==================== ML PREDICTOR SINGLETON ====================
+_predictor_instance = None
 
-# ==================== MOCK ML PREDICTIONS ====================
-# These would be replaced with actual ML model calls
+def get_predictor() -> FinGuidePredictor:
+    """Get or create the FinGuide predictor instance."""
+    global _predictor_instance
+    if _predictor_instance is None:
+        # Model directory is relative to the ML folder
+        model_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+            'ML', 'models'
+        )
+        _predictor_instance = FinGuidePredictor(model_dir=model_dir)
+    return _predictor_instance
+
+
+# ==================== AI PREDICTION FUNCTIONS ====================
+
+def get_user_transactions_for_ml(user_id: int, db: Session, days: int = 60) -> List[dict]:
+    """Fetch user transactions formatted for ML model input."""
+    cutoff_date = datetime.now() - timedelta(days=days)
+    
+    transactions = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_date >= cutoff_date,
+        Transaction.is_verified == True
+    ).order_by(Transaction.transaction_date.asc()).all()
+    
+    return [
+        {
+            "date": t.transaction_date.strftime("%Y-%m-%d"),
+            "amount": float(t.amount),
+            "category": t.category or "Other",
+            "type": t.transaction_type.value if hasattr(t.transaction_type, 'value') else str(t.transaction_type)
+        }
+        for t in transactions
+    ]
+
+
+def generate_expense_prediction_with_ai(user_id: int, db: Session) -> dict:
+    """Generate 7-day expense forecast using BiLSTM model."""
+    transaction_dicts = get_user_transactions_for_ml(user_id, db)
+    
+    if len(transaction_dicts) < 15:
+        return {
+            "status": "insufficient_data",
+            "message": f"Need at least 15 days of transactions. You have {len(transaction_dicts)}.",
+            "forecast": None
+        }
+    
+    try:
+        predictor = get_predictor()
+        result = predictor.predict_next_week(transaction_dicts)
+        return result
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Prediction failed: {str(e)}",
+            "forecast": None
+        }
+
 
 def mock_income_predictions(user_id: int, db: Session) -> List[dict]:
-    """Mock income predictions - replace with actual BiLSTM model."""
-    now = datetime.now()
-    predictions = []
+    """Predict next income using pattern detection from historical data."""
+    # Fetch last 90 days of income transactions
+    cutoff_date = datetime.now() - timedelta(days=90)
     
-    # Generate 3 mock predictions
-    for i in range(1, 4):
-        predictions.append({
-            "predicted_amount": random.randint(50000, 200000),
-            "predicted_date": now + timedelta(days=random.randint(3, 14) * i),
-            "confidence": round(random.uniform(0.65, 0.90), 2),
-            "amount_lower_bound": random.randint(40000, 80000),
-            "amount_upper_bound": random.randint(150000, 250000),
-            "source_category": random.choice(["salary", "freelance", "business"])
-        })
+    income_txns = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_type == ModelTransactionType.INCOME,
+        Transaction.transaction_date >= cutoff_date,
+        Transaction.is_verified == True
+    ).order_by(Transaction.transaction_date.asc()).all()
+    
+    if len(income_txns) < 2:
+        # Not enough data - return empty prediction
+        return []
+    
+    # Calculate average days between income events
+    dates = [t.transaction_date for t in income_txns]
+    intervals = [(dates[i+1] - dates[i]).days for i in range(len(dates)-1)]
+    avg_interval = sum(intervals) / len(intervals) if intervals else 30
+    
+    # Calculate income amount average (last 5 incomes)
+    recent_amounts = [float(t.amount) for t in income_txns[-5:]]
+    avg_amount = sum(recent_amounts) / len(recent_amounts)
+    min_amount = min(recent_amounts)
+    max_amount = max(recent_amounts)
+    
+    # Confidence based on income regularity
+    if intervals:
+        variance = sum((x - avg_interval) ** 2 for x in intervals) / len(intervals)
+        std_dev = variance ** 0.5
+        cv = std_dev / avg_interval if avg_interval > 0 else 1.0
+        
+        if cv < 0.15:
+            confidence = 0.85
+        elif cv < 0.35:
+            confidence = 0.70
+        else:
+            confidence = 0.55
+    else:
+        confidence = 0.50
+    
+    # Predict next income date
+    last_income_date = income_txns[-1].transaction_date
+    predicted_date = last_income_date + timedelta(days=int(avg_interval))
+    
+    # Determine source category from last income
+    source_category = income_txns[-1].category or "salary"
+    
+    predictions = [{
+        "predicted_amount": avg_amount,
+        "predicted_date": predicted_date,
+        "confidence": confidence,
+        "amount_lower_bound": min_amount,
+        "amount_upper_bound": max_amount,
+        "source_category": source_category
+    }]
     
     return predictions
 
 
 def mock_expense_predictions(user_id: int, db: Session) -> List[dict]:
-    """Mock expense predictions - replace with actual model."""
+    """Generate expense predictions using AI model."""
+    ai_result = generate_expense_prediction_with_ai(user_id, db)
+    
+    if ai_result["status"] != "success" or not ai_result.get("forecast"):
+        # Fallback to empty list if AI fails
+        return []
+    
+    forecast = ai_result["forecast"]
     now = datetime.now()
-    predictions = []
     
-    expenses = [
-        ("rent", 100000, True, "monthly"),
-        ("utilities", 15000, True, "monthly"),
-        ("airtime_data", 5000, True, "weekly"),
-        ("food_groceries", 30000, False, None),
-    ]
-    
-    for cat, amount, recurring, pattern in expenses:
-        predictions.append({
-            "predicted_amount": amount + random.randint(-5000, 5000),
-            "predicted_date": now + timedelta(days=random.randint(1, 7)),
-            "category": cat,
-            "confidence": round(random.uniform(0.70, 0.95), 2),
-            "is_recurring": recurring,
-            "recurrence_pattern": pattern
-        })
+    # The AI gives us a 7-day aggregate forecast
+    # Convert it to a single prediction entry
+    predictions = [{
+        "predicted_amount": forecast["total_amount_rwf"],
+        "predicted_date": now + timedelta(days=3),  # Mid-week prediction
+        "category": forecast["likely_top_expense"],
+        "confidence": forecast["confidence_score"] / 100.0,  # Convert 0-100 to 0-1
+        "is_recurring": False,
+        "recurrence_pattern": None
+    }]
     
     return predictions
 
@@ -208,6 +310,24 @@ async def get_expense_predictions(
         stored.append(ExpensePredictionResponse.model_validate(expense_pred))
     
     return stored
+
+
+@router.get("/forecast-7day")
+async def get_7day_forecast(
+    current_user: TokenPayload = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get detailed 7-day expense forecast using AI BiLSTM model.
+    
+    Returns:
+        - forecast: Amount, category, confidence
+        - status: success/insufficient_data/error
+        - nudge: Contextual explanation
+    """
+    user_id = int(current_user.sub)
+    result = generate_expense_prediction_with_ai(user_id, db)
+    return result
 
 
 @router.get("/health-score", response_model=FinancialHealthScoreResponse)

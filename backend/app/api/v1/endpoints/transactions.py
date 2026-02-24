@@ -22,7 +22,57 @@ from app.schemas.transaction import (
 )
 from app.schemas.user import TokenPayload
 from app.core.deps import get_current_active_user
-from app.services.sms_parser import parse_momo_sms
+from app.core.momo_parsing import parse_momo_sms as _parse_momo_sms
+import hashlib
+
+
+def _adapt_parsed(result: dict, raw_sms: str) -> dict:
+    """Map app.core.momo_parsing output to the dict shape expected by the endpoint."""
+    transaction_date = datetime.now()
+    if result.get("date"):
+        try:
+            transaction_date = datetime.strptime(result["date"], "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            pass
+
+    reference = hashlib.md5(raw_sms.encode()).hexdigest()[:12].upper()
+
+    party_name = result.get("party_name") or result.get("party")
+    party_phone = result.get("party_phone")
+
+    need_want_map = {
+        "airtime_data": "need",
+        "utilities": "need",
+        "food_groceries": "need",
+        "transport": "need",
+        "healthcare": "need",
+        "education": "need",
+        "savings": "savings",
+        "ejo_heza": "savings",
+        "investment": "savings",
+    }
+    category = result.get("category", "other")
+    need_want = need_want_map.get(category, "uncategorized")
+
+    return {
+        "transaction_type": result.get("type", "expense"),
+        "amount": result.get("amount", 0.0),
+        "counterparty": party_phone or party_name,
+        "counterparty_name": party_name,
+        "description": party_name,
+        "category": category,
+        "need_want": need_want,
+        "reference": reference,
+        "transaction_date": transaction_date,
+        "confidence": 0.9,
+    }
+
+
+def parse_momo_sms(sms_text: str):
+    result = _parse_momo_sms(sms_text)
+    if result is None:
+        return None
+    return _adapt_parsed(result, sms_text)
 
 router = APIRouter()
 
@@ -315,17 +365,23 @@ async def parse_sms_messages(
                 if existing:
                     continue
             
-            # Auto-categorize based on counterparty
-            category = ModelCategory.OTHER
-            need_want = ModelNeedWant.UNCATEGORIZED
-            counterparty_name = None
-            
+            # Auto-categorize: use existing counterparty mapping, else fall back to parser result
+            counterparty_name = parsed.get("counterparty_name")
             if parsed.get("counterparty") and parsed["counterparty"] in mapping_dict:
                 mapping = mapping_dict[parsed["counterparty"]]
                 category = mapping.category
                 need_want = mapping.need_want
-                counterparty_name = mapping.display_name
-            
+                counterparty_name = mapping.display_name or counterparty_name
+            else:
+                try:
+                    category = ModelCategory(parsed.get("category", "other"))
+                except ValueError:
+                    category = ModelCategory.OTHER
+                try:
+                    need_want = ModelNeedWant(parsed.get("need_want", "uncategorized"))
+                except ValueError:
+                    need_want = ModelNeedWant.UNCATEGORIZED
+
             transaction = Transaction(
                 user_id=user_id,
                 transaction_type=ModelTransactionType(parsed["transaction_type"]),

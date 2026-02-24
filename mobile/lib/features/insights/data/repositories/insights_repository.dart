@@ -14,6 +14,33 @@ class InsightsRepository {
 
   InsightsRepository(this._apiClient);
 
+  Future<Either<String, Map<String, dynamic>>> get7DayForecast() async {
+    try {
+      final response = await _apiClient.get7DayForecast();
+      return Right(response);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  Future<Either<String, Map<String, dynamic>>> getHealthScore() async {
+    try {
+      final response = await _apiClient.getHealthScore();
+      return Right(response);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  Future<Either<String, Map<String, dynamic>>> getSafeToSpend() async {
+    try {
+      final response = await _apiClient.getSafeToSpend();
+      return Right(response);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
   Future<Either<String, FinancialHealth>> getFinancialHealth() async {
     try {
       final response = await _apiClient.getFinancialHealth();
