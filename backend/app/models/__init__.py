@@ -4,6 +4,7 @@ from app.models.transaction import Transaction, CounterpartyMapping
 from app.models.savings_goal import SavingsGoal, GoalContribution
 from app.models.prediction import IncomePrediction, ExpensePrediction, FinancialHealthScore, Recommendation
 from app.models.investment import Investment, InvestmentContribution
+from app.models.rnit import RnitPurchase, RnitNavCache
 
 __all__ = [
     "User",
@@ -17,4 +18,6 @@ __all__ = [
     "Recommendation",
     "Investment",
     "InvestmentContribution",
+    "RnitPurchase",
+    "RnitNavCache",
 ]

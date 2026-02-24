@@ -23,6 +23,8 @@ from app.schemas.transaction import (
 from app.schemas.user import TokenPayload
 from app.core.deps import get_current_active_user
 from app.core.momo_parsing import parse_momo_sms as _parse_momo_sms
+from app.models.rnit import RnitPurchase
+from app.services.rnit_nav import get_nav_on_date
 import hashlib
 
 
@@ -65,6 +67,7 @@ def _adapt_parsed(result: dict, raw_sms: str) -> dict:
         "reference": reference,
         "transaction_date": transaction_date,
         "confidence": 0.9,
+        "is_rnit": result.get("is_rnit", False),
     }
 
 
@@ -80,7 +83,7 @@ router = APIRouter()
 @router.get("", response_model=TransactionListResponse)
 async def get_transactions(
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    page_size: int = Query(20, ge=1, le=500),
     transaction_type: Optional[TransactionType] = None,
     category: Optional[TransactionCategory] = None,
     start_date: Optional[datetime] = None,
@@ -401,6 +404,24 @@ async def parse_sms_messages(
             db.add(transaction)
             db.commit()
             db.refresh(transaction)
+
+            # Auto-create RNIT purchase record
+            if parsed.get("is_rnit"):
+                purchase_date = parsed["transaction_date"]
+                nav = get_nav_on_date(db, purchase_date)
+                units = (transaction.amount / nav) if nav else None
+                rnit_purchase = RnitPurchase(
+                    user_id=user_id,
+                    transaction_id=transaction.id,
+                    purchase_date=purchase_date,
+                    amount_rwf=transaction.amount,
+                    nav_at_purchase=nav,
+                    units=units,
+                    raw_sms=sms_text,
+                )
+                db.add(rnit_purchase)
+                db.commit()
+
             parsed_transactions.append(transaction)
             
         except Exception as e:

@@ -12,7 +12,10 @@ import 'package:intl/intl.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/investment_model.dart';
+import '../../data/models/rnit_model.dart';
 import '../bloc/investment_bloc.dart';
+import '../bloc/rnit_bloc.dart';
+import 'rnit_detail_page.dart';
 
 class InvestmentsPage extends StatefulWidget {
   const InvestmentsPage({super.key});
@@ -28,6 +31,7 @@ class _InvestmentsPageState extends State<InvestmentsPage> {
     context.read<InvestmentBloc>().add(LoadInvestments());
     context.read<InvestmentBloc>().add(LoadInvestmentSummary());
     context.read<InvestmentBloc>().add(LoadInvestmentAdvice());
+    context.read<RnitBloc>().add(LoadRnitPortfolio());
   }
 
   @override
@@ -92,6 +96,10 @@ class _InvestmentsPageState extends State<InvestmentsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // RNIT Quick-Access Card
+                    _RnitSummaryCard(),
+                    const SizedBox(height: 16),
+
                     // Summary Card
                     if (state.summary != null)
                       _buildSummaryCard(state.summary!),
@@ -1117,5 +1125,174 @@ class _AddInvestmentPageState extends State<AddInvestmentPage> {
 
       context.read<InvestmentBloc>().add(CreateInvestment(data));
     }
+  }
+}
+
+// ── RNIT Summary Card ─────────────────────────────────────────────────────────
+
+class _RnitSummaryCard extends StatelessWidget {
+  const _RnitSummaryCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<RnitBloc, RnitState>(
+      builder: (context, state) {
+        if (state is RnitInitial || state is RnitLoading) {
+          return const SizedBox.shrink();
+        }
+
+        if (state is RnitEmpty) {
+          // Show a gentle prompt card when user has no RNIT yet
+          return _buildPromptCard(context);
+        }
+
+        if (state is RnitLoaded) {
+          return _buildPortfolioCard(context, state.portfolio);
+        }
+
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  Widget _buildPortfolioCard(BuildContext context, RnitPortfolio portfolio) {
+    final fmt = NumberFormat('#,###', 'en_US');
+    final gainPct = portfolio.totalGainPct ?? 0.0;
+    final isPositive = gainPct >= 0;
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const RnitDetailPage()),
+      ).then((_) => context.read<RnitBloc>().add(LoadRnitPortfolio())),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1B4332), Color(0xFF2D6A4F)],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1B4332).withOpacity(0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.account_balance,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'RNIT',
+                    style:
+                        GoogleFonts.inter(fontSize: 12, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'RWF ${fmt.format((portfolio.currentValue ?? portfolio.totalInvestedRwf).toInt())}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    '${portfolio.totalUnits.toStringAsFixed(4)} units',
+                    style:
+                        GoogleFonts.inter(fontSize: 12, color: Colors.white60),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isPositive
+                        ? Colors.greenAccent.withOpacity(0.25)
+                        : Colors.redAccent.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${isPositive ? '+' : ''}${gainPct.toStringAsFixed(1)}%',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: isPositive ? Colors.greenAccent : Colors.redAccent,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Icon(Icons.chevron_right, color: Colors.white54),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPromptCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B4332).withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF1B4332).withOpacity(0.15),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.account_balance_outlined,
+              color: Color(0xFF1B4332), size: 28),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'RNIT Auto-Tracking',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1B4332),
+                  ),
+                ),
+                Text(
+                  'RNIT purchases from MoMo SMS will appear here automatically.',
+                  style:
+                      GoogleFonts.inter(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

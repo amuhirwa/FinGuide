@@ -8,11 +8,12 @@ from typing import List
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 
 from app.models.base import get_db
 from app.models.savings_goal import SavingsGoal, GoalContribution
 from app.models.savings_goal import GoalPriority as ModelPriority, GoalStatus as ModelStatus
+from app.models.transaction import Transaction, TransactionCategory as ModelCategory, TransactionType as ModelTxType
 from app.schemas.savings_goal import (
     SavingsGoalCreate, SavingsGoalUpdate, SavingsGoalResponse,
     SavingsGoalDetailResponse, GoalContributionCreate, GoalContributionResponse
@@ -126,6 +127,72 @@ async def create_savings_goal(
         created_at=goal.created_at,
         completed_at=goal.completed_at
     )
+
+
+# ==================== Piggybank ====================
+
+@router.get("/piggybank")
+async def get_piggybank(
+    current_user: TokenPayload = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Compute the user's 'piggybank' balance:
+      = sum of all savings-category EXPENSE transactions
+      - sum of all income transactions from savings counterparties
+        (i.e. withdrawals returned from savings back to the main wallet)
+    """
+    user_id = int(current_user.sub)
+
+    contributions = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.category == ModelCategory.SAVINGS,
+        Transaction.transaction_type == ModelTxType.EXPENSE,
+    ).order_by(Transaction.transaction_date.desc()).all()
+
+    savings_counterparties = {
+        tx.counterparty for tx in contributions if tx.counterparty
+    }
+
+    withdrawals = []
+    if savings_counterparties:
+        withdrawals = db.query(Transaction).filter(
+            Transaction.user_id == user_id,
+            Transaction.transaction_type == ModelTxType.INCOME,
+            Transaction.counterparty.in_(savings_counterparties),
+        ).order_by(Transaction.transaction_date.desc()).all()
+
+    total_in = sum(tx.amount for tx in contributions)
+    total_out = sum(tx.amount for tx in withdrawals)
+    balance = max(0.0, total_in - total_out)
+
+    by_party: dict = {}
+    for tx in contributions:
+        key = tx.counterparty_name or tx.counterparty or "Savings"
+        by_party.setdefault(key, {"name": key, "total_in": 0.0, "total_out": 0.0, "tx_count": 0})
+        by_party[key]["total_in"] += tx.amount
+        by_party[key]["tx_count"] += 1
+    for tx in withdrawals:
+        key = tx.counterparty_name or tx.counterparty or "Savings"
+        if key in by_party:
+            by_party[key]["total_out"] += tx.amount
+
+    return {
+        "balance": balance,
+        "total_contributed": total_in,
+        "total_withdrawn": total_out,
+        "contribution_count": len(contributions),
+        "withdrawal_count": len(withdrawals),
+        "by_party": list(by_party.values()),
+        "recent_contributions": [
+            {
+                "date": tx.transaction_date.isoformat(),
+                "amount": tx.amount,
+                "party": tx.counterparty_name or tx.counterparty or "Savings",
+            }
+            for tx in contributions[:10]
+        ],
+    }
 
 
 @router.get("/{goal_id}", response_model=SavingsGoalDetailResponse)
@@ -332,3 +399,4 @@ async def contribute_to_goal(
         created_at=goal.created_at,
         completed_at=goal.completed_at
     )
+

@@ -8,6 +8,7 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../models/savings_goal_model.dart';
+import '../../../investments/data/models/rnit_model.dart';
 
 class GoalsRepository {
   final ApiClient _apiClient;
@@ -73,6 +74,15 @@ class GoalsRepository {
       final response =
           await _apiClient.contributeToGoal(goalId, amount, note: note);
       return Right(SavingsGoalModel.fromJson(response));
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  Future<Either<String, PiggyBankModel>> getPiggybank() async {
+    try {
+      final response = await _apiClient.getPiggybank();
+      return Right(PiggyBankModel.fromJson(response));
     } catch (e) {
       return Left(e.toString());
     }

@@ -7,11 +7,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/savings_goal_model.dart';
+import '../../../investments/data/models/rnit_model.dart';
 import '../bloc/goals_bloc.dart';
 
 class GoalsPage extends StatefulWidget {
@@ -72,10 +73,10 @@ class _GoalsPageState extends State<GoalsPage> {
           }
 
           if (state is GoalsLoaded) {
-            if (state.goals.isEmpty) {
+            if (state.goals.isEmpty && state.piggybank == null) {
               return _buildEmptyState();
             }
-            return _buildGoalsList(state.goals);
+            return _buildGoalsList(state.goals, piggybank: state.piggybank);
           }
 
           return _buildEmptyState();
@@ -164,8 +165,8 @@ class _GoalsPageState extends State<GoalsPage> {
     );
   }
 
-  Widget _buildGoalsList(List<SavingsGoalModel> goals) {
-    // Separate active and completed
+  Widget _buildGoalsList(List<SavingsGoalModel> goals,
+      {PiggyBankModel? piggybank}) {
     final activeGoals =
         goals.where((g) => g.status == GoalStatus.active).toList();
     final completedGoals =
@@ -174,9 +175,14 @@ class _GoalsPageState extends State<GoalsPage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Summary Card
-        _buildSummaryCard(goals),
-        const SizedBox(height: 24),
+        // Piggybank Hero
+        if (piggybank != null) ...[
+          _PiggyBankHero(
+            piggybank: piggybank,
+            onTap: () => _showAssignToGoalSheet(piggybank, activeGoals),
+          ),
+          const SizedBox(height: 24),
+        ],
 
         // Active Goals
         if (activeGoals.isNotEmpty) ...[
@@ -216,78 +222,6 @@ class _GoalsPageState extends State<GoalsPage> {
 
         const SizedBox(height: 80), // FAB space
       ],
-    );
-  }
-
-  Widget _buildSummaryCard(List<SavingsGoalModel> goals) {
-    final format = NumberFormat('#,###', 'en_US');
-    final totalTarget = goals.fold<double>(0, (sum, g) => sum + g.targetAmount);
-    final totalSaved = goals.fold<double>(0, (sum, g) => sum + g.currentAmount);
-    final overallProgress = totalTarget > 0 ? (totalSaved / totalTarget) : 0.0;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondary.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Total Savings Progress',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.white70,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'RWF ${format.format(totalSaved)}',
-            style: GoogleFonts.poppins(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          Text(
-            'of RWF ${format.format(totalTarget)}',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.white70,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: overallProgress,
-              minHeight: 8,
-              backgroundColor: Colors.white24,
-              valueColor: const AlwaysStoppedAnimation(Colors.white),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${(overallProgress * 100).toStringAsFixed(1)}% complete',
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              color: Colors.white70,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -376,6 +310,159 @@ class _GoalsPageState extends State<GoalsPage> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showAssignToGoalSheet(
+      PiggyBankModel piggybank, List<SavingsGoalModel> goals) {
+    final fmt = NumberFormat('#,###', 'en_US');
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        minChildSize: 0.4,
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Drag handle
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Assign Savings to a Goal',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Available: RWF ${fmt.format(piggybank.balance.toInt())}',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              if (goals.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      'No active goals yet.\nCreate a goal first!',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.separated(
+                    controller: controller,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                    itemCount: goals.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (_, i) {
+                      final goal = goals[i];
+                      final remaining = (goal.targetAmount - goal.currentAmount)
+                          .clamp(0.0, double.infinity);
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _showContributeDialog(goal);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8F9FD),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.secondary.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(Icons.flag,
+                                    color: AppColors.secondary, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      goal.name,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF1E293B),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Needs RWF ${fmt.format(remaining.toInt())} more',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        color: Colors.grey[500],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value: goal.progressPercentage / 100,
+                                        minHeight: 6,
+                                        backgroundColor: Colors.grey[200],
+                                        valueColor: AlwaysStoppedAnimation(
+                                            AppColors.secondary),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Icon(Icons.chevron_right,
+                                  color: Colors.grey[400]),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -1223,6 +1310,417 @@ class _DetailRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Piggybank Hero ────────────────────────────────────────────────────────────
+
+class _PiggyBankHero extends StatelessWidget {
+  final PiggyBankModel piggybank;
+  final VoidCallback onTap;
+
+  const _PiggyBankHero({required this.piggybank, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = NumberFormat('#,###', 'en_US');
+    final pb = piggybank;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 196,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFF9A825), Color(0xFFFFB81C), Color(0xFFFFCC55)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFB81C).withOpacity(0.42),
+              blurRadius: 22,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
+              // Background decorative circles
+              Positioned(
+                top: -28,
+                right: 158,
+                child: Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.07),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -36,
+                left: 100,
+                child: Container(
+                  width: 108,
+                  height: 108,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.06),
+                  ),
+                ),
+              ),
+
+              // Piggybank illustration (right side)
+              Positioned(
+                right: -4,
+                top: 0,
+                bottom: 0,
+                width: 162,
+                child: CustomPaint(painter: _PiggyPainter()),
+              ),
+
+              // Text content (left side)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 18, 170, 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Label row
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.savings_rounded,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Savings Piggybank',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withOpacity(0.88),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Balance
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'RWF',
+                          style: GoogleFonts.inter(
+                              fontSize: 11, color: Colors.white70),
+                        ),
+                        Text(
+                          fmt.format(pb.balance.toInt()),
+                          style: GoogleFonts.poppins(
+                            fontSize: 27,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            height: 1.1,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+
+                    // Footer: stat + CTA button
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        RichText(
+                          text: TextSpan(
+                            style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: Colors.white.withOpacity(0.75)),
+                            children: [
+                              TextSpan(
+                                text:
+                                    'RWF ${fmt.format(pb.totalContributed.toInt())}',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white),
+                              ),
+                              const TextSpan(text: ' saved'),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 9),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.10),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.add,
+                                  color: Color(0xFFF0820F), size: 13),
+                              const SizedBox(width: 5),
+                              Text(
+                                'Assign to Goal',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFFF0820F),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Piggybank CustomPainter ───────────────────────────────────────────────────
+
+class _PiggyPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    const pigRose = Color(0xFFFFD4DC);
+    const pigPink = Color(0xFFFFBBBB);
+    const pigDark = Color(0xFFFF9999);
+    const coinGold = Color(0xFFFFB81C);
+    const coinBorderColor = Color(0xFFF9A825);
+
+    final bodyP = Paint()
+      ..color = pigRose
+      ..style = PaintingStyle.fill;
+    final pinkP = Paint()
+      ..color = pigPink
+      ..style = PaintingStyle.fill;
+    final darkP = Paint()
+      ..color = pigDark
+      ..style = PaintingStyle.fill;
+
+    // Positioning relative to canvas
+    final bx = size.width * 0.38; // body center x ≈ 61
+    final by = size.height * 0.52; // body center y ≈ 102
+    final bw = size.width * 0.58; // body width ≈ 93
+    final bh = size.height * 0.38; // body height ≈ 74
+    final hr = size.width * 0.155; // head radius ≈ 25
+    final hx = bx + bw * 0.44; // head center x ≈ 102
+    final hy = by - bh * 0.09; // head center y ≈ 95
+
+    // ── Tail ───────────────────────────────────────────────────────────────
+    canvas.drawPath(
+      Path()
+        ..moveTo(bx - bw * 0.44, by - 2)
+        ..cubicTo(bx - bw * 0.58, by - 21, bx - bw * 0.65, by - 4,
+            bx - bw * 0.56, by + 8),
+      Paint()
+        ..color = pigPink
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.5
+        ..strokeCap = StrokeCap.round,
+    );
+
+    // ── Legs ───────────────────────────────────────────────────────────────
+    final legRRect = RRect.fromRectAndRadius(
+        const Rect.fromLTWH(0, 0, 12, 16), const Radius.circular(6));
+    for (final lx in [bx - 28.0, bx - 11.0, bx + 6.0, bx + 23.0]) {
+      canvas.drawRRect(legRRect.shift(Offset(lx - 6, by + bh * 0.49)), pinkP);
+    }
+
+    // ── Body shadow ────────────────────────────────────────────────────────
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(bx, by + 7), width: bw, height: bh * 0.55),
+      Paint()
+        ..color = Colors.black.withOpacity(0.07)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 9),
+    );
+
+    // ── Body ───────────────────────────────────────────────────────────────
+    canvas.drawOval(
+        Rect.fromCenter(center: Offset(bx, by), width: bw, height: bh), bodyP);
+    // Body sheen
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(bx - 16, by - 14), width: 28, height: 18),
+      Paint()
+        ..color = Colors.white.withOpacity(0.28)
+        ..style = PaintingStyle.fill,
+    );
+
+    // ── Coin slot ──────────────────────────────────────────────────────────
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+            center: Offset(bx - 3, by - bh * 0.49), width: 22, height: 4),
+        const Radius.circular(2),
+      ),
+      Paint()
+        ..color = const Color(0xFFEE7070).withOpacity(0.60)
+        ..style = PaintingStyle.fill,
+    );
+
+    // ── Coin (being dropped in) ─────────────────────────────────────────────
+    final coinX = bx - 3;
+    final coinY = by - bh * 0.49 - 12;
+    canvas.drawCircle(
+        Offset(coinX, coinY),
+        8.5,
+        Paint()
+          ..color = coinGold
+          ..style = PaintingStyle.fill);
+    // Coin shine
+    canvas.drawCircle(
+      Offset(coinX - 3, coinY - 3),
+      2.8,
+      Paint()
+        ..color = Colors.white.withOpacity(0.38)
+        ..style = PaintingStyle.fill,
+    );
+    // Coin border
+    canvas.drawCircle(
+      Offset(coinX, coinY),
+      8.5,
+      Paint()
+        ..color = coinBorderColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+    // RWF symbol on coin
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: '₣',
+        style: TextStyle(
+          color: const Color(0xFFF9A825).withOpacity(0.85),
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    textPainter.paint(canvas,
+        Offset(coinX - textPainter.width / 2, coinY - textPainter.height / 2));
+
+    // ── Head ───────────────────────────────────────────────────────────────
+    canvas.drawCircle(Offset(hx, hy), hr, bodyP);
+    // Head sheen
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(hx - 7, hy - 10), width: 14, height: 10),
+      Paint()
+        ..color = Colors.white.withOpacity(0.20)
+        ..style = PaintingStyle.fill,
+    );
+
+    // ── Ear ────────────────────────────────────────────────────────────────
+    canvas.drawOval(
+        Rect.fromCenter(
+            center: Offset(hx + 3, hy - hr * 0.83), width: 16, height: 20),
+        bodyP);
+    canvas.drawOval(
+        Rect.fromCenter(
+            center: Offset(hx + 3, hy - hr * 0.79), width: 9, height: 12),
+        pinkP);
+
+    // ── Snout ──────────────────────────────────────────────────────────────
+    canvas.drawOval(
+      Rect.fromCenter(
+          center: Offset(hx + hr * 0.81, hy + 4), width: 18, height: 13),
+      pinkP,
+    );
+    canvas.drawCircle(Offset(hx + hr * 0.66, hy + 5.5), 2.2, darkP);
+    canvas.drawCircle(Offset(hx + hr * 0.96, hy + 5.5), 2.2, darkP);
+
+    // ── Eye ────────────────────────────────────────────────────────────────
+    canvas.drawCircle(
+        Offset(hx + 8, hy - 9),
+        3.0,
+        Paint()
+          ..color = const Color(0xFF2D1515)
+          ..style = PaintingStyle.fill);
+    canvas.drawCircle(
+        Offset(hx + 9, hy - 10),
+        1.2,
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.fill);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _PiggyStatBox extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+
+  const _PiggyStatBox({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: Colors.white70),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: GoogleFonts.inter(
+                          fontSize: 11, color: Colors.white60)),
+                  Text(value,
+                      style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white),
+                      overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

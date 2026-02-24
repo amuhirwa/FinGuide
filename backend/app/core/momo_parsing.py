@@ -107,6 +107,9 @@ def parse_momo_sms(sms_text: str):
         pl = party.lower()
         if "data bundle" in pl or "airtime" in pl:
             data["category"] = "airtime_data"
+        elif "rwanda national investment trust" in pl or "rnit" in pl:
+            data["category"] = "investment"
+            data["is_rnit"] = True
         elif "mobile money rwanda" in pl:
             data["category"] = "other"   # cash-out / agent withdrawal
         else:

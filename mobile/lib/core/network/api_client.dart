@@ -84,8 +84,9 @@ class ApiClient {
       queryParams['transaction_type'] = transactionType;
     if (category != null) queryParams['category'] = category;
     if (startDate != null)
-      queryParams['start_date'] = startDate.toIso8601String();
-    if (endDate != null) queryParams['end_date'] = endDate.toIso8601String();
+      queryParams['start_date'] = startDate.toIso8601String().split('.').first;
+    if (endDate != null)
+      queryParams['end_date'] = endDate.toIso8601String().split('.').first;
 
     final response =
         await _dio.get('/transactions', queryParameters: queryParams);
@@ -106,8 +107,9 @@ class ApiClient {
   }) async {
     final queryParams = <String, dynamic>{};
     if (startDate != null)
-      queryParams['start_date'] = startDate.toIso8601String();
-    if (endDate != null) queryParams['end_date'] = endDate.toIso8601String();
+      queryParams['start_date'] = startDate.toIso8601String().split('.').first;
+    if (endDate != null)
+      queryParams['end_date'] = endDate.toIso8601String().split('.').first;
 
     final response =
         await _dio.get('/transactions/summary', queryParameters: queryParams);
@@ -231,8 +233,9 @@ class ApiClient {
   }) async {
     final queryParams = <String, dynamic>{};
     if (startDate != null)
-      queryParams['start_date'] = startDate.toIso8601String();
-    if (endDate != null) queryParams['end_date'] = endDate.toIso8601String();
+      queryParams['start_date'] = startDate.toIso8601String().split('.').first;
+    if (endDate != null)
+      queryParams['end_date'] = endDate.toIso8601String().split('.').first;
 
     final response = await _dio.get('/insights/spending-by-category',
         queryParameters: queryParams);
@@ -374,8 +377,9 @@ class ApiClient {
   }) async {
     final queryParams = <String, dynamic>{};
     if (startDate != null)
-      queryParams['start_date'] = startDate.toIso8601String();
-    if (endDate != null) queryParams['end_date'] = endDate.toIso8601String();
+      queryParams['start_date'] = startDate.toIso8601String().split('.').first;
+    if (endDate != null)
+      queryParams['end_date'] = endDate.toIso8601String().split('.').first;
 
     final response =
         await _dio.get('/reports/transactions', queryParameters: queryParams);
@@ -391,6 +395,37 @@ class ApiClient {
   /// Export investments report
   Future<Map<String, dynamic>> exportInvestments() async {
     final response = await _dio.get('/reports/investments');
+    return response.data;
+  }
+
+  // ==================== RNIT Investment ====================
+
+  /// Get RNIT portfolio (purchases + analytics + projections)
+  Future<Map<String, dynamic>> getRnitPortfolio() async {
+    final response = await _dio.get('/rnit/portfolio');
+    return response.data;
+  }
+
+  /// Get RNIT NAV history for charting
+  Future<List<dynamic>> getRnitNavHistory({int limit = 90}) async {
+    final response = await _dio.get(
+      '/rnit/nav-history',
+      queryParameters: {'limit': limit},
+    );
+    return response.data;
+  }
+
+  /// Force-refresh RNIT NAV cache from rnit.rw
+  Future<Map<String, dynamic>> refreshRnitNav() async {
+    final response = await _dio.post('/rnit/refresh-nav');
+    return response.data;
+  }
+
+  // ==================== Piggybank ====================
+
+  /// Get auto-computed savings piggybank data
+  Future<Map<String, dynamic>> getPiggybank() async {
+    final response = await _dio.get('/goals/piggybank');
     return response.data;
   }
 
