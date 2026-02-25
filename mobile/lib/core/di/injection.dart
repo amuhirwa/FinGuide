@@ -39,7 +39,9 @@ import '../../features/insights/presentation/bloc/insights_bloc.dart';
 
 // Investments
 import '../../features/investments/data/repositories/investment_repository.dart';
+import '../../features/investments/data/repositories/rnit_repository.dart';
 import '../../features/investments/presentation/bloc/investment_bloc.dart';
+import '../../features/investments/presentation/bloc/rnit_bloc.dart';
 
 // SMS Consent
 import '../../features/sms_consent/presentation/bloc/sms_consent_bloc.dart';
@@ -154,6 +156,15 @@ Future<void> configureDependencies() async {
 
   getIt.registerFactory<InvestmentBloc>(
     () => InvestmentBloc(getIt<InvestmentRepository>()),
+  );
+
+  // ==================== RNIT Feature ====================
+  getIt.registerLazySingleton<RnitRepository>(
+    () => RnitRepository(getIt<ApiClient>()),
+  );
+
+  getIt.registerFactory<RnitBloc>(
+    () => RnitBloc(getIt<RnitRepository>()),
   );
 
   // ==================== Reports Feature ====================
