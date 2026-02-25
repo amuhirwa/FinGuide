@@ -21,6 +21,8 @@ import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/login_usecase.dart';
 import '../../features/auth/domain/usecases/register_usecase.dart';
 import '../../features/auth/domain/usecases/check_auth_usecase.dart';
+import '../../features/auth/domain/usecases/send_otp_usecase.dart';
+import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 
 // Transactions
@@ -103,6 +105,8 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton(() => LoginUseCase(getIt<AuthRepository>()));
   getIt.registerLazySingleton(() => RegisterUseCase(getIt<AuthRepository>()));
   getIt.registerLazySingleton(() => CheckAuthUseCase(getIt<AuthRepository>()));
+  getIt.registerLazySingleton(() => SendOtpUseCase(getIt<AuthRepository>()));
+  getIt.registerLazySingleton(() => VerifyOtpUseCase(getIt<AuthRepository>()));
 
   // BLoC
   getIt.registerFactory<AuthBloc>(
@@ -110,6 +114,8 @@ Future<void> configureDependencies() async {
       loginUseCase: getIt<LoginUseCase>(),
       registerUseCase: getIt<RegisterUseCase>(),
       checkAuthUseCase: getIt<CheckAuthUseCase>(),
+      sendOtpUseCase: getIt<SendOtpUseCase>(),
+      verifyOtpUseCase: getIt<VerifyOtpUseCase>(),
       localDataSource: getIt<AuthLocalDataSource>(),
     ),
   );

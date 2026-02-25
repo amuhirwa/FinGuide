@@ -21,8 +21,30 @@ class ApiClient {
   // static const String baseUrl = 'http://localhost:8000/api/v1'; // iOS simulator
   static const String baseUrl =
       'http://192.168.1.73:8000/api/v1'; // iOS simulator
+  // static const String baseUrl =
+  //     'http://10.9.86.93:8000/api/v1'; // iOS simulator
 
   // ==================== Auth Endpoints ====================
+
+  /// Send OTP to phone number via Twilio SMS
+  Future<void> sendOtp({required String phoneNumber}) async {
+    await _dio.post(
+      '/auth/send-otp',
+      data: {'phone_number': phoneNumber},
+    );
+  }
+
+  /// Verify OTP code – returns the short-lived otp_token on success
+  Future<String> verifyOtp({
+    required String phoneNumber,
+    required String otpCode,
+  }) async {
+    final response = await _dio.post(
+      '/auth/verify-otp',
+      data: {'phone_number': phoneNumber, 'otp_code': otpCode},
+    );
+    return response.data['otp_token'] as String;
+  }
 
   /// Register a new user
   Future<AuthResponseModel> register({
@@ -31,6 +53,7 @@ class ApiClient {
     required String password,
     required String ubudeheCategory,
     required String incomeFrequency,
+    required String otpToken,
   }) async {
     final response = await _dio.post(
       '/auth/register',
@@ -40,6 +63,7 @@ class ApiClient {
         'password': password,
         'ubudehe_category': ubudeheCategory,
         'income_frequency': incomeFrequency,
+        'otp_token': otpToken,
       },
     );
 
@@ -50,10 +74,15 @@ class ApiClient {
   Future<AuthResponseModel> login({
     required String phoneNumber,
     required String password,
+    required String otpToken,
   }) async {
     final response = await _dio.post(
       '/auth/login',
-      data: {'phone_number': phoneNumber, 'password': password},
+      data: {
+        'phone_number': phoneNumber,
+        'password': password,
+        'otp_token': otpToken,
+      },
     );
 
     return AuthResponseModel.fromJson(response.data);

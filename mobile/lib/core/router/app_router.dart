@@ -13,6 +13,7 @@ import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
+import '../../features/auth/presentation/pages/otp_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 
 // SMS Consent
@@ -46,6 +47,7 @@ class Routes {
   static const String onboarding = '/onboarding';
   static const String login = '/login';
   static const String register = '/register';
+  static const String otp = '/otp';
   static const String smsConsent = '/sms-consent';
   static const String dashboard = '/dashboard';
 
@@ -103,6 +105,15 @@ class AppRouter {
         path: Routes.register,
         name: 'register',
         builder: (context, state) => const RegisterPage(),
+      ),
+
+      // OTP Verification (phone ownership check before login/register completes)
+      GoRoute(
+        path: Routes.otp,
+        name: 'otp',
+        builder: (context, state) => OtpPage(
+          phoneNumber: (state.extra as String?) ?? '',
+        ),
       ),
 
       // SMS Consent (shown once after first login/register)

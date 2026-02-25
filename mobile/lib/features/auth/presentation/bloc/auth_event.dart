@@ -11,7 +11,7 @@ abstract class AuthEvent extends Equatable {
 /// Check authentication status
 class AuthCheckRequested extends AuthEvent {}
 
-/// Login request
+/// Login request – triggers OTP send before completing login
 class AuthLoginRequested extends AuthEvent {
   final String phoneNumber;
   final String password;
@@ -22,7 +22,7 @@ class AuthLoginRequested extends AuthEvent {
   List<Object?> get props => [phoneNumber, password];
 }
 
-/// Registration request
+/// Registration request – triggers OTP send before completing registration
 class AuthRegisterRequested extends AuthEvent {
   final String phoneNumber;
   final String fullName;
@@ -40,13 +40,26 @@ class AuthRegisterRequested extends AuthEvent {
 
   @override
   List<Object?> get props => [
-    phoneNumber,
-    fullName,
-    password,
-    ubudeheCategory,
-    incomeFrequency,
-  ];
+        phoneNumber,
+        fullName,
+        password,
+        ubudeheCategory,
+        incomeFrequency,
+      ];
 }
+
+/// Dispatched by the OTP page when the SMS OTP is auto-read from telephony
+class AuthOtpAutoDetected extends AuthEvent {
+  final String otpCode;
+
+  const AuthOtpAutoDetected({required this.otpCode});
+
+  @override
+  List<Object?> get props => [otpCode];
+}
+
+/// Dispatched from the OTP page when the user taps 'Resend OTP'
+class AuthOtpResendRequested extends AuthEvent {}
 
 /// Logout request
 class AuthLogoutRequested extends AuthEvent {}

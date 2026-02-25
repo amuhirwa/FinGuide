@@ -22,6 +22,7 @@ class LoginUseCase {
     return _repository.login(
       phoneNumber: params.phoneNumber,
       password: params.password,
+      otpToken: params.otpToken,
     );
   }
 }
@@ -30,9 +31,14 @@ class LoginUseCase {
 class LoginParams extends Equatable {
   final String phoneNumber;
   final String password;
+  final String otpToken;
 
-  const LoginParams({required this.phoneNumber, required this.password});
+  const LoginParams({
+    required this.phoneNumber,
+    required this.password,
+    required this.otpToken,
+  });
 
   @override
-  List<Object?> get props => [phoneNumber, password];
+  List<Object?> get props => [phoneNumber, password, otpToken];
 }

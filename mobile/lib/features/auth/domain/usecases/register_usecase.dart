@@ -25,6 +25,7 @@ class RegisterUseCase {
       password: params.password,
       ubudeheCategory: params.ubudeheCategory,
       incomeFrequency: params.incomeFrequency,
+      otpToken: params.otpToken,
     );
   }
 }
@@ -36,6 +37,7 @@ class RegisterParams extends Equatable {
   final String password;
   final String ubudeheCategory;
   final String incomeFrequency;
+  final String otpToken;
 
   const RegisterParams({
     required this.phoneNumber,
@@ -43,14 +45,16 @@ class RegisterParams extends Equatable {
     required this.password,
     required this.ubudeheCategory,
     required this.incomeFrequency,
+    required this.otpToken,
   });
 
   @override
   List<Object?> get props => [
-    phoneNumber,
-    fullName,
-    password,
-    ubudeheCategory,
-    incomeFrequency,
-  ];
+        phoneNumber,
+        fullName,
+        password,
+        ubudeheCategory,
+        incomeFrequency,
+        otpToken,
+      ];
 }
