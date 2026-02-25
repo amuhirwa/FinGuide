@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     SMS_AUTH: str
     SMS_SEND: str
 
+    ANTHROPIC_API_KEY: str = ""
+
     OTP_EXPIRE_MINUTES: int = 5  # OTP validity window in minutes
 
     # Environment

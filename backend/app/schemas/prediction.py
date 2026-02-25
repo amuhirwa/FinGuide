@@ -96,10 +96,11 @@ class RecommendationResponse(BaseModel):
     action_url: Optional[str] = None
     reason: Optional[str] = None
     urgency: str = "normal"
+    trigger_type: Optional[str] = None
     is_viewed: bool = False
     is_acted_upon: bool = False
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -107,6 +108,11 @@ class RecommendationResponse(BaseModel):
 class RecommendationInteraction(BaseModel):
     """Schema for tracking recommendation interactions."""
     action: str = Field(..., pattern="^(viewed|acted|dismissed)$")
+
+
+class GenerateNudgesRequest(BaseModel):
+    """Request body for the generate-nudges endpoint."""
+    trigger_type: str = Field(default="manual", pattern="^(manual|daily|weekly|income)$")
 
 
 class InvestmentSimulationRequest(BaseModel):

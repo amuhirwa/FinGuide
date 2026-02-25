@@ -10,7 +10,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../transactions/data/models/transaction_model.dart';
 import '../../data/models/investment_model.dart';
 import '../../data/models/rnit_model.dart';
 import '../bloc/investment_bloc.dart';
@@ -425,150 +427,165 @@ class _InvestmentsPageState extends State<InvestmentsPage> {
     final format = NumberFormat('#,###', 'en_US');
     final isPositive = (investment.gainPercentage ?? 0) >= 0;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color:
-                      _getTypeColor(investment.investmentType).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: () => _showInvestmentDetail(investment),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _getTypeColor(investment.investmentType)
+                        .withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    _getTypeIcon(investment.investmentType),
+                    color: _getTypeColor(investment.investmentType),
+                    size: 24,
+                  ),
                 ),
-                child: Icon(
-                  _getTypeIcon(investment.investmentType),
-                  color: _getTypeColor(investment.investmentType),
-                  size: 24,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        investment.name,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                      Text(
+                        _getTypeLabel(investment.investmentType),
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      investment.name,
-                      style: GoogleFonts.inter(
+                      'RWF ${format.format(investment.currentValue)}',
+                      style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFF1E293B),
                       ),
                     ),
-                    Text(
-                      _getTypeLabel(investment.investmentType),
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: Colors.grey[600],
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isPositive
+                            ? Colors.green.withOpacity(0.1)
+                            : Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${isPositive ? '+' : ''}${(investment.gainPercentage ?? 0).toStringAsFixed(1)}%',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isPositive ? Colors.green : Colors.red,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Progress bar for maturity if applicable
+            if (investment.maturityDate != null) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'RWF ${format.format(investment.currentValue)}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1E293B),
+                    'Maturity: ${DateFormat('MMM d, yyyy').format(investment.maturityDate!)}',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: Colors.grey[600],
                     ),
                   ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: isPositive
-                          ? Colors.green.withOpacity(0.1)
-                          : Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${isPositive ? '+' : ''}${(investment.gainPercentage ?? 0).toStringAsFixed(1)}%',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isPositive ? Colors.green : Colors.red,
-                      ),
+                  Text(
+                    '${_getDaysToMaturity(investment.maturityDate!)} days left',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.primary,
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: _getMaturityProgress(
+                      investment.startDate, investment.maturityDate!),
+                  backgroundColor: Colors.grey[200],
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  minHeight: 6,
+                ),
+              ),
             ],
-          ),
-          const SizedBox(height: 16),
-          // Progress bar for maturity if applicable
-          if (investment.maturityDate != null) ...[
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Maturity: ${DateFormat('MMM d, yyyy').format(investment.maturityDate!)}',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                _buildInfoChip(
+                  'Initial',
+                  'RWF ${format.format(investment.initialAmount)}',
                 ),
-                Text(
-                  '${_getDaysToMaturity(investment.maturityDate!)} days left',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.primary,
-                  ),
+                _buildInfoChip(
+                  'Return',
+                  '${investment.expectedAnnualReturn.toStringAsFixed(1)}% p.a.',
                 ),
+                if (investment.autoContribute)
+                  _buildInfoChip(
+                    'Auto',
+                    'RWF ${format.format(investment.monthlyContribution)}/mo',
+                  ),
               ],
             ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: _getMaturityProgress(
-                    investment.startDate, investment.maturityDate!),
-                backgroundColor: Colors.grey[200],
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                minHeight: 6,
-              ),
-            ),
           ],
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildInfoChip(
-                'Initial',
-                'RWF ${format.format(investment.initialAmount)}',
-              ),
-              _buildInfoChip(
-                'Return',
-                '${investment.expectedAnnualReturn.toStringAsFixed(1)}% p.a.',
-              ),
-              if (investment.autoContribute)
-                _buildInfoChip(
-                  'Auto',
-                  'RWF ${format.format(investment.monthlyContribution)}/mo',
-                ),
-            ],
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  void _showInvestmentDetail(InvestmentModel investment) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _InvestmentDetailSheet(
+        investment: investment,
+        apiClient: getIt<ApiClient>(),
       ),
     );
   }
@@ -1292,6 +1309,363 @@ class _RnitSummaryCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+// ═══════════════════════════════════════════════════════════════════════════
+// Investment Detail Sheet — shows linked transactions and allows linking new
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _InvestmentDetailSheet extends StatefulWidget {
+  final InvestmentModel investment;
+  final ApiClient apiClient;
+
+  const _InvestmentDetailSheet({
+    required this.investment,
+    required this.apiClient,
+  });
+
+  @override
+  State<_InvestmentDetailSheet> createState() => _InvestmentDetailSheetState();
+}
+
+class _InvestmentDetailSheetState extends State<_InvestmentDetailSheet> {
+  late Future<List<TransactionModel>> _linkedFuture;
+  final _fmt = NumberFormat('#,###', 'en_US');
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  void _reload() {
+    setState(() {
+      _linkedFuture = widget.apiClient
+          .getLinkedTransactions(widget.investment.id)
+          .then((data) => data
+              .map((j) => TransactionModel.fromJson(j as Map<String, dynamic>))
+              .toList());
+    });
+  }
+
+  Future<void> _unlink(int txId) async {
+    try {
+      await widget.apiClient.unlinkTransaction(widget.investment.id, txId);
+      _reload();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Failed to unlink')));
+      }
+    }
+  }
+
+  Future<void> _showLinkPicker() async {
+    // Load recent transactions
+    List<TransactionModel> allTxs = [];
+    try {
+      final raw = await widget.apiClient.getTransactions(pageSize: 100);
+      final list = raw['transactions'] as List? ?? [];
+      allTxs = list
+          .map((j) => TransactionModel.fromJson(j as Map<String, dynamic>))
+          .toList();
+    } catch (_) {}
+
+    if (!mounted) return;
+
+    String query = '';
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) {
+          final filtered = query.isEmpty
+              ? allTxs
+              : allTxs.where((tx) {
+                  final q = query.toLowerCase();
+                  return (tx.counterpartyName?.toLowerCase().contains(q) ??
+                          false) ||
+                      (tx.counterparty?.toLowerCase().contains(q) ?? false) ||
+                      (tx.description?.toLowerCase().contains(q) ?? false);
+                }).toList();
+
+          return DraggableScrollableSheet(
+            initialChildSize: 0.75,
+            maxChildSize: 0.95,
+            minChildSize: 0.5,
+            builder: (_, scroll) => Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Link a Transaction',
+                            style: GoogleFonts.poppins(
+                                fontSize: 18, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 12),
+                        TextField(
+                          onChanged: (v) => setS(() => query = v),
+                          decoration: InputDecoration(
+                            hintText: 'Search transactions…',
+                            prefixIcon: const Icon(Icons.search, size: 20),
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 0),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scroll,
+                      itemCount: filtered.length,
+                      itemBuilder: (_, i) {
+                        final tx = filtered[i];
+                        final isLinked =
+                            tx.linkedInvestmentId == widget.investment.id;
+                        return ListTile(
+                          leading: CircleAvatar(
+                            radius: 18,
+                            backgroundColor:
+                                tx.transactionType == TransactionType.income
+                                    ? Colors.green.withOpacity(0.12)
+                                    : Colors.red.withOpacity(0.12),
+                            child: Icon(
+                              tx.transactionType == TransactionType.income
+                                  ? Icons.arrow_downward
+                                  : Icons.arrow_upward,
+                              size: 16,
+                              color:
+                                  tx.transactionType == TransactionType.income
+                                      ? Colors.green
+                                      : Colors.red,
+                            ),
+                          ),
+                          title: Text(
+                            tx.counterpartyName ??
+                                tx.counterparty ??
+                                tx.description ??
+                                'Transaction',
+                            style: GoogleFonts.inter(
+                                fontSize: 14, fontWeight: FontWeight.w500),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            'RWF ${_fmt.format(tx.amount.toInt())}  •  '
+                            '${DateFormat('MMM d').format(tx.transactionDate)}',
+                            style: GoogleFonts.inter(
+                                fontSize: 12, color: Colors.grey[600]),
+                          ),
+                          trailing: isLinked
+                              ? Icon(Icons.link,
+                                  color: AppColors.primary, size: 20)
+                              : const Icon(Icons.link_off,
+                                  color: Colors.grey, size: 20),
+                          onTap: isLinked
+                              ? null
+                              : () async {
+                                  Navigator.pop(ctx);
+                                  try {
+                                    await widget.apiClient.linkTransaction(
+                                        widget.investment.id, tx.id);
+                                    _reload();
+                                  } catch (_) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(const SnackBar(
+                                              content: Text('Failed to link')));
+                                    }
+                                  }
+                                },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.65,
+      maxChildSize: 0.92,
+      minChildSize: 0.4,
+      builder: (_, scroll) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(widget.investment.name,
+                            style: GoogleFonts.poppins(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF1E293B))),
+                        Text(
+                          'RWF ${_fmt.format(widget.investment.currentValue.toInt())} current value',
+                          style: GoogleFonts.inter(
+                              fontSize: 13, color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: _showLinkPicker,
+                    icon: const Icon(Icons.add_link, size: 18),
+                    label: const Text('Link Tx'),
+                    style: TextButton.styleFrom(
+                        foregroundColor: AppColors.primary),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Linked Transactions',
+                    style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700])),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: FutureBuilder<List<TransactionModel>>(
+                future: _linkedFuture,
+                builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2));
+                  }
+                  final txs = snap.data ?? [];
+                  if (txs.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.link_off,
+                              size: 48, color: Colors.grey[300]),
+                          const SizedBox(height: 12),
+                          Text('No linked transactions yet',
+                              style:
+                                  GoogleFonts.inter(color: Colors.grey[500])),
+                          const SizedBox(height: 6),
+                          Text('Tap "Link Tx" above to link MoMo transactions.',
+                              style: GoogleFonts.inter(
+                                  fontSize: 12, color: Colors.grey[400])),
+                        ],
+                      ),
+                    );
+                  }
+                  return ListView.separated(
+                    controller: scroll,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: txs.length,
+                    separatorBuilder: (_, __) =>
+                        const Divider(height: 1, indent: 56),
+                    itemBuilder: (_, i) {
+                      final tx = txs[i];
+                      return ListTile(
+                        leading: CircleAvatar(
+                          radius: 20,
+                          backgroundColor:
+                              tx.transactionType == TransactionType.income
+                                  ? Colors.green.withOpacity(0.12)
+                                  : Colors.red.withOpacity(0.12),
+                          child: Icon(
+                            tx.transactionType == TransactionType.income
+                                ? Icons.arrow_downward
+                                : Icons.arrow_upward,
+                            size: 16,
+                            color: tx.transactionType == TransactionType.income
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                        ),
+                        title: Text(
+                          tx.counterpartyName ??
+                              tx.counterparty ??
+                              tx.description ??
+                              'Transaction',
+                          style: GoogleFonts.inter(
+                              fontSize: 14, fontWeight: FontWeight.w500),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          'RWF ${_fmt.format(tx.amount.toInt())}  •  '
+                          '${DateFormat('MMM d, yyyy').format(tx.transactionDate)}',
+                          style: GoogleFonts.inter(
+                              fontSize: 12, color: Colors.grey[600]),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.link_off,
+                              color: Colors.red, size: 20),
+                          tooltip: 'Unlink',
+                          onPressed: () => _unlink(tx.id),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

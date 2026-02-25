@@ -61,7 +61,13 @@ class SavingsGoalResponse(SavingsGoalBase):
     remaining_amount: float
     created_at: datetime
     completed_at: Optional[datetime] = None
-    
+    # Realistic fields — based on actual income/spending history
+    realistic_weekly_saving: float = 0.0
+    realistic_weeks: Optional[int] = None
+    realistic_finish_date: Optional[datetime] = None
+    avg_weekly_income: float = 0.0
+    avg_weekly_surplus: float = 0.0
+
     class Config:
         from_attributes = True
 

@@ -198,9 +198,11 @@ Future<void> configureDependencies() async {
     ),
   );
 
-  // Auto-start SMS listener if user previously gave consent
+  // Auto-start SMS listener + delta-sync if user previously gave consent
   final smsService = getIt<SmsService>();
   if (smsService.hasConsented) {
     smsService.startListening();
+    // Import any MoMo SMS that arrived since the last time the app was open
+    smsService.syncNewMessages();
   }
 }

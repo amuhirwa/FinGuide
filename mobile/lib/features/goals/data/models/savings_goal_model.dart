@@ -27,6 +27,13 @@ class SavingsGoalModel extends Equatable {
   final DateTime createdAt;
   final DateTime? completedAt;
 
+  // Realistic fields (based on 8-week income/expense history)
+  final double realisticWeeklySaving;
+  final int? realisticWeeks;
+  final DateTime? realisticFinishDate;
+  final double avgWeeklyIncome;
+  final double avgWeeklySurplus;
+
   const SavingsGoalModel({
     required this.id,
     required this.name,
@@ -43,6 +50,11 @@ class SavingsGoalModel extends Equatable {
     required this.remainingAmount,
     required this.createdAt,
     this.completedAt,
+    this.realisticWeeklySaving = 0.0,
+    this.realisticWeeks,
+    this.realisticFinishDate,
+    this.avgWeeklyIncome = 0.0,
+    this.avgWeeklySurplus = 0.0,
   });
 
   factory SavingsGoalModel.fromJson(Map<String, dynamic> json) {
@@ -72,6 +84,14 @@ class SavingsGoalModel extends Equatable {
       completedAt: json['completed_at'] != null
           ? DateTime.parse(json['completed_at'])
           : null,
+      realisticWeeklySaving:
+          (json['realistic_weekly_saving'] as num?)?.toDouble() ?? 0.0,
+      realisticWeeks: json['realistic_weeks'] as int?,
+      realisticFinishDate: json['realistic_finish_date'] != null
+          ? DateTime.parse(json['realistic_finish_date'])
+          : null,
+      avgWeeklyIncome: (json['avg_weekly_income'] as num?)?.toDouble() ?? 0.0,
+      avgWeeklySurplus: (json['avg_weekly_surplus'] as num?)?.toDouble() ?? 0.0,
     );
   }
 

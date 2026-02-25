@@ -19,10 +19,10 @@ class ApiClient {
   // static const String baseUrl =
   // 'http://10.0.2.2:8000/api/v1'; // Android emulator
   // static const String baseUrl = 'http://localhost:8000/api/v1'; // iOS simulator
-  static const String baseUrl =
-      'http://192.168.1.73:8000/api/v1'; // iOS simulator
   // static const String baseUrl =
-  //     'http://10.9.86.93:8000/api/v1'; // iOS simulator
+  //     'http://192.168.1.73:8000/api/v1'; // iOS simulator
+  static const String baseUrl =
+      'http://192.168.0.114:8000/api/v1';
 
   // ==================== Auth Endpoints ====================
 
@@ -382,6 +382,29 @@ class ApiClient {
   /// Get investment contributions
   Future<List<dynamic>> getInvestmentContributions(int investmentId) async {
     final response = await _dio.get('/investments/$investmentId/contributions');
+    return response.data;
+  }
+
+  /// Get transactions linked to an investment
+  Future<List<dynamic>> getLinkedTransactions(int investmentId) async {
+    final response =
+        await _dio.get('/investments/$investmentId/linked-transactions');
+    return response.data as List<dynamic>;
+  }
+
+  /// Link a transaction to an investment
+  Future<Map<String, dynamic>> linkTransaction(
+      int investmentId, int txId) async {
+    final response =
+        await _dio.post('/investments/$investmentId/link-transaction/$txId');
+    return response.data;
+  }
+
+  /// Unlink a transaction from an investment
+  Future<Map<String, dynamic>> unlinkTransaction(
+      int investmentId, int txId) async {
+    final response =
+        await _dio.delete('/investments/$investmentId/link-transaction/$txId');
     return response.data;
   }
 

@@ -107,6 +107,9 @@ class Transaction(Base):
     # SMS Data
     raw_sms = Column(Text)
     sms_sender = Column(String(50))
+
+    # Investment Link (optional: which investment funded/represents this transaction)
+    linked_investment_id = Column(Integer, ForeignKey("investments.id"), nullable=True, index=True)
     
     # Metadata
     transaction_date = Column(DateTime(timezone=True), nullable=False)
@@ -120,6 +123,7 @@ class Transaction(Base):
     
     # Relationships
     user = relationship("User", back_populates="transactions")
+    linked_investment = relationship("Investment", foreign_keys=[linked_investment_id], back_populates="linked_transactions")
     
     def __repr__(self) -> str:
         return f"<Transaction(id={self.id}, type={self.transaction_type}, amount={self.amount})>"

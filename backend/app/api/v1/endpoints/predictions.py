@@ -23,11 +23,12 @@ from app.schemas.prediction import (
     CashFlowForecast, FinancialHealthScoreResponse,
     SafeToSpendResponse, RecommendationResponse, RecommendationInteraction,
     InvestmentSimulationRequest, InvestmentSimulationResponse,
-    DashboardSummary, IrregularityAlert
+    DashboardSummary, IrregularityAlert, GenerateNudgesRequest
 )
 from app.schemas.user import TokenPayload
 from app.core.deps import get_current_active_user
 from app.core.finguide_inference import FinGuidePredictor
+from app.core import nudge_service
 
 router = APIRouter()
 
@@ -421,63 +422,51 @@ async def get_recommendations(
     current_user: TokenPayload = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get personalized recommendations."""
+    """Get personalized AI-generated recommendations."""
     user_id = int(current_user.sub)
-    
-    # Get active recommendations
+
+    # Fetch active, non-dismissed recommendations
     recommendations = db.query(Recommendation).filter(
         and_(
             Recommendation.user_id == user_id,
             Recommendation.is_active == True,
-            Recommendation.is_dismissed == False
+            Recommendation.is_dismissed == False,
         )
     ).order_by(Recommendation.created_at.desc()).limit(5).all()
-    
-    # If no recommendations, generate some
-    if not recommendations:
-        rec_templates = [
-            {
-                "title": "Start Your Emergency Fund",
-                "message": "You have surplus cash this week. Consider starting an emergency fund to cover 7 days of expenses.",
-                "recommendation_type": "savings",
-                "action_type": "save",
-                "action_amount": 10000,
-                "reason": "You have predicted surplus cash in the next 7 days",
-                "urgency": "normal"
-            },
-            {
-                "title": "Ejo Heza Contribution",
-                "message": "Make a small contribution to your Ejo Heza pension fund to secure your future.",
-                "recommendation_type": "investment",
-                "action_type": "invest",
-                "action_amount": 5000,
-                "reason": "Regular contributions build long-term wealth",
-                "urgency": "low"
-            },
-            {
-                "title": "Reduce Dining Out",
-                "message": "You spent 15% more on dining out compared to last month. Consider cooking at home more.",
-                "recommendation_type": "spending",
-                "action_type": "reduce_spending",
-                "reason": "Unusual increase in dining expenses detected",
-                "urgency": "normal"
-            }
-        ]
-        
-        for template in rec_templates:
-            rec = Recommendation(
-                user_id=user_id,
-                valid_until=datetime.now() + timedelta(days=7),
-                **template
-            )
-            db.add(rec)
-        db.commit()
-        
-        recommendations = db.query(Recommendation).filter(
-            Recommendation.user_id == user_id
-        ).all()
-    
+
+    # Generate fresh nudges if none exist or all are older than 24 hours
+    newest = recommendations[0] if recommendations else None
+    stale = newest is None or (datetime.now() - newest.created_at.replace(tzinfo=None)).total_seconds() > 86400
+
+    if stale:
+        fresh = nudge_service.generate_nudges(user_id, db, trigger_type="manual")
+        if fresh:
+            recommendations = fresh
+        elif not recommendations:
+            # Fallback: return whatever is in DB (even if old)
+            recommendations = db.query(Recommendation).filter(
+                Recommendation.user_id == user_id,
+                Recommendation.is_dismissed == False,
+            ).order_by(Recommendation.created_at.desc()).limit(5).all()
+
     return [RecommendationResponse.model_validate(r) for r in recommendations]
+
+
+@router.post("/generate-nudges", response_model=List[RecommendationResponse])
+async def generate_nudges(
+    request: GenerateNudgesRequest,
+    current_user: TokenPayload = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Generate fresh AI nudges on demand.
+
+    Used by the mobile app for scheduled daily/weekly checks or
+    when a user explicitly refreshes their recommendations.
+    """
+    user_id = int(current_user.sub)
+    created = nudge_service.generate_nudges(user_id, db, trigger_type=request.trigger_type)
+    return [RecommendationResponse.model_validate(r) for r in created]
 
 
 @router.patch("/recommendations/{rec_id}", response_model=RecommendationResponse)

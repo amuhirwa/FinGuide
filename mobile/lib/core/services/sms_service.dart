@@ -142,6 +142,58 @@ class SmsService {
     }
   }
 
+  // ─── Delta sync (new since last open) ──────────────────────────
+
+  /// Import only MoMo SMS that arrived after the last successful sync.
+  ///
+  /// Call this every time the app is foregrounded / opened so the user
+  /// always sees up-to-date transactions without re-scanning all history.
+  Future<int> syncNewMessages() async {
+    final lastTimestamp = _prefs.getInt(StorageKeys.lastSmsSyncTimestamp) ?? 0;
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    try {
+      // Fetch only SMS newer than the stored timestamp
+      final List<SmsMessage> messages = await _telephony.getInboxSms(
+        columns: [SmsColumn.ADDRESS, SmsColumn.BODY, SmsColumn.DATE],
+        filter: SmsFilter.where(SmsColumn.DATE)
+            .greaterThan(lastTimestamp.toString()),
+        sortOrder: [OrderBy(SmsColumn.DATE, sort: Sort.ASC)],
+      );
+
+      final newMomo = messages
+          .where(_isMomoMessage)
+          .map((m) => m.body ?? '')
+          .where((b) => b.isNotEmpty)
+          .toList();
+
+      if (newMomo.isEmpty) {
+        await _prefs.setInt(StorageKeys.lastSmsSyncTimestamp, now);
+        return 0;
+      }
+
+      _log.i('Delta sync: found ${newMomo.length} new MoMo SMS since '
+          '${DateTime.fromMillisecondsSinceEpoch(lastTimestamp)}');
+
+      int totalParsed = 0;
+      for (var i = 0; i < newMomo.length; i += 50) {
+        final batch = newMomo.sublist(
+          i,
+          (i + 50) > newMomo.length ? newMomo.length : i + 50,
+        );
+        final result = await _apiClient.parseSmsMessages(batch);
+        totalParsed += result['parsed_count'] as int? ?? batch.length;
+      }
+
+      await _prefs.setInt(StorageKeys.lastSmsSyncTimestamp, now);
+      _log.i('Delta sync complete: $totalParsed new transactions imported');
+      return totalParsed;
+    } catch (e) {
+      _log.e('Delta SMS sync failed', error: e);
+      return 0;
+    }
+  }
+
   // ─── Real-time listener ───────────────────────────────────────────
 
   /// Start listening for new incoming MoMo SMS in the foreground.
