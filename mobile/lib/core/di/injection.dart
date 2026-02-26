@@ -12,6 +12,7 @@ import 'package:telephony/telephony.dart';
 
 import '../network/api_client.dart';
 import '../network/api_interceptor.dart';
+import '../services/nudge_notification_service.dart';
 import '../services/sms_service.dart';
 import '../services/report_service.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
@@ -180,6 +181,11 @@ Future<void> configureDependencies() async {
     () => ReportBloc(getIt<ReportsRepository>()),
   );
 
+  // ==================== Nudge Notification Service ====================
+  final nudgeNotificationService = NudgeNotificationService();
+  await nudgeNotificationService.initialize();
+  getIt.registerSingleton<NudgeNotificationService>(nudgeNotificationService);
+
   // ==================== SMS Service ====================
   getIt.registerLazySingleton<Telephony>(() => Telephony.instance);
 
@@ -188,6 +194,7 @@ Future<void> configureDependencies() async {
       telephony: getIt<Telephony>(),
       apiClient: getIt<ApiClient>(),
       prefs: getIt<SharedPreferences>(),
+      nudgeService: getIt<NudgeNotificationService>(),
     ),
   );
 

@@ -5,6 +5,10 @@
  *
  * Uses the `telephony` package for SMS access on Android.
  * Messages are filtered to MoMo-related senders and parsed via the backend.
+ *
+ * Income detection: when new income SMS arrives, the backend generates an
+ * AI nudge (via nudge_service.py). The mobile side then fetches and displays
+ * that nudge as a local notification.
  */
 
 import 'dart:async';
@@ -15,6 +19,7 @@ import 'package:logger/logger.dart';
 
 import '../constants/storage_keys.dart';
 import '../network/api_client.dart';
+import 'nudge_notification_service.dart';
 
 /// Known MoMo sender addresses / keywords used to filter SMS.
 /// MTN MoMo Rwanda sends from short-codes or addresses containing these strings.
@@ -41,11 +46,20 @@ const List<String> _momoKeywords = [
   'FT Id',
 ];
 
+/// Keywords that indicate this SMS is an income (money received) message.
+const List<String> _incomeKeywords = [
+  'received',
+  'You have received',
+  'has been deposited',
+  'Cash In',
+];
+
 /// Service responsible for reading & listening to MoMo SMS messages.
 class SmsService {
   final Telephony _telephony;
   final ApiClient _apiClient;
   final SharedPreferences _prefs;
+  final NudgeNotificationService _nudgeService;
   final Logger _log = Logger();
 
   /// Stream controller that broadcasts newly received MoMo messages.
@@ -59,9 +73,11 @@ class SmsService {
     required Telephony telephony,
     required ApiClient apiClient,
     required SharedPreferences prefs,
+    required NudgeNotificationService nudgeService,
   })  : _telephony = telephony,
         _apiClient = apiClient,
-        _prefs = prefs;
+        _prefs = prefs,
+        _nudgeService = nudgeService;
 
   // ─── Permission helpers ────────────────────────────────────────────
 
@@ -121,8 +137,10 @@ class SmsService {
     if (bodies.isEmpty) return 0;
 
     try {
-      // Send in batches of 50 to avoid huge payloads
       int totalParsed = 0;
+      bool hasIncome = false;
+
+      // Send in batches of 50 to avoid huge payloads
       for (var i = 0; i < bodies.length; i += 50) {
         final batch = bodies.sublist(
           i,
@@ -131,10 +149,22 @@ class SmsService {
         final result = await _apiClient.parseSmsMessages(batch);
         final parsed = result['parsed_count'] as int? ?? batch.length;
         totalParsed += parsed;
+
+        // Check if any of the batch contained income SMS
+        if (!hasIncome) {
+          hasIncome = batch.any(_isIncomeSms);
+        }
       }
 
       await _prefs.setBool(StorageKeys.smsInitialImportDone, true);
       _log.i('Imported $totalParsed transactions from ${bodies.length} SMS');
+
+      // Nudges are triggered by the backend background task on income parse.
+      // Fetch and display any new income nudge after a short delay.
+      if (hasIncome) {
+        _showPendingIncomeNudge();
+      }
+
       return totalParsed;
     } catch (e) {
       _log.e('Failed to import SMS to backend', error: e);
@@ -175,7 +205,9 @@ class SmsService {
       _log.i('Delta sync: found ${newMomo.length} new MoMo SMS since '
           '${DateTime.fromMillisecondsSinceEpoch(lastTimestamp)}');
 
+      bool hasIncome = newMomo.any(_isIncomeSms);
       int totalParsed = 0;
+
       for (var i = 0; i < newMomo.length; i += 50) {
         final batch = newMomo.sublist(
           i,
@@ -187,6 +219,12 @@ class SmsService {
 
       await _prefs.setInt(StorageKeys.lastSmsSyncTimestamp, now);
       _log.i('Delta sync complete: $totalParsed new transactions imported');
+
+      // Show income nudge notification if income was detected
+      if (hasIncome) {
+        _showPendingIncomeNudge();
+      }
+
       return totalParsed;
     } catch (e) {
       _log.e('Delta SMS sync failed', error: e);
@@ -211,14 +249,41 @@ class SmsService {
       _log.i('New MoMo SMS detected from ${message.address}');
       _incomingController.add(message);
 
-      // Also push to backend immediately
       final body = message.body;
       if (body != null && body.isNotEmpty) {
-        _apiClient.parseSmsMessages([body]).catchError((e) {
+        final isIncome = _isIncomeSms(body);
+        _apiClient.parseSmsMessages([body]).then((_) {
+          if (isIncome) _showPendingIncomeNudge();
+        }).catchError((Object e) {
           _log.e('Failed to push live SMS to backend', error: e);
-          return <String, dynamic>{'error': e.toString()};
         });
       }
+    }
+  }
+
+  // ─── Nudge helper ─────────────────────────────────────────────────
+
+  /// After the backend has had a moment to generate an income nudge,
+  /// fetch the latest recommendations and display them as local notifications.
+  Future<void> _showPendingIncomeNudge() async {
+    try {
+      // Small delay so the backend background task can complete
+      await Future.delayed(const Duration(seconds: 3));
+      final nudges = await _apiClient.generateNudges('income');
+      for (final nudge in nudges) {
+        final id = nudge['id'] as int? ?? nudge.hashCode;
+        final title = nudge['title'] as String? ?? 'FinGuide Nudge';
+        final message = nudge['message'] as String? ?? '';
+        final type = nudge['recommendation_type'] as String? ?? 'savings';
+        await _nudgeService.showNudge(
+          id: id,
+          title: title,
+          body: message,
+          type: type,
+        );
+      }
+    } catch (e) {
+      _log.e('Failed to show income nudge notification', error: e);
     }
   }
 
@@ -229,17 +294,20 @@ class SmsService {
     final address = (message.address ?? '').toLowerCase();
     final body = (message.body ?? '').toLowerCase();
 
-    // Check sender
     final senderMatch = _momoSenders.any(
       (s) => address.contains(s.toLowerCase()),
     );
-
-    // Check body keywords (fallback – some phones strip the sender)
     final bodyMatch = _momoKeywords.any(
       (k) => body.contains(k.toLowerCase()),
     );
 
     return senderMatch || bodyMatch;
+  }
+
+  /// Check whether an SMS body indicates incoming money.
+  bool _isIncomeSms(String body) {
+    final lower = body.toLowerCase();
+    return _incomeKeywords.any((k) => lower.contains(k.toLowerCase()));
   }
 
   /// Clean up resources.

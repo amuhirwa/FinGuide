@@ -287,6 +287,16 @@ class ApiClient {
     return response.data;
   }
 
+  /// Generate fresh AI nudges for the given trigger type.
+  /// trigger_type: "income" | "daily" | "weekly" | "manual"
+  Future<List<dynamic>> generateNudges(String triggerType) async {
+    final response = await _dio.post(
+      '/insights/generate-nudges',
+      data: {'trigger_type': triggerType},
+    );
+    return response.data as List<dynamic>;
+  }
+
   /// Simulate investment
   Future<Map<String, dynamic>> simulateInvestment({
     required String investmentType,

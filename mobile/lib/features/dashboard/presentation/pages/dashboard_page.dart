@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -753,109 +754,371 @@ class _SafeToSpendSection extends StatelessWidget {
   }
 }
 
-/// AI Insights Section
-class _AIInsightsSection extends StatelessWidget {
+/// AI Insights Section — fetches live Claude-generated nudges from the backend.
+class _AIInsightsSection extends StatefulWidget {
   const _AIInsightsSection();
+
+  @override
+  State<_AIInsightsSection> createState() => _AIInsightsSectionState();
+}
+
+class _AIInsightsSectionState extends State<_AIInsightsSection> {
+  final ApiClient _api = getIt<ApiClient>();
+
+  List<Map<String, dynamic>> _nudges = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNudges();
+  }
+
+  Future<void> _loadNudges() async {
+    try {
+      final data = await _api.getRecommendations();
+      if (mounted) {
+        setState(() {
+          _nudges = data.cast<Map<String, dynamic>>();
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _refresh() async {
+    setState(() => _loading = true);
+    try {
+      await _api.generateNudges('manual');
+      await _loadNudges();
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _dismiss(int id) async {
+    await _api.updateRecommendation(id, 'dismissed');
+    setState(() => _nudges.removeWhere((n) => n['id'] == id));
+  }
+
+  Future<void> _act(int id, String actionType) async {
+    await _api.updateRecommendation(id, 'acted');
+    // Navigate based on action type
+    if (!mounted) return;
+    if (actionType == 'invest') {
+      context.push(Routes.investments);
+    } else {
+      context.push(Routes.goals);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'AI Financial Forecast',
+                'Smart Nudges',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF1E293B),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE0F2F1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Beta',
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF00695C),
+              Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE0F2F1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'AI',
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF00695C),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: _refresh,
+                    child: Icon(Icons.refresh,
+                        size: 20, color: Colors.grey[500]),
+                  ),
+                ],
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.grey.shade100),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+          if (_loading)
+            _NudgeCardShimmer()
+          else if (_nudges.isEmpty)
+            _EmptyNudgeCard(onRefresh: _refresh)
+          else
+            Column(
+              children: _nudges
+                  .take(3)
+                  .map((n) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _NudgeCard(
+                          nudge: n,
+                          onAct: () =>
+                              _act(n['id'] as int, n['action_type'] ?? 'save'),
+                          onDismiss: () => _dismiss(n['id'] as int),
+                        ),
+                      ))
+                  .toList(),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+        ],
+      ),
+    );
+  }
+}
+
+class _NudgeCard extends StatelessWidget {
+  final Map<String, dynamic> nudge;
+  final VoidCallback onAct;
+  final VoidCallback onDismiss;
+
+  const _NudgeCard({
+    required this.nudge,
+    required this.onAct,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final type = nudge['recommendation_type'] as String? ?? 'savings';
+    final urgency = nudge['urgency'] as String? ?? 'normal';
+    final title = nudge['title'] as String? ?? '';
+    final message = nudge['message'] as String? ?? '';
+    final actionType = nudge['action_type'] as String? ?? 'save';
+
+    final colors = _colorsForType(type, urgency);
+    final icon = _iconForType(type);
+    final actionLabel = _actionLabel(actionType);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors['border']!, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors['iconBg'],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 18, color: colors['iconColor']),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.auto_awesome,
-                      size: 20,
-                      color: AppColors.secondary,
-                    ),
-                    const SizedBox(width: 8),
                     Text(
-                      'Upcoming volatility detected',
+                      title,
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFF1E293B),
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        height: 1.4,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'Based on your gig patterns, your cash flow might dip around the 15th. We recommend saving RWF 15,000 extra this week.',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                    height: 1.5,
-                  ),
+              ),
+              GestureDetector(
+                onTap: onDismiss,
+                child: Icon(Icons.close, size: 16, color: Colors.grey[400]),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onAct,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors['buttonBg'],
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () => context.push(Routes.goals),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppColors.primary),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: Text(
-                      'Adjust Savings Plan',
-                      style: TextStyle(color: AppColors.primary),
-                    ),
-                  ),
+              ),
+              child: Text(
+                actionLabel,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Map<String, dynamic> _colorsForType(String type, String urgency) {
+    if (urgency == 'high') {
+      return {
+        'iconBg': const Color(0xFFFEE2E2),
+        'iconColor': const Color(0xFFDC2626),
+        'border': const Color(0xFFFECACA),
+        'buttonBg': const Color(0xFFDC2626),
+      };
+    }
+    if (type == 'investment') {
+      return {
+        'iconBg': const Color(0xFFEDE9FE),
+        'iconColor': const Color(0xFF7C3AED),
+        'border': const Color(0xFFDDD6FE),
+        'buttonBg': const Color(0xFF7C3AED),
+      };
+    }
+    if (type == 'spending') {
+      return {
+        'iconBg': const Color(0xFFFFF7ED),
+        'iconColor': const Color(0xFFEA580C),
+        'border': const Color(0xFFFED7AA),
+        'buttonBg': const Color(0xFFEA580C),
+      };
+    }
+    // savings (default)
+    return {
+      'iconBg': const Color(0xFFE0F2F1),
+      'iconColor': AppColors.primary,
+      'border': const Color(0xFFB2DFDB),
+      'buttonBg': AppColors.primary,
+    };
+  }
+
+  IconData _iconForType(String type) {
+    switch (type) {
+      case 'investment':
+        return Icons.trending_up;
+      case 'spending':
+        return Icons.warning_amber_outlined;
+      default:
+        return Icons.savings_outlined;
+    }
+  }
+
+  String _actionLabel(String actionType) {
+    switch (actionType) {
+      case 'invest':
+        return 'Invest Now';
+      case 'reduce_spending':
+        return 'View Spending';
+      case 'view_goals':
+        return 'View Goals';
+      default:
+        return 'Save Now';
+    }
+  }
+}
+
+class _NudgeCardShimmer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 120,
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyNudgeCard extends StatelessWidget {
+  final VoidCallback onRefresh;
+  const _EmptyNudgeCard({required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.lightbulb_outline, color: Colors.grey[400], size: 32),
+          const SizedBox(height: 8),
+          Text(
+            'No nudges yet',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[500],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Keep transacting and we\'ll personalise your advice.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[400]),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: onRefresh,
+            child: Text(
+              'Generate nudge',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
