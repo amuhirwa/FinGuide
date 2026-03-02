@@ -117,7 +117,16 @@ def _get_user_context(user_id: int, db: Session) -> dict:
             "spending_discipline_score": health.spending_discipline_score,
         }
 
-    estimated_balance = max(0, income_total - expense_total)
+    # Real balance: use latest SMS balance_after if available, else net 30-day
+    latest_with_balance = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.balance_after.isnot(None),
+    ).order_by(Transaction.transaction_date.desc()).first()
+
+    if latest_with_balance:
+        estimated_balance = float(latest_with_balance.balance_after)
+    else:
+        estimated_balance = max(0, income_total - expense_total)
 
     return {
         "income_30d": round(income_total, 0),

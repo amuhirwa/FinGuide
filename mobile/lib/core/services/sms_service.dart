@@ -220,9 +220,24 @@ class SmsService {
       await _prefs.setInt(StorageKeys.lastSmsSyncTimestamp, now);
       _log.i('Delta sync complete: $totalParsed new transactions imported');
 
-      // Show income nudge notification if income was detected
+      // Show income nudge notification if significant income was detected
       if (hasIncome) {
-        _showPendingIncomeNudge();
+        final threshold = await _getSignificantThreshold();
+        final bigIncome = newMomo.any((sms) {
+          final amt = _extractAmount(sms);
+          return _isIncomeSms(sms) && amt != null && amt >= threshold;
+        });
+        if (bigIncome) {
+          _showSignificantIncomeNudge(
+            newMomo
+                .where(_isIncomeSms)
+                .map(_extractAmount)
+                .whereType<double>()
+                .fold(0.0, (a, b) => a + b),
+          );
+        } else {
+          _showPendingIncomeNudge();
+        }
       }
 
       return totalParsed;
@@ -252,8 +267,19 @@ class SmsService {
       final body = message.body;
       if (body != null && body.isNotEmpty) {
         final isIncome = _isIncomeSms(body);
-        _apiClient.parseSmsMessages([body]).then((_) {
-          if (isIncome) _showPendingIncomeNudge();
+        final amount = _extractAmount(body);
+        _apiClient.parseSmsMessages([body]).then((_) async {
+          // Check if this is significant enough to trigger a nudge
+          final threshold = await _getSignificantThreshold();
+          if (amount != null && amount >= threshold) {
+            if (isIncome) {
+              _showSignificantIncomeNudge(amount);
+            } else {
+              _showBigExpenseNudge(amount);
+            }
+          } else if (isIncome) {
+            _showPendingIncomeNudge();
+          }
         }).catchError((Object e) {
           _log.e('Failed to push live SMS to backend', error: e);
         });
@@ -284,6 +310,94 @@ class SmsService {
       }
     } catch (e) {
       _log.e('Failed to show income nudge notification', error: e);
+    }
+  }
+
+  // ─── Significant transaction nudges ──────────────────────────────
+
+  /// Returns the threshold (in RWF) above which a transaction is considered
+  /// "significant" and warrants a nudge notification.
+  ///
+  /// = max(40_000, 5% of average monthly income).
+  /// The average is derived from the last summary call; falls back to 40k.
+  Future<double> _getSignificantThreshold() async {
+    try {
+      final summary = await _apiClient.getTransactionSummary();
+      final avgIncome =
+          (summary['average_monthly_income'] as num?)?.toDouble() ??
+              (summary['total_income'] as num?)?.toDouble() ??
+              0.0;
+      return (avgIncome * 0.05).clamp(40000, double.infinity);
+    } catch (_) {
+      return 40000;
+    }
+  }
+
+  /// Extract the first RWF amount from an SMS body (e.g. "20,000 RWF").
+  double? _extractAmount(String body) {
+    final match =
+        RegExp(r'([\d,]+)\s*RWF', caseSensitive: false).firstMatch(body);
+    if (match == null) return null;
+    return double.tryParse(match.group(1)!.replaceAll(',', ''));
+  }
+
+  /// Show a nudge for a significant income event — prompt to save or invest.
+  Future<void> _showSignificantIncomeNudge(double amount) async {
+    try {
+      await Future.delayed(const Duration(seconds: 3));
+      final nudges = await _apiClient.generateNudges('income');
+      if (nudges.isNotEmpty) {
+        final nudge = nudges.first;
+        await _nudgeService.showNudge(
+          id: nudge['id'] as int? ?? nudge.hashCode,
+          title: nudge['title'] as String? ?? '💰 Money received!',
+          body: nudge['message'] as String? ?? '',
+          type: nudge['recommendation_type'] as String? ?? 'savings',
+        );
+      } else {
+        // Fallback generic nudge
+        final fmt = amount >= 1000000
+            ? '${(amount / 1000000).toStringAsFixed(1)}M'
+            : amount >= 1000
+                ? '${(amount / 1000).toStringAsFixed(0)}k'
+                : amount.toStringAsFixed(0);
+        await _nudgeService.showNudge(
+          id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          title: '💰 RWF $fmt received!',
+          body:
+              'Great timing — consider moving 20% into savings or your Ejo Heza goal before spending.',
+          type: 'savings',
+        );
+      }
+    } catch (e) {
+      _log.e('Failed to show significant income nudge', error: e);
+    }
+  }
+
+  /// Show a nudge after a big expense — remind the user of their situation.
+  Future<void> _showBigExpenseNudge(double amount) async {
+    try {
+      await Future.delayed(const Duration(seconds: 2));
+      final fmt = amount >= 1000000
+          ? '${(amount / 1000000).toStringAsFixed(1)}M'
+          : amount >= 1000
+              ? '${(amount / 1000).toStringAsFixed(0)}k'
+              : amount.toStringAsFixed(0);
+      final safe = await _apiClient.getSafeToSpend();
+      final remaining = (safe['safe_to_spend'] as num?)?.toDouble() ?? 0.0;
+      final remainFmt = remaining >= 1000
+          ? '${(remaining / 1000).toStringAsFixed(0)}k'
+          : remaining.toStringAsFixed(0);
+      await _nudgeService.showNudge(
+        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        title: '📊 RWF $fmt just left your wallet',
+        body: remaining > 0
+            ? 'You have RWF $remainFmt safe to spend for the rest of the month. Stay on track!'
+            : 'This is a big spend for your budget — check your FinGuide safe-to-spend before your next purchase.',
+        type: 'spending',
+      );
+    } catch (e) {
+      _log.e('Failed to show big expense nudge', error: e);
     }
   }
 

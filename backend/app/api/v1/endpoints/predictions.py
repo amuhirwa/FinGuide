@@ -415,22 +415,30 @@ async def get_safe_to_spend(
     else:
         avg_weekly_expense = 0.0
 
-    # ── Current month balance ─────────────────────────────────────────────────
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    month_transactions = db.query(Transaction).filter(
+    # ── Current balance: prefer latest SMS balance_after, else month net ─────
+    latest_with_balance = db.query(Transaction).filter(
         Transaction.user_id == user_id,
-        Transaction.transaction_date >= month_start,
-    ).all()
+        Transaction.balance_after.isnot(None),
+    ).order_by(Transaction.transaction_date.desc()).first()
 
-    total_income = sum(
-        float(t.amount) for t in month_transactions
-        if t.transaction_type == ModelTransactionType.INCOME
-    )
-    total_expenses_month = sum(
-        float(t.amount) for t in month_transactions
-        if t.transaction_type == ModelTransactionType.EXPENSE
-    )
-    total_balance = total_income - total_expenses_month
+    if latest_with_balance:
+        total_balance = float(latest_with_balance.balance_after)
+    else:
+        # Fallback: month income − month expenses
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        month_transactions = db.query(Transaction).filter(
+            Transaction.user_id == user_id,
+            Transaction.transaction_date >= month_start,
+        ).all()
+        total_income = sum(
+            float(t.amount) for t in month_transactions
+            if t.transaction_type == ModelTransactionType.INCOME
+        )
+        total_expenses_month = sum(
+            float(t.amount) for t in month_transactions
+            if t.transaction_type == ModelTransactionType.EXPENSE
+        )
+        total_balance = total_income - total_expenses_month
 
     # ── Days / weeks remaining in the current calendar month ─────────────────
     days_in_month = calendar.monthrange(now.year, now.month)[1]

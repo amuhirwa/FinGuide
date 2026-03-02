@@ -42,6 +42,7 @@ def parse_momo_sms(sms_text: str) -> Optional[Dict]:
         "description": None,
         "reference": None,
         "transaction_date": datetime.now(),
+        "balance_after": None,
         "confidence": 0.8
     }
     
@@ -60,6 +61,11 @@ def parse_momo_sms(sms_text: str) -> Optional[Dict]:
         result["amount"] = float(amount_str)
     else:
         return None  # Can't parse without amount
+
+    # Extract balance_after — "Balance: 31,135 RWF" or "Balance:31135 RWF"
+    balance_match = re.search(r'BALANCE[:\s]*([\d,]+(?:\.\d+)?)\s*(?:RWF|FRW)', text)
+    if balance_match:
+        result["balance_after"] = float(balance_match.group(1).replace(',', ''))
     
     # Extract counterparty phone
     phone_match = re.search(phone_pattern, text)

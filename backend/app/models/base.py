@@ -56,6 +56,7 @@ def _apply_column_migrations():
         "ALTER TABLE transactions ADD COLUMN linked_investment_id INTEGER REFERENCES investments(id)",
         "ALTER TABLE recommendations ADD COLUMN trigger_type VARCHAR(20)",
         "ALTER TABLE recommendations ADD COLUMN nudge_metadata JSON",
+        "ALTER TABLE transactions ADD COLUMN balance_after FLOAT",
     ]
     with engine.connect() as conn:
         for sql in migrations:

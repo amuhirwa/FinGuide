@@ -21,7 +21,7 @@ class ApiClient {
   // static const String baseUrl = 'http://localhost:8000/api/v1'; // iOS simulator
   // static const String baseUrl =
   //     'http://192.168.1.73:8000/api/v1'; // iOS simulator
-  static const String baseUrl = 'http://192.168.3.44:8000/api/v1';
+  static const String baseUrl = 'http://173.249.25.80:10000/api/v1';
 
   // ==================== Auth Endpoints ====================
 
@@ -210,31 +210,31 @@ class ApiClient {
 
   /// Get 7-day expense forecast (AI BiLSTM model)
   Future<Map<String, dynamic>> get7DayForecast() async {
-    final response = await _dio.get('/predictions/forecast-7day');
+    final response = await _dio.get('/insights/forecast-7day');
     return response.data;
   }
 
   /// Get income predictions
   Future<List<dynamic>> getIncomePredictions() async {
-    final response = await _dio.get('/predictions/income');
+    final response = await _dio.get('/insights/income');
     return response.data;
   }
 
   /// Get expense predictions
   Future<List<dynamic>> getExpensePredictions() async {
-    final response = await _dio.get('/predictions/expenses');
+    final response = await _dio.get('/insights/expenses');
     return response.data;
   }
 
   /// Get financial health score
   Future<Map<String, dynamic>> getHealthScore() async {
-    final response = await _dio.get('/predictions/health-score');
+    final response = await _dio.get('/insights/health-score');
     return response.data;
   }
 
   /// Get safe-to-spend calculation
   Future<Map<String, dynamic>> getSafeToSpend() async {
-    final response = await _dio.get('/predictions/safe-to-spend');
+    final response = await _dio.get('/insights/safe-to-spend');
     return response.data;
   }
 
