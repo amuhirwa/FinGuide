@@ -20,7 +20,7 @@ from app.core.config import settings
 from app.models.investment import Investment, InvestmentStatus
 from app.models.prediction import FinancialHealthScore, Recommendation
 from app.models.savings_goal import SavingsGoal, GoalStatus
-from app.models.transaction import Transaction, TransactionType
+from app.models.transaction import Transaction, TransactionType, TransactionCategory
 
 logger = logging.getLogger(__name__)
 
@@ -61,10 +61,15 @@ def _get_user_context(user_id: int, db: Session) -> dict:
         for cat, amt in expense_by_category.most_common(5)
     ]
 
-    # This month's savings transactions
+    # This month's savings transactions (money actually put aside)
+    _savings_cats = {
+        TransactionCategory.SAVINGS,
+        TransactionCategory.EJO_HEZA,
+        TransactionCategory.INVESTMENT,
+    }
     savings_this_month = sum(
         t.amount for t in transactions
-        if t.transaction_type == TransactionType.INCOME
+        if t.category in _savings_cats
         and t.transaction_date >= month_start
     )
 
@@ -241,14 +246,23 @@ def generate_nudges(
     context = _get_user_context(user_id, db)
     preferences = _analyze_nudge_preferences(user_id, db)
 
-    # Build trigger description
-    trigger_desc = {
-        "income": f"User just received income of RWF {income_amount:,.0f}"
-                  + (f" from {income_source}" if income_source else ""),
-        "daily": "Daily savings quota check — remind user of today's savings progress",
-        "weekly": "Weekly financial review — broader savings + investment overview",
-        "manual": "User opened the app — show relevant personalized recommendations",
-    }.get(trigger_type, "General check-in")
+    # Build trigger description — handle None income_amount gracefully
+    if trigger_type == "income":
+        if income_amount:
+            trigger_desc = (
+                f"User just received income of RWF {income_amount:,.0f}"
+                + (f" from {income_source}" if income_source else "")
+            )
+        else:
+            trigger_desc = "User just received income" + (
+                f" from {income_source}" if income_source else ""
+            )
+    elif trigger_type == "daily":
+        trigger_desc = "Daily savings quota check — remind user of today's savings progress"
+    elif trigger_type == "weekly":
+        trigger_desc = "Weekly financial review — broader savings + investment overview"
+    else:
+        trigger_desc = "User opened the app — show relevant personalized recommendations"
 
     system_prompt = """You are FinGuide, a friendly and smart financial advisor built for Rwandan youth with irregular income.
 Your job is to generate short, personalized nudge notifications to encourage saving and investing.
@@ -256,14 +270,17 @@ Your job is to generate short, personalized nudge notifications to encourage sav
 Guidelines:
 - Write in clear, conversational English. You may sprinkle in Kinyarwanda words for warmth (e.g. "Murakoze", "Muraho", "Ego").
 - Keep each message under 120 characters so it fits on a phone notification.
-- Be specific — mention real amounts, goal names, or percentages from the context.
+- Be specific — use ONLY real amounts and dates taken directly from the trigger description or financial context. NEVER invent amounts.
+- For income triggers: the EXACT amount received is in the trigger description — use it. Do not use context averages.
 - Adapt your tone to what has worked for this user (their preference history is provided).
 - Never be preachy or guilt-tripping. Be encouraging and action-oriented.
 - For income triggers: create urgency — this is the perfect moment to save/invest NOW.
 - For daily/weekly: celebrate progress if any, gently nudge if behind.
+- Be time-aware: use the current date in the context to acknowledge timing (e.g. "end of month", "payday").
 - Return ONLY a valid JSON array, no extra text."""
 
-    user_prompt = f"""Trigger: {trigger_desc}
+    user_prompt = f"""Today's date: {datetime.now().strftime('%A, %B %d, %Y')}
+Trigger: {trigger_desc}
 
 User financial context:
 {json.dumps(context, indent=2)}

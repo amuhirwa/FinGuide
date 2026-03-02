@@ -5,6 +5,7 @@ AI predictions, health score, recommendations, and dashboard.
 """
 
 import calendar
+import statistics
 from typing import List
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -14,7 +15,7 @@ import random
 import os
 
 from app.models.base import get_db
-from app.models.transaction import Transaction, TransactionType as ModelTransactionType
+from app.models.transaction import Transaction, TransactionType as ModelTransactionType, NeedWantCategory as ModelNeedWant
 from app.models.savings_goal import SavingsGoal, GoalStatus
 from app.models.prediction import (
     IncomePrediction, ExpensePrediction, FinancialHealthScore, Recommendation
@@ -398,11 +399,46 @@ async def get_safe_to_spend(
         Transaction.transaction_date < now,
     ).all()
 
-    # Bucket transactions into 7-day windows
+    # Bucket transactions into 7-day windows with need/want weighting:
+    #   NEED        → weight 1.00 (non-negotiable)
+    #   WANT        → weight 0.70 (user can trim discretionary spend ~30%)
+    #   SAVINGS     → weight 0.00 (not a drain, it's wealth-building)
+    #   UNCATEGORIZED → outlier-removed, weight 0.85 (mix of needs+wants)
+    WANT_WEIGHT = 0.70
+    UNCAT_WEIGHT = 0.85
+
+    # Collect raw uncategorized amounts for outlier detection
+    uncategorized_raw: list[float] = []
+    for t in all_expenses:
+        nw = t.need_want.value if t.need_want else "uncategorized"
+        if nw == "uncategorized":
+            uncategorized_raw.append(float(t.amount))
+
+    # Remove outliers from uncategorized: drop anything > 2.5 × median
+    if uncategorized_raw:
+        median_uncat = statistics.median(uncategorized_raw)
+        outlier_threshold = median_uncat * 2.5
+    else:
+        outlier_threshold = float("inf")
+
     weekly_totals: dict[int, float] = {}
     for t in all_expenses:
         week_key = int((t.transaction_date - eight_weeks_ago).total_seconds() // (7 * 86400))
-        weekly_totals[week_key] = weekly_totals.get(week_key, 0.0) + float(t.amount)
+        nw = t.need_want.value if t.need_want else "uncategorized"
+        amt = float(t.amount)
+
+        if nw == "savings":
+            continue  # savings are wealth-building, not a spend to reserve for
+        elif nw == "need":
+            weighted = amt * 1.0
+        elif nw == "want":
+            weighted = amt * WANT_WEIGHT
+        else:  # uncategorized
+            if amt > outlier_threshold:
+                continue  # probable one-off / rounding error
+            weighted = amt * UNCAT_WEIGHT
+
+        weekly_totals[week_key] = weekly_totals.get(week_key, 0.0) + weighted
 
     non_zero = [v for v in weekly_totals.values() if v > 0]
     if non_zero:
@@ -472,9 +508,9 @@ async def get_safe_to_spend(
     # ── Human-readable explanation ────────────────────────────────────────────
     if avg_weekly_expense > 0:
         explanation = (
-            f"Based on your {len(non_zero)}-week spending average of "
-            f"RWF {avg_weekly_expense:,.0f}/week, with {days_remaining} days "
-            f"remaining this month"
+            f"Based on your {len(non_zero)}-week weighted spending average "
+            f"(needs 100%, wants 70%) of RWF {avg_weekly_expense:,.0f}/week, "
+            f"with {days_remaining} days remaining this month"
         )
     else:
         explanation = (
@@ -545,7 +581,12 @@ async def generate_nudges(
     when a user explicitly refreshes their recommendations.
     """
     user_id = int(current_user.sub)
-    created = nudge_service.generate_nudges(user_id, db, trigger_type=request.trigger_type)
+    created = nudge_service.generate_nudges(
+        user_id, db,
+        trigger_type=request.trigger_type,
+        income_amount=request.income_amount,
+        income_source=request.income_source,
+    )
     return [RecommendationResponse.model_validate(r) for r in created]
 
 
