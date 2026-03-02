@@ -828,7 +828,8 @@ class _SafeToSpendSectionState extends State<_SafeToSpendSection> {
         .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
   }
 
-  Widget _buildPeriodChip(String label, int index) {    final selected = _selectedPeriod == index;
+  Widget _buildPeriodChip(String label, int index) {
+    final selected = _selectedPeriod == index;
     return GestureDetector(
       onTap: () => setState(() => _selectedPeriod = index),
       child: AnimatedContainer(
@@ -909,18 +910,12 @@ class _InvestmentAndSavingsRowState extends State<_InvestmentAndSavingsRow> {
       final now = DateTime.now();
       final monthStart = DateTime(now.year, now.month, 1);
       final results = await Future.wait([
-        _api
-            .getInvestmentSummary()
-            .catchError((_) => <String, dynamic>{}),
-        _api
-            .getRnitPortfolio()
-            .catchError((_) => <String, dynamic>{}),
+        _api.getInvestmentSummary().catchError((_) => <String, dynamic>{}),
+        _api.getRnitPortfolio().catchError((_) => <String, dynamic>{}),
         _api
             .getTransactionSummary(startDate: monthStart)
             .catchError((_) => <String, dynamic>{}),
-        _api
-            .getSavingsGoals(status: 'active')
-            .catchError((_) => <dynamic>[]),
+        _api.getSavingsGoals(status: 'active').catchError((_) => <dynamic>[]),
       ]);
       if (mounted) {
         setState(() {
@@ -970,10 +965,8 @@ class _InvestmentAndSavingsRowState extends State<_InvestmentAndSavingsRow> {
           (_investmentSummary!['total_invested'] as num? ?? 0).toDouble();
     }
     if (_rnitPortfolio != null) {
-      rnitCurrentValue =
-          (_rnitPortfolio!['current_value'] as num?)?.toDouble();
-      rnitGainPct =
-          (_rnitPortfolio!['total_gain_pct'] as num?)?.toDouble();
+      rnitCurrentValue = (_rnitPortfolio!['current_value'] as num?)?.toDouble();
+      rnitGainPct = (_rnitPortfolio!['total_gain_pct'] as num?)?.toDouble();
       final rnitInvested =
           (_rnitPortfolio!['total_invested_rwf'] as num? ?? 0).toDouble();
       totalValue += rnitCurrentValue ?? 0;
@@ -981,17 +974,15 @@ class _InvestmentAndSavingsRowState extends State<_InvestmentAndSavingsRow> {
     }
 
     final gain = totalValue - totalInvested;
-    final gainPct =
-        totalInvested > 0 ? (gain / totalInvested * 100) : 0.0;
+    final gainPct = totalInvested > 0 ? (gain / totalInvested * 100) : 0.0;
     final hasData = totalInvested > 0;
     final isGain = gain >= 0;
 
     String? rnitChipLabel;
     if (rnitCurrentValue != null && rnitCurrentValue > 0) {
       final sign = (rnitGainPct ?? 0) >= 0 ? '+' : '';
-      final pct = rnitGainPct != null
-          ? ' $sign${rnitGainPct.toStringAsFixed(1)}%'
-          : '';
+      final pct =
+          rnitGainPct != null ? ' $sign${rnitGainPct.toStringAsFixed(1)}%' : '';
       rnitChipLabel = 'RNIT$pct · RWF ${_fmt(rnitCurrentValue)}';
     }
 
@@ -1125,12 +1116,9 @@ class _InvestmentAndSavingsRowState extends State<_InvestmentAndSavingsRow> {
     if (_txSummary != null) {
       final breakdown =
           (_txSummary!['category_breakdown'] as Map<String, dynamic>?) ?? {};
-      savingsThisMonth +=
-          (breakdown['savings'] as num? ?? 0).toDouble();
-      savingsThisMonth +=
-          (breakdown['ejo_heza'] as num? ?? 0).toDouble();
-      savingsThisMonth +=
-          (breakdown['investment'] as num? ?? 0).toDouble();
+      savingsThisMonth += (breakdown['savings'] as num? ?? 0).toDouble();
+      savingsThisMonth += (breakdown['ejo_heza'] as num? ?? 0).toDouble();
+      savingsThisMonth += (breakdown['investment'] as num? ?? 0).toDouble();
     }
 
     double totalSaved = 0;
