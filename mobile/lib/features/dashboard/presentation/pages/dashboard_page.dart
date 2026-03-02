@@ -293,6 +293,11 @@ class _HomeContent extends StatelessWidget {
 
           const SizedBox(height: 32),
 
+          // Investment & Savings Cards (side by side)
+          const _InvestmentAndSavingsRow(),
+
+          const SizedBox(height: 32),
+
           // AI Insights Section
           const _AIInsightsSection(),
 
@@ -622,13 +627,35 @@ class _SafeToSpendSectionState extends State<_SafeToSpendSection> {
                 (data['emergency_buffer'] as num?)?.toDouble() ?? 0.0;
             final expectedIncome =
                 (data['expected_income_remaining'] as num?)?.toDouble() ?? 0.0;
+            final expensesToday =
+                (data['expenses_today'] as num?)?.toDouble() ?? 0.0;
+            final expensesThisWeek =
+                (data['expenses_this_week'] as num?)?.toDouble() ?? 0.0;
             final explanation = data['explanation'] as String? ?? '';
 
+            // For Today/Week: remaining = budget − already spent
+            final safeTodayRemaining =
+                (safePerDay - expensesToday).clamp(0.0, double.infinity);
+            final safeWeekRemaining =
+                (safePerWeek - expensesThisWeek).clamp(0.0, double.infinity);
+
             final displayAmount = _selectedPeriod == 0
-                ? safePerDay
+                ? safeTodayRemaining
                 : _selectedPeriod == 1
-                    ? safePerWeek
+                    ? safeWeekRemaining
                     : safeMonth;
+
+            // Sub-label: how much spent vs allocated for today/week
+            final String spentNote;
+            if (_selectedPeriod == 0 && expensesToday > 0) {
+              spentNote =
+                  'RWF ${_fmtAmt(expensesToday)} spent of RWF ${_fmtAmt(safePerDay)} daily budget';
+            } else if (_selectedPeriod == 1 && expensesThisWeek > 0) {
+              spentNote =
+                  'RWF ${_fmtAmt(expensesThisWeek)} spent of RWF ${_fmtAmt(safePerWeek)} weekly budget';
+            } else {
+              spentNote = '';
+            }
 
             final periodLabel = _selectedPeriod == 0
                 ? 'today'
@@ -718,6 +745,17 @@ class _SafeToSpendSectionState extends State<_SafeToSpendSection> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                        if (spentNote.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            spentNote,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: Colors.white.withOpacity(0.7),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 6),
                         Text(
                           explanation.isNotEmpty
@@ -784,8 +822,13 @@ class _SafeToSpendSectionState extends State<_SafeToSpendSection> {
     );
   }
 
-  Widget _buildPeriodChip(String label, int index) {
-    final selected = _selectedPeriod == index;
+  String _fmtAmt(double v) {
+    return v
+        .toStringAsFixed(0)
+        .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
+  }
+
+  Widget _buildPeriodChip(String label, int index) {    final selected = _selectedPeriod == index;
     return GestureDetector(
       onTap: () => setState(() => _selectedPeriod = index),
       child: AnimatedContainer(
@@ -833,6 +876,364 @@ class _SafeToSpendSectionState extends State<_SafeToSpendSection> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Investment & Savings Row — two compact summary cards side by side
+class _InvestmentAndSavingsRow extends StatefulWidget {
+  const _InvestmentAndSavingsRow();
+
+  @override
+  State<_InvestmentAndSavingsRow> createState() =>
+      _InvestmentAndSavingsRowState();
+}
+
+class _InvestmentAndSavingsRowState extends State<_InvestmentAndSavingsRow> {
+  final ApiClient _api = getIt<ApiClient>();
+
+  Map<String, dynamic>? _investmentSummary;
+  Map<String, dynamic>? _rnitPortfolio;
+  Map<String, dynamic>? _txSummary;
+  List<dynamic>? _goals;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final now = DateTime.now();
+      final monthStart = DateTime(now.year, now.month, 1);
+      final results = await Future.wait([
+        _api
+            .getInvestmentSummary()
+            .catchError((_) => <String, dynamic>{}),
+        _api
+            .getRnitPortfolio()
+            .catchError((_) => <String, dynamic>{}),
+        _api
+            .getTransactionSummary(startDate: monthStart)
+            .catchError((_) => <String, dynamic>{}),
+        _api
+            .getSavingsGoals(status: 'active')
+            .catchError((_) => <dynamic>[]),
+      ]);
+      if (mounted) {
+        setState(() {
+          _investmentSummary = results[0] as Map<String, dynamic>?;
+          _rnitPortfolio = results[1] as Map<String, dynamic>?;
+          _txSummary = results[2] as Map<String, dynamic>?;
+          _goals = results[3] as List<dynamic>?;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  String _fmt(double v) {
+    if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(1)}M';
+    if (v >= 1000) return '${(v / 1000).toStringAsFixed(0)}k';
+    return v.toStringAsFixed(0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: _buildInvestmentCard()),
+          const SizedBox(width: 12),
+          Expanded(child: _buildSavingsCard()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInvestmentCard() {
+    double totalValue = 0;
+    double totalInvested = 0;
+    double? rnitCurrentValue;
+    double? rnitGainPct;
+
+    if (_investmentSummary != null) {
+      totalValue +=
+          (_investmentSummary!['total_current_value'] as num? ?? 0).toDouble();
+      totalInvested +=
+          (_investmentSummary!['total_invested'] as num? ?? 0).toDouble();
+    }
+    if (_rnitPortfolio != null) {
+      rnitCurrentValue =
+          (_rnitPortfolio!['current_value'] as num?)?.toDouble();
+      rnitGainPct =
+          (_rnitPortfolio!['total_gain_pct'] as num?)?.toDouble();
+      final rnitInvested =
+          (_rnitPortfolio!['total_invested_rwf'] as num? ?? 0).toDouble();
+      totalValue += rnitCurrentValue ?? 0;
+      totalInvested += rnitInvested;
+    }
+
+    final gain = totalValue - totalInvested;
+    final gainPct =
+        totalInvested > 0 ? (gain / totalInvested * 100) : 0.0;
+    final hasData = totalInvested > 0;
+    final isGain = gain >= 0;
+
+    String? rnitChipLabel;
+    if (rnitCurrentValue != null && rnitCurrentValue > 0) {
+      final sign = (rnitGainPct ?? 0) >= 0 ? '+' : '';
+      final pct = rnitGainPct != null
+          ? ' $sign${rnitGainPct.toStringAsFixed(1)}%'
+          : '';
+      rnitChipLabel = 'RNIT$pct · RWF ${_fmt(rnitCurrentValue)}';
+    }
+
+    return GestureDetector(
+      onTap: () => context.push(Routes.investments),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE3F2FD),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.trending_up,
+                      size: 18, color: Color(0xFF1565C0)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Investments',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1E293B),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_loading)
+              Container(
+                height: 24,
+                width: 80,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              )
+            else if (!hasData)
+              Text(
+                'No investments\nyet',
+                style: GoogleFonts.inter(
+                    fontSize: 12, color: Colors.grey.shade500),
+              )
+            else ...[
+              Text(
+                'RWF ${_fmt(totalValue)}',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    isGain ? Icons.arrow_upward : Icons.arrow_downward,
+                    size: 12,
+                    color: isGain
+                        ? const Color(0xFF2E7D32)
+                        : const Color(0xFFC62828),
+                  ),
+                  const SizedBox(width: 2),
+                  Text(
+                    '${gainPct.abs().toStringAsFixed(1)}%',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isGain
+                          ? const Color(0xFF2E7D32)
+                          : const Color(0xFFC62828),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Invested RWF ${_fmt(totalInvested)}',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              if (rnitChipLabel != null) ...[
+                const SizedBox(height: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF9C4),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    rnitChipLabel,
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFF57F17),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSavingsCard() {
+    double savingsThisMonth = 0;
+    if (_txSummary != null) {
+      final breakdown =
+          (_txSummary!['category_breakdown'] as Map<String, dynamic>?) ?? {};
+      savingsThisMonth +=
+          (breakdown['savings'] as num? ?? 0).toDouble();
+      savingsThisMonth +=
+          (breakdown['ejo_heza'] as num? ?? 0).toDouble();
+      savingsThisMonth +=
+          (breakdown['investment'] as num? ?? 0).toDouble();
+    }
+
+    double totalSaved = 0;
+    if (_goals != null) {
+      for (final g in _goals!) {
+        totalSaved +=
+            ((g as Map<String, dynamic>)['current_amount'] as num? ?? 0)
+                .toDouble();
+      }
+    }
+
+    return GestureDetector(
+      onTap: () => context.push(Routes.goals),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.savings_outlined,
+                      size: 18, color: Color(0xFF2E7D32)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Savings',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1E293B),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_loading)
+              Container(
+                height: 24,
+                width: 80,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              )
+            else ...[
+              Text(
+                'RWF ${_fmt(savingsThisMonth)}',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'saved this month',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Container(height: 1, color: Colors.grey.shade100),
+              const SizedBox(height: 10),
+              Text(
+                'RWF ${_fmt(totalSaved)}',
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF2E7D32),
+                ),
+              ),
+              Text(
+                'total in goals',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

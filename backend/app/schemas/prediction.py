@@ -91,6 +91,9 @@ class SafeToSpendResponse(BaseModel):
     avg_weekly_expense: float = 0.0
     # Expected income remaining this month (confidence-weighted prediction)
     expected_income_remaining: float = 0.0
+    # Expenses already incurred today and this week (for remaining-budget view)
+    expenses_today: float = 0.0
+    expenses_this_week: float = 0.0
 
 
 class ChatMessage(BaseModel):

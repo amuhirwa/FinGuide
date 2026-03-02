@@ -504,6 +504,24 @@ async def get_safe_to_spend(
     # ── Emergency buffer (2 weeks of average weekly spend) ───────────────────
     emergency_buffer = avg_weekly_expense * 2.0
 
+    # ── Expenses already spent today and this calendar week ────────────────────
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timedelta(days=now.weekday())  # Monday
+    todays_txns = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_type == ModelTransactionType.EXPENSE,
+        Transaction.transaction_date >= today_start,
+        Transaction.transaction_date < now,
+    ).all()
+    week_txns = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_type == ModelTransactionType.EXPENSE,
+        Transaction.transaction_date >= week_start,
+        Transaction.transaction_date < now,
+    ).all()
+    expenses_today = sum(float(t.amount) for t in todays_txns)
+    expenses_this_week = sum(float(t.amount) for t in week_txns)
+
     # ── Expected income still to arrive this month ────────────────────────────
     # Use the existing income-pattern predictor and filter for predictions
     # whose expected date falls before month-end but after right now.
@@ -560,6 +578,8 @@ async def get_safe_to_spend(
         days_remaining=days_remaining,
         avg_weekly_expense=round(avg_weekly_expense, 2),
         expected_income_remaining=round(expected_income_remaining, 2),
+        expenses_today=round(expenses_today, 2),
+        expenses_this_week=round(expenses_this_week, 2),
     )
 
 
