@@ -345,7 +345,10 @@ class SmsService {
   Future<void> _showSignificantIncomeNudge(double amount) async {
     try {
       await Future.delayed(const Duration(seconds: 3));
-      final nudges = await _apiClient.generateNudges('income');
+      final nudges = await _apiClient.generateNudges(
+        'income',
+        incomeAmount: amount,
+      );
       if (nudges.isNotEmpty) {
         final nudge = nudges.first;
         await _nudgeService.showNudge(

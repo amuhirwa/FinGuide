@@ -288,10 +288,18 @@ class ApiClient {
 
   /// Generate fresh AI nudges for the given trigger type.
   /// trigger_type: "income" | "daily" | "weekly" | "manual"
-  Future<List<dynamic>> generateNudges(String triggerType) async {
+  Future<List<dynamic>> generateNudges(
+    String triggerType, {
+    double? incomeAmount,
+    String? incomeSource,
+  }) async {
     final response = await _dio.post(
       '/insights/generate-nudges',
-      data: {'trigger_type': triggerType},
+      data: {
+        'trigger_type': triggerType,
+        if (incomeAmount != null) 'income_amount': incomeAmount,
+        if (incomeSource != null) 'income_source': incomeSource,
+      },
     );
     return response.data as List<dynamic>;
   }

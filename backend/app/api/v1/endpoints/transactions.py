@@ -13,6 +13,7 @@ from sqlalchemy import func, and_
 from app.models.base import get_db, SessionLocal
 from app.models.transaction import Transaction, CounterpartyMapping, TransactionType as ModelTransactionType
 from app.models.transaction import TransactionCategory as ModelCategory, NeedWantCategory as ModelNeedWant
+from app.models.prediction import Recommendation
 from app.schemas.transaction import (
     TransactionCreate, TransactionUpdate, TransactionResponse,
     TransactionListResponse, TransactionSummary,
@@ -44,6 +45,26 @@ def _trigger_income_nudge(user_id: int, income_amount: float, income_source: Opt
         pass
     finally:
         db.close()
+
+
+_SAVINGS_CATEGORIES = {
+    ModelCategory.SAVINGS,
+    ModelCategory.EJO_HEZA,
+    ModelCategory.INVESTMENT,
+}
+
+
+def _close_income_nudges(user_id: int, db: Session) -> None:
+    """Mark recent unacted income nudges as acted upon when a savings transaction arrives."""
+    cutoff = datetime.now() - timedelta(hours=48)
+    db.query(Recommendation).filter(
+        Recommendation.user_id == user_id,
+        Recommendation.trigger_type == "income",
+        Recommendation.is_acted_upon == False,
+        Recommendation.is_dismissed == False,
+        Recommendation.created_at >= cutoff,
+    ).update({"is_acted_upon": True, "acted_at": datetime.now()}, synchronize_session=False)
+    db.commit()
 
 
 def _adapt_parsed(result: dict, raw_sms: str) -> dict:
@@ -429,6 +450,13 @@ async def parse_sms_messages(
             db.add(transaction)
             db.commit()
             db.refresh(transaction)
+
+            # Auto-close income nudges if the user just saved / invested
+            if transaction.category in _SAVINGS_CATEGORIES:
+                try:
+                    _close_income_nudges(user_id, db)
+                except Exception:
+                    pass
 
             # Auto-create RNIT purchase record
             if parsed.get("is_rnit"):

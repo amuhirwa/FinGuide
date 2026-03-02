@@ -136,6 +136,8 @@ class RecommendationInteraction(BaseModel):
 class GenerateNudgesRequest(BaseModel):
     """Request body for the generate-nudges endpoint."""
     trigger_type: str = Field(default="manual", pattern="^(manual|daily|weekly|income)$")
+    income_amount: Optional[float] = Field(default=None, ge=0)
+    income_source: Optional[str] = None
 
 
 class InvestmentSimulationRequest(BaseModel):
