@@ -10,8 +10,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/insights_model.dart';
+import '../../data/repositories/insights_repository.dart';
 import '../bloc/insights_bloc.dart';
 
 // ==================== Financial Health Page ====================
@@ -1635,4 +1637,507 @@ class _GrowthChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+// ==================== Finance Advisor Chat Page ====================
+
+/// A message in the chat conversation.
+class _ChatBubble {
+  final String text;
+  final bool isUser;
+
+  const _ChatBubble({required this.text, required this.isUser});
+}
+
+/// FinanceAdvisorPage — AI-powered finance chat using Claude.
+class FinanceAdvisorPage extends StatefulWidget {
+  const FinanceAdvisorPage({super.key});
+
+  @override
+  State<FinanceAdvisorPage> createState() => _FinanceAdvisorPageState();
+}
+
+class _FinanceAdvisorPageState extends State<FinanceAdvisorPage> {
+  final InsightsRepository _repo = getIt<InsightsRepository>();
+  final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
+
+  final List<_ChatBubble> _messages = [];
+  bool _isLoading = false;
+
+  static const _suggestions = [
+    'How much can I spend this week?',
+    'Am I on track with my savings goals?',
+    'Should I invest in Ejo Heza?',
+    'What are my biggest expenses?',
+    'How do I build an emergency fund?',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _messages.add(const _ChatBubble(
+      isUser: false,
+      text:
+          "Muraho! 👋 I'm your FinGuide AI advisor. Ask me anything about your finances — budgeting, savings, investments, or how to make the most of your income.",
+    ));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send(String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty || _isLoading) return;
+
+    _controller.clear();
+    setState(() {
+      _messages.add(_ChatBubble(isUser: true, text: trimmed));
+      _isLoading = true;
+    });
+    _scrollToBottom();
+
+    // Build history from existing messages (skip welcome message at index 0)
+    final history = _messages
+        .skip(1) // skip the welcome message
+        .take(
+            _messages.length - 2) // exclude the latest user message just added
+        .map((m) => {
+              'role': m.isUser ? 'user' : 'assistant',
+              'content': m.text,
+            })
+        .toList();
+
+    final result = await _repo.chatWithAdvisor(
+      message: trimmed,
+      history: history,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      result.fold(
+        (error) => _messages.add(const _ChatBubble(
+          isUser: false,
+          text:
+              "Sorry, I couldn't connect right now. Please check your connection and try again.",
+        )),
+        (reply) => _messages.add(_ChatBubble(isUser: false, text: reply)),
+      );
+    });
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FD),
+      appBar: _buildAppBar(),
+      body: Column(
+        children: [
+          // Suggestion chips — visible only before user sends a message
+          if (_messages.length == 1) _buildSuggestions(),
+          // Message list
+          Expanded(child: _buildMessageList()),
+          // Input bar
+          _buildInputBar(),
+        ],
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      leading: BackButton(color: Colors.grey[700]),
+      titleSpacing: 0,
+      title: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.primary, AppColors.primary.withOpacity(0.7)],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child:
+                const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Finance Advisor',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+              Text(
+                'Powered by Claude AI',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        Container(
+          margin: const EdgeInsets.only(right: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE0F2F1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            'AI',
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF00695C),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuggestions() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Try asking:',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: Colors.grey[500],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _suggestions
+                .map(
+                  (s) => GestureDetector(
+                    onTap: () => _send(s),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: AppColors.primary.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        s,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessageList() {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: _messages.length + (_isLoading ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (_isLoading && index == _messages.length) {
+          return _buildTypingIndicator();
+        }
+        return _buildBubble(_messages[index]);
+      },
+    );
+  }
+
+  Widget _buildBubble(_ChatBubble msg) {
+    final isUser = msg.isUser;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!isUser) ...[
+            Container(
+              width: 28,
+              height: 28,
+              margin: const EdgeInsets.only(right: 8, bottom: 2),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withOpacity(0.7)
+                  ],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child:
+                  const Icon(Icons.auto_awesome, color: Colors.white, size: 14),
+            ),
+          ],
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isUser ? AppColors.primary : Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(18),
+                  topRight: const Radius.circular(18),
+                  bottomLeft: Radius.circular(isUser ? 18 : 4),
+                  bottomRight: Radius.circular(isUser ? 4 : 18),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                msg.text,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: isUser ? Colors.white : const Color(0xFF1E293B),
+                  height: 1.45,
+                ),
+              ),
+            ),
+          ),
+          if (isUser) const SizedBox(width: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypingIndicator() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.primary, AppColors.primary.withOpacity(0.7)],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child:
+                const Icon(Icons.auto_awesome, color: Colors.white, size: 14),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+                bottomRight: Radius.circular(18),
+                bottomLeft: Radius.circular(4),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(
+                3,
+                (i) => _TypingDot(delay: Duration(milliseconds: i * 200)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputBar() {
+    return Container(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                textCapitalization: TextCapitalization.sentences,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: const Color(0xFF1E293B),
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Ask your finance advisor...',
+                  hintStyle: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.grey[400],
+                  ),
+                  border: InputBorder.none,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                onSubmitted: _send,
+                maxLines: null,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          GestureDetector(
+            onTap: () => _send(_controller.text),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withOpacity(0.8)
+                  ],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: _isLoading
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Icon(Icons.send, color: Colors.white, size: 20),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Animated typing dot for the "AI is thinking" indicator.
+class _TypingDot extends StatefulWidget {
+  final Duration delay;
+  const _TypingDot({required this.delay});
+
+  @override
+  State<_TypingDot> createState() => _TypingDotState();
+}
+
+class _TypingDotState extends State<_TypingDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _anim = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+    Future.delayed(widget.delay, () {
+      if (mounted) _ctrl.repeat(reverse: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) => Container(
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        width: 7,
+        height: 7 + (_anim.value * 4),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.5 + _anim.value * 0.5),
+          borderRadius: BorderRadius.circular(4),
+        ),
+      ),
+    );
+  }
 }

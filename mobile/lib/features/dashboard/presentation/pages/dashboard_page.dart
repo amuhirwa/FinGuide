@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
@@ -305,12 +306,43 @@ class _HomeContent extends StatelessWidget {
   }
 }
 
-/// Balance Card Widget
-class _BalanceCard extends StatelessWidget {
+/// Balance Card Widget — loads live safe-to-spend data
+class _BalanceCard extends StatefulWidget {
   const _BalanceCard();
 
   @override
+  State<_BalanceCard> createState() => _BalanceCardState();
+}
+
+class _BalanceCardState extends State<_BalanceCard> {
+  final ApiClient _api = getIt<ApiClient>();
+  Map<String, dynamic>? _data;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final data = await _api.getSafeToSpend();
+      if (mounted) setState(() => _data = data);
+    } catch (_) {}
+  }
+
+  String _fmt(double v) {
+    if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(1)}M';
+    if (v >= 1000) return '${(v / 1000).toStringAsFixed(0)}k';
+    return v.toStringAsFixed(0);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final balance = (_data?['total_balance'] as num?)?.toDouble() ?? 0.0;
+    final safeToSpend = (_data?['safe_to_spend'] as num?)?.toDouble() ?? 0.0;
+    final safePerDay = (_data?['safe_per_day'] as num?)?.toDouble() ?? 0.0;
+
     return Container(
       width: double.infinity,
       height: 200,
@@ -389,29 +421,38 @@ class _BalanceCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'RWF ',
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white.withOpacity(0.8),
+                    _data == null
+                        ? Container(
+                            width: 160,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          )
+                        : RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'RWF ',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white.withOpacity(0.8),
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: _fmt(balance),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                    height: 1.0,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          TextSpan(
-                            text: '850,000',
-                            style: GoogleFonts.poppins(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              height: 1.0,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
                 Row(
@@ -419,7 +460,7 @@ class _BalanceCard extends StatelessWidget {
                   children: [
                     _BalanceIndicator(
                       label: 'Safe to Spend',
-                      amount: '320k',
+                      amount: _data == null ? '—' : _fmt(safeToSpend),
                       color: const Color(0xFFB3E5FC),
                     ),
                     Container(
@@ -428,8 +469,8 @@ class _BalanceCard extends StatelessWidget {
                       color: Colors.white.withOpacity(0.3),
                     ),
                     _BalanceIndicator(
-                      label: 'Ejo Heza Savings',
-                      amount: '56k',
+                      label: 'Daily Budget',
+                      amount: _data == null ? '—' : _fmt(safePerDay),
                       color: const Color(0xFFFFD54F),
                     ),
                   ],
@@ -853,8 +894,8 @@ class _AIInsightsSectionState extends State<_AIInsightsSection> {
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: _refresh,
-                    child: Icon(Icons.refresh,
-                        size: 20, color: Colors.grey[500]),
+                    child:
+                        Icon(Icons.refresh, size: 20, color: Colors.grey[500]),
                   ),
                 ],
               ),
@@ -1128,8 +1169,128 @@ class _EmptyNudgeCard extends StatelessWidget {
 }
 
 /// Recent Transactions Section
-class _RecentTransactionsSection extends StatelessWidget {
+class _RecentTransactionsSection extends StatefulWidget {
   const _RecentTransactionsSection();
+
+  @override
+  State<_RecentTransactionsSection> createState() =>
+      _RecentTransactionsSectionState();
+}
+
+class _RecentTransactionsSectionState
+    extends State<_RecentTransactionsSection> {
+  final ApiClient _api = getIt<ApiClient>();
+  List<Map<String, dynamic>> _transactions = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final data = await _api.getTransactions(pageSize: 5);
+      final items = (data['items'] as List? ?? []).cast<Map<String, dynamic>>();
+      if (mounted)
+        setState(() {
+          _transactions = items;
+          _loading = false;
+        });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  String _fmtDate(String? raw) {
+    if (raw == null) return '';
+    try {
+      final dt = DateTime.parse(raw).toLocal();
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final txDay = DateTime(dt.year, dt.month, dt.day);
+      final diff = today.difference(txDay).inDays;
+      final time = DateFormat('h:mm a').format(dt);
+      if (diff == 0) return 'Today, $time';
+      if (diff == 1) return 'Yesterday, $time';
+      return DateFormat('MMM d, h:mm a').format(dt);
+    } catch (_) {
+      return raw;
+    }
+  }
+
+  _TileConfig _configFor(Map<String, dynamic> tx) {
+    final type = (tx['transaction_type'] as String? ?? '').toLowerCase();
+    final category = (tx['category'] as String? ?? '').toLowerCase();
+    final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+    final formatted = NumberFormat('#,###').format(amount.round());
+
+    if (type == 'income') {
+      return _TileConfig(
+        title: tx['counterparty_name'] as String? ?? 'Income',
+        subtitle: tx['description'] as String? ?? '',
+        amount: '+ RWF $formatted',
+        isPositive: true,
+        icon: Icons.arrow_downward_rounded,
+        color: Colors.green.shade100,
+        iconColor: Colors.green.shade700,
+      );
+    }
+    if (type == 'savings') {
+      return _TileConfig(
+        title: tx['counterparty_name'] as String? ?? 'Savings',
+        subtitle: tx['description'] as String? ?? '',
+        amount: '- RWF $formatted',
+        isPositive: false,
+        icon: Icons.shield_outlined,
+        color: Colors.orange.shade100,
+        iconColor: Colors.orange.shade700,
+      );
+    }
+    // expense — icon by category
+    IconData icon = Icons.remove_circle_outline;
+    Color bg = Colors.grey.shade100;
+    Color fg = Colors.grey.shade700;
+    if (category.contains('food') || category.contains('grocer')) {
+      icon = Icons.restaurant;
+      bg = Colors.red.shade100;
+      fg = Colors.red.shade700;
+    } else if (category.contains('transport')) {
+      icon = Icons.directions_bus;
+      bg = Colors.blue.shade100;
+      fg = Colors.blue.shade700;
+    } else if (category.contains('airtime') || category.contains('data')) {
+      icon = Icons.wifi;
+      bg = Colors.blue.shade100;
+      fg = Colors.blue.shade700;
+    } else if (category.contains('util')) {
+      icon = Icons.bolt;
+      bg = Colors.yellow.shade100;
+      fg = Colors.yellow.shade800;
+    } else if (category.contains('entertainment')) {
+      icon = Icons.movie_outlined;
+      bg = Colors.purple.shade100;
+      fg = Colors.purple.shade700;
+    } else if (category.contains('health')) {
+      icon = Icons.local_hospital_outlined;
+      bg = Colors.teal.shade100;
+      fg = Colors.teal.shade700;
+    } else if (category.contains('momo') || category.contains('transfer')) {
+      icon = Icons.smartphone;
+      bg = Colors.green.shade100;
+      fg = Colors.green.shade700;
+    }
+    return _TileConfig(
+      title: tx['counterparty_name'] as String? ?? 'Expense',
+      subtitle: tx['description'] as String? ?? '',
+      amount: '- RWF $formatted',
+      isPositive: false,
+      icon: icon,
+      color: bg,
+      iconColor: fg,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1163,41 +1324,64 @@ class _RecentTransactionsSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          _TransactionTile(
-            title: 'MoMo Transfer',
-            subtitle: 'Payment from Client A',
-            amount: '+ RWF 50,000',
-            isPositive: true,
-            date: 'Today, 10:30 AM',
-            icon: Icons.smartphone,
-            color: Colors.green.shade100,
-            iconColor: Colors.green.shade700,
-          ),
-          _TransactionTile(
-            title: 'Airtime Bundle',
-            subtitle: 'MTN Rwanda',
-            amount: '- RWF 2,000',
-            isPositive: false,
-            date: 'Yesterday, 4:15 PM',
-            icon: Icons.wifi,
-            color: Colors.blue.shade100,
-            iconColor: Colors.blue.shade700,
-          ),
-          _TransactionTile(
-            title: 'Ejo Heza Contribution',
-            subtitle: 'Long term savings',
-            amount: '- RWF 5,000',
-            isPositive: false,
-            date: 'Feb 1, 09:00 AM',
-            icon: Icons.shield_outlined,
-            color: Colors.orange.shade100,
-            iconColor: Colors.orange.shade700,
-          ),
+          if (_loading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else if (_transactions.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                'No recent transactions',
+                style: GoogleFonts.inter(
+                  color: Colors.grey[500],
+                  fontSize: 14,
+                ),
+              ),
+            )
+          else
+            ...List.generate(_transactions.length, (i) {
+              final tx = _transactions[i];
+              final cfg = _configFor(tx);
+              return _TransactionTile(
+                title: cfg.title,
+                subtitle: cfg.subtitle,
+                amount: cfg.amount,
+                isPositive: cfg.isPositive,
+                date: _fmtDate(tx['transaction_date'] as String?),
+                icon: cfg.icon,
+                color: cfg.color,
+                iconColor: cfg.iconColor,
+              );
+            }),
           const SizedBox(height: 80),
         ],
       ),
     );
   }
+}
+
+/// Helper data class for transaction tile configuration
+class _TileConfig {
+  final String title;
+  final String subtitle;
+  final String amount;
+  final bool isPositive;
+  final IconData icon;
+  final Color color;
+  final Color iconColor;
+  const _TileConfig({
+    required this.title,
+    required this.subtitle,
+    required this.amount,
+    required this.isPositive,
+    required this.icon,
+    required this.color,
+    required this.iconColor,
+  });
 }
 
 /// Transaction Tile Widget
@@ -1358,6 +1542,90 @@ class _InsightsContent extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
+            // Finance Advisor Card
+            GestureDetector(
+              onTap: () => context.push(Routes.advisor),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary,
+                      AppColors.primary.withOpacity(0.85),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.auto_awesome,
+                          color: Colors.white, size: 26),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Finance Advisor',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Ask anything about your money',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.white.withOpacity(0.85),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'AI',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward_ios,
+                        color: Colors.white, size: 16),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             // Health Score Card
             GestureDetector(
               onTap: () => context.push(Routes.financialHealth),

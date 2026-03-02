@@ -67,6 +67,7 @@ class Routes {
   static const String financialHealth = '/insights/health';
   static const String predictions = '/insights/predictions';
   static const String investmentSimulator = '/insights/simulator';
+  static const String advisor = '/insights/advisor';
 
   // Investments
   static const String investments = '/investments';
@@ -204,6 +205,11 @@ class AppRouter {
           create: (_) => getIt<InsightsBloc>(),
           child: const InvestmentSimulatorPage(),
         ),
+      ),
+      GoRoute(
+        path: Routes.advisor,
+        name: 'advisor',
+        builder: (context, state) => const FinanceAdvisorPage(),
       ),
 
       // ==================== Investments ====================

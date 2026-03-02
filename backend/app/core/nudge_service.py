@@ -341,3 +341,118 @@ Generate 1-2 nudges appropriate for this trigger. Return a JSON array like:
         len(created), user_id, trigger_type,
     )
     return created
+
+
+# ─── Finance Advisor Chat ─────────────────────────────────────────────────────
+
+def chat_with_advisor(
+    user_id: int,
+    db: Session,
+    message: str,
+    history: list[dict],
+) -> str:
+    """
+    Chat with the FinGuide AI financial advisor.
+
+    Provides personalized financial advice using the user's live financial
+    context (income, expenses, goals, investments, health score).
+
+    Args:
+        user_id:  The authenticated user.
+        db:       Database session.
+        message:  The user's latest message.
+        history:  Previous conversation turns [{role, content}, ...].
+
+    Returns:
+        The advisor's reply as a plain string.
+    """
+    if not settings.ANTHROPIC_API_KEY:
+        return (
+            "I'm unable to connect to the AI advisor right now. "
+            "Please make sure your API key is configured."
+        )
+
+    context = _get_user_context(user_id, db)
+    now = datetime.now()
+
+    # Build a concise, structured financial snapshot
+    goals_list = []
+    for g in context["active_goals"]:
+        days_str = f" — {g['days_left']} days left" if g.get('days_left') else ""
+        goals_list.append(f"  • {g['name']}: {g['progress_pct']:.0f}% of RWF {g['target']:,.0f}{days_str}")
+    
+    goals_text = "\n".join(goals_list) or "  (no active goals)"
+
+    investments_list = []
+    for i in context["investments"]:
+        contrib = f", contributes RWF {i['monthly_contribution']:,.0f}/month" if i.get('monthly_contribution') else ""
+        investments_list.append(f"  • {i['name']} ({i['type']}): RWF {i['current_value']:,.0f}{contrib}")
+
+    investments_text = "\n".join(investments_list) or "  (no active investments)"
+    top_cats = ", ".join(
+        f"{c['category']} RWF {c['amount']:,.0f}"
+        for c in context["top_expense_categories"][:5]
+    ) or "none"
+
+    health_score = (
+        f"{context['health_score']['overall_score']}/100"
+        if context.get("health_score")
+        else "not calculated yet"
+    )
+    savings_rate = (
+        f"{context['health_score']['savings_rate']:.1f}%"
+        if context.get("health_score")
+        else "unknown"
+    )
+
+    context_block = f"""User's financial snapshot ({now.strftime('%B %Y')}):
+• Income (last 30 days):   RWF {context['income_30d']:,.0f}
+• Expenses (last 30 days): RWF {context['expenses_30d']:,.0f}
+• Estimated balance:       RWF {context['estimated_balance']:,.0f}
+• Savings this month:      RWF {context['savings_this_month']:,.0f}
+• Savings rate:            {savings_rate}
+• Top expense categories:  {top_cats}
+• Financial health score:  {health_score}
+• Savings goals:
+{goals_text}
+• Investments:
+{investments_text}"""
+
+    system_prompt = f"""You are FinGuide, a friendly personal finance advisor for Rwandan youth. \
+You give clear, concise, actionable advice in plain English.
+
+{context_block}
+
+Conversation guidelines:
+- Keep replies to 3–5 sentences unless a detailed explanation is asked for.
+- Reference the user's actual numbers (amounts, goal names, percentages) when relevant.
+- Use RWF for currency. Round large amounts to thousands (e.g. "RWF 50,000").
+- You may use occasional Kinyarwanda for warmth (Muraho, Murakoze, Ego, etc.).
+- Topics you can help with: budgeting, saving, Ejo Heza, RNIT, spending habits, \
+  financial goals, safe-to-spend, emergency funds, and general investing in Rwanda.
+- Do NOT give legal, tax, or medical advice beyond general guidance.
+- If the user's question is unrelated to personal finance, politely redirect."""
+
+    # Limit history to the last 12 turns (6 exchanges) to control token usage
+    messages: list[dict] = [
+        {"role": m["role"], "content": m["content"]}
+        for m in history[-12:]
+    ]
+    messages.append({"role": "user", "content": message})
+
+    try:
+        client = _get_client()
+        response = client.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=600,
+            system=system_prompt,
+            messages=messages,
+        )
+        return response.content[0].text.strip()
+
+    except anthropic.APIError as e:
+        logger.error("Anthropic API error during advisor chat: %s", e)
+        return "Sorry, I'm having trouble connecting right now. Please try again in a moment."
+    except Exception as e:
+        logger.error("Unexpected error during advisor chat: %s", e)
+        return "Something went wrong on my end. Please try again."

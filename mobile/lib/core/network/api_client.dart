@@ -21,8 +21,7 @@ class ApiClient {
   // static const String baseUrl = 'http://localhost:8000/api/v1'; // iOS simulator
   // static const String baseUrl =
   //     'http://192.168.1.73:8000/api/v1'; // iOS simulator
-  static const String baseUrl =
-      'http://192.168.0.114:8000/api/v1';
+  static const String baseUrl = 'http://192.168.3.44:8000/api/v1';
 
   // ==================== Auth Endpoints ====================
 
@@ -488,6 +487,21 @@ class ApiClient {
   /// Get auto-computed savings piggybank data
   Future<Map<String, dynamic>> getPiggybank() async {
     final response = await _dio.get('/goals/piggybank');
+    return response.data;
+  }
+
+  /// Chat with the AI finance advisor
+  Future<Map<String, dynamic>> chatWithAdvisor({
+    required String message,
+    List<Map<String, dynamic>> history = const [],
+  }) async {
+    final response = await _dio.post(
+      '/insights/chat',
+      data: {
+        'message': message,
+        'history': history,
+      },
+    );
     return response.data;
   }
 

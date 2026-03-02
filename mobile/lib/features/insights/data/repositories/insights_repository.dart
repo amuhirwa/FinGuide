@@ -79,6 +79,25 @@ class InsightsRepository {
     }
   }
 
+  Future<Either<String, SimulationResult>> getSimulationResult({
+    required double initialAmount,
+    required double monthlyContribution,
+    required int months,
+    required double annualReturn,
+  }) async {
+    try {
+      final result = runSimulation(
+        initialAmount: initialAmount,
+        monthlyContribution: monthlyContribution,
+        months: months,
+        annualReturn: annualReturn,
+      );
+      return Right(result);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
   SimulationResult runSimulation({
     required double initialAmount,
     required double monthlyContribution,
@@ -91,5 +110,21 @@ class InsightsRepository {
       months: months,
       annualReturn: annualReturn,
     );
+  }
+
+  /// Send a message to the AI finance advisor and receive a reply.
+  Future<Either<String, String>> chatWithAdvisor({
+    required String message,
+    List<Map<String, dynamic>> history = const [],
+  }) async {
+    try {
+      final response = await _apiClient.chatWithAdvisor(
+        message: message,
+        history: history,
+      );
+      return Right(response['reply'] as String? ?? '');
+    } catch (e) {
+      return Left(e.toString());
+    }
   }
 }

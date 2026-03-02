@@ -83,6 +83,29 @@ class SafeToSpendResponse(BaseModel):
     reserved_for_goals: float
     emergency_buffer: float
     explanation: str
+    # Per-period breakdowns (from rolling-average algorithm)
+    safe_per_day: float = 0.0
+    safe_per_week: float = 0.0
+    weeks_remaining: float = 0.0
+    days_remaining: int = 0
+    avg_weekly_expense: float = 0.0
+
+
+class ChatMessage(BaseModel):
+    """A single message in a chat conversation."""
+    role: str  # "user" or "assistant"
+    content: str
+
+
+class ChatRequest(BaseModel):
+    """Request body for the AI advisor chat endpoint."""
+    message: str
+    history: List[ChatMessage] = []
+
+
+class ChatResponse(BaseModel):
+    """Response from the AI advisor."""
+    reply: str
 
 
 class RecommendationResponse(BaseModel):

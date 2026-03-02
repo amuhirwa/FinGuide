@@ -4,6 +4,7 @@ Predictions & Insights Endpoints
 AI predictions, health score, recommendations, and dashboard.
 """
 
+import calendar
 from typing import List
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -23,7 +24,8 @@ from app.schemas.prediction import (
     CashFlowForecast, FinancialHealthScoreResponse,
     SafeToSpendResponse, RecommendationResponse, RecommendationInteraction,
     InvestmentSimulationRequest, InvestmentSimulationResponse,
-    DashboardSummary, IrregularityAlert, GenerateNudgesRequest
+    DashboardSummary, IrregularityAlert, GenerateNudgesRequest,
+    ChatRequest, ChatResponse,
 )
 from app.schemas.user import TokenPayload
 from app.core.deps import get_current_active_user
@@ -370,50 +372,120 @@ async def get_safe_to_spend(
     current_user: TokenPayload = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Calculate safe to spend amount."""
+    """
+    Calculate safe-to-spend using a rolling 8-week expense average.
+
+    Algorithm:
+     1. Collect all expense transactions over the past 8 weeks.
+     2. Split into 7-day buckets and compute a trimmed mean (drops the min/max
+        week when 4+ weeks of data are available) to avoid outlier distortion.
+     3. Multiply average weekly expense by weeks remaining in the current month
+        to estimate predicted remaining expenses.
+     4. Reserve 2 weeks of average expenses as an emergency buffer.
+     5. Reserve goal weekly targets × weeks remaining for savings goals.
+     6. safe_to_spend = current_balance - predicted_remaining - goals - emergency.
+     7. Divide by remaining days/weeks to give per-day and per-week budgets.
+    """
     user_id = int(current_user.sub)
     now = datetime.now()
+
+    # ── Rolling 8-week expense average ───────────────────────────────────────
+    eight_weeks_ago = now - timedelta(weeks=8)
+    all_expenses = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_type == ModelTransactionType.EXPENSE,
+        Transaction.transaction_date >= eight_weeks_ago,
+        Transaction.transaction_date < now,
+    ).all()
+
+    # Bucket transactions into 7-day windows
+    weekly_totals: dict[int, float] = {}
+    for t in all_expenses:
+        week_key = int((t.transaction_date - eight_weeks_ago).total_seconds() // (7 * 86400))
+        weekly_totals[week_key] = weekly_totals.get(week_key, 0.0) + float(t.amount)
+
+    non_zero = [v for v in weekly_totals.values() if v > 0]
+    if non_zero:
+        if len(non_zero) >= 4:
+            # Trimmed mean: drop the single highest and single lowest week
+            trimmed = sorted(non_zero)[1:-1]
+        else:
+            trimmed = non_zero
+        avg_weekly_expense = sum(trimmed) / len(trimmed)
+    else:
+        avg_weekly_expense = 0.0
+
+    # ── Current month balance ─────────────────────────────────────────────────
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    
-    # Get this month's transactions
-    transactions = db.query(Transaction).filter(
-        and_(
-            Transaction.user_id == user_id,
-            Transaction.transaction_date >= month_start
-        )
+    month_transactions = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_date >= month_start,
     ).all()
-    
-    total_income = sum(t.amount for t in transactions if t.transaction_type == ModelTransactionType.INCOME)
-    total_expenses = sum(t.amount for t in transactions if t.transaction_type == ModelTransactionType.EXPENSE)
-    total_balance = total_income - total_expenses
-    
-    # Get active goals
+
+    total_income = sum(
+        float(t.amount) for t in month_transactions
+        if t.transaction_type == ModelTransactionType.INCOME
+    )
+    total_expenses_month = sum(
+        float(t.amount) for t in month_transactions
+        if t.transaction_type == ModelTransactionType.EXPENSE
+    )
+    total_balance = total_income - total_expenses_month
+
+    # ── Days / weeks remaining in the current calendar month ─────────────────
+    days_in_month = calendar.monthrange(now.year, now.month)[1]
+    days_remaining = max(1, days_in_month - now.day)
+    weeks_remaining = days_remaining / 7.0
+
+    # ── Active savings goals ──────────────────────────────────────────────────
     active_goals = db.query(SavingsGoal).filter(
-        and_(
-            SavingsGoal.user_id == user_id,
-            SavingsGoal.status == GoalStatus.ACTIVE
-        )
+        SavingsGoal.user_id == user_id,
+        SavingsGoal.status == GoalStatus.ACTIVE,
     ).all()
-    
-    # Calculate reserved amounts
-    reserved_for_goals = sum(g.daily_target * 7 for g in active_goals)  # Weekly goal contributions
-    
-    # Mock expected expenses (would come from predictions)
-    reserved_for_expenses = total_expenses * 0.3  # Assume 30% more expenses coming
-    
-    # Emergency buffer (7 days of average expenses)
-    avg_daily_expense = total_expenses / max(now.day, 1)
-    emergency_buffer = avg_daily_expense * 7
-    
-    safe_to_spend = max(0, total_balance - reserved_for_expenses - reserved_for_goals - emergency_buffer)
-    
+
+    reserved_for_goals = sum(
+        float(g.weekly_target or 0) for g in active_goals
+    ) * weeks_remaining
+
+    # ── Predicted remaining expenses (rolling average × weeks left) ───────────
+    reserved_for_expenses = avg_weekly_expense * weeks_remaining
+
+    # ── Emergency buffer (2 weeks of average weekly spend) ───────────────────
+    emergency_buffer = avg_weekly_expense * 2.0
+
+    # ── Safe-to-spend totals ──────────────────────────────────────────────────
+    safe_to_spend = max(
+        0.0,
+        total_balance - reserved_for_expenses - reserved_for_goals - emergency_buffer,
+    )
+    safe_per_day = safe_to_spend / days_remaining
+    safe_per_week = safe_to_spend / weeks_remaining
+
+    # ── Human-readable explanation ────────────────────────────────────────────
+    if avg_weekly_expense > 0:
+        explanation = (
+            f"Based on your {len(non_zero)}-week spending average of "
+            f"RWF {avg_weekly_expense:,.0f}/week, with {days_remaining} days "
+            f"remaining this month"
+        )
+    else:
+        explanation = (
+            f"Not enough expense history yet. "
+            f"Add more transactions to get an accurate safe-to-spend figure."
+        )
+
     return SafeToSpendResponse(
         safe_to_spend=round(safe_to_spend, 2),
         total_balance=round(total_balance, 2),
         reserved_for_expenses=round(reserved_for_expenses, 2),
         reserved_for_goals=round(reserved_for_goals, 2),
         emergency_buffer=round(emergency_buffer, 2),
-        explanation=f"Based on your spending patterns and {len(active_goals)} active savings goals"
+        explanation=explanation,
+        safe_per_day=round(safe_per_day, 2),
+        safe_per_week=round(safe_per_week, 2),
+        weeks_remaining=round(weeks_remaining, 1),
+        days_remaining=days_remaining,
+        avg_weekly_expense=round(avg_weekly_expense, 2),
     )
 
 
@@ -736,8 +808,7 @@ async def get_financial_health(
 
 
 @router.get("/spending-by-category")
-async def get_spending_by_category(
-    start_date: datetime = None,
+async def get_spending_by_category(    start_date: datetime = None,
     end_date: datetime = None,
     current_user: TokenPayload = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -782,3 +853,36 @@ async def get_spending_by_category(
         })
     
     return result
+
+
+# ── Finance Advisor Chat ─────────────────────────────────────────────────────
+
+@router.post("/chat", response_model=ChatResponse, tags=["Finance Advisor"])
+async def chat_with_advisor(
+    request: ChatRequest,
+    current_user: TokenPayload = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Chat with the FinGuide AI financial advisor.
+
+    Accepts a user message and optional prior conversation history,
+    enriches the prompt with the user's live financial context (income,
+    expenses, goals, investments, health score), and returns a concise,
+    personalized reply from Claude.
+
+    Request body:
+        message  – The user's latest question or message.
+        history  – Optional list of prior turns [{role, content}, ...].
+
+    Returns:
+        reply – The advisor's response as plain text.
+    """
+    user_id = int(current_user.sub)
+    reply = nudge_service.chat_with_advisor(
+        user_id=user_id,
+        db=db,
+        message=request.message,
+        history=[{"role": m.role, "content": m.content} for m in request.history],
+    )
+    return ChatResponse(reply=reply)
