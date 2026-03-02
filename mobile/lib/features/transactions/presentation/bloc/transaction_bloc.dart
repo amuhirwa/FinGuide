@@ -10,6 +10,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/transaction_model.dart';
 import '../../data/repositories/transaction_repository.dart';
 
+const _kPageSize = 50;
+
 // Events
 abstract class TransactionEvent extends Equatable {
   @override
@@ -23,6 +25,24 @@ class LoadTransactions extends TransactionEvent {
   final DateTime? endDate;
 
   LoadTransactions({
+    this.transactionType,
+    this.category,
+    this.startDate,
+    this.endDate,
+  });
+
+  @override
+  List<Object?> get props => [transactionType, category, startDate, endDate];
+}
+
+/// Load the next page and append to the existing list.
+class LoadMoreTransactions extends TransactionEvent {
+  final String? transactionType;
+  final String? category;
+  final DateTime? startDate;
+  final DateTime? endDate;
+
+  LoadMoreTransactions({
     this.transactionType,
     this.category,
     this.startDate,
@@ -84,11 +104,18 @@ class TransactionLoading extends TransactionState {}
 class TransactionsLoaded extends TransactionState {
   final List<TransactionModel> transactions;
   final TransactionSummary? summary;
+  final bool hasMore;
+  final int currentPage;
 
-  TransactionsLoaded(this.transactions, {this.summary});
+  TransactionsLoaded(
+    this.transactions, {
+    this.summary,
+    this.hasMore = false,
+    this.currentPage = 1,
+  });
 
   @override
-  List<Object?> get props => [transactions, summary];
+  List<Object?> get props => [transactions, summary, hasMore, currentPage];
 }
 
 class TransactionCreated extends TransactionState {
@@ -125,6 +152,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
 
   TransactionBloc(this._repository) : super(TransactionInitial()) {
     on<LoadTransactions>(_onLoadTransactions);
+    on<LoadMoreTransactions>(_onLoadMoreTransactions);
     on<LoadTransactionSummary>(_onLoadSummary);
     on<CreateTransaction>(_onCreateTransaction);
     on<UpdateTransaction>(_onUpdateTransaction);
@@ -137,20 +165,23 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   ) async {
     emit(TransactionLoading());
 
-    final result = await _repository.getTransactions(
+    final pageResult = await _repository.getTransactionPage(
       transactionType: event.transactionType,
       category: event.category,
       startDate: event.startDate,
       endDate: event.endDate,
-      pageSize: 200,
+      page: 1,
+      pageSize: _kPageSize,
     );
 
-    if (result.isLeft()) {
-      result.fold((error) => emit(TransactionError(error)), (_) {});
+    if (pageResult.isLeft()) {
+      pageResult.fold((error) => emit(TransactionError(error)), (_) {});
       return;
     }
 
-    final transactions = result.getOrElse(() => []);
+    final page = pageResult.getOrElse(
+      () => TransactionPage(transactions: [], currentPage: 1, totalPages: 1),
+    );
 
     // Also fetch summary for the same window so card stays in sync
     final summaryResult = await _repository.getTransactionSummary(
@@ -159,9 +190,51 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     );
 
     summaryResult.fold(
-      (_) => emit(TransactionsLoaded(transactions)),
-      (summary) => emit(TransactionsLoaded(transactions, summary: summary)),
+      (_) => emit(TransactionsLoaded(
+        page.transactions,
+        hasMore: page.hasMore,
+        currentPage: 1,
+      )),
+      (summary) => emit(TransactionsLoaded(
+        page.transactions,
+        summary: summary,
+        hasMore: page.hasMore,
+        currentPage: 1,
+      )),
     );
+  }
+
+  Future<void> _onLoadMoreTransactions(
+    LoadMoreTransactions event,
+    Emitter<TransactionState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! TransactionsLoaded || !currentState.hasMore) return;
+
+    final nextPage = currentState.currentPage + 1;
+
+    final pageResult = await _repository.getTransactionPage(
+      transactionType: event.transactionType,
+      category: event.category,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      page: nextPage,
+      pageSize: _kPageSize,
+    );
+
+    if (pageResult.isLeft()) return; // silently ignore; keep current list
+
+    final page = pageResult.getOrElse(
+      () => TransactionPage(
+          transactions: [], currentPage: nextPage, totalPages: nextPage),
+    );
+
+    emit(TransactionsLoaded(
+      [...currentState.transactions, ...page.transactions],
+      summary: currentState.summary,
+      hasMore: page.hasMore,
+      currentPage: nextPage,
+    ));
   }
 
   Future<void> _onLoadSummary(
@@ -180,9 +253,15 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       endDate: event.endDate,
     );
 
+    final prevLoaded = currentState is TransactionsLoaded ? currentState : null;
     result.fold(
       (error) => emit(TransactionError(error)),
-      (summary) => emit(TransactionsLoaded(transactions, summary: summary)),
+      (summary) => emit(TransactionsLoaded(
+        transactions,
+        summary: summary,
+        hasMore: prevLoaded?.hasMore ?? false,
+        currentPage: prevLoaded?.currentPage ?? 1,
+      )),
     );
   }
 

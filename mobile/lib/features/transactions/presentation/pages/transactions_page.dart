@@ -94,17 +94,41 @@ class _TransactionsPageState extends State<TransactionsPage> {
   String _searchQuery = '';
   final _searchController = TextEditingController();
 
+  // Pagination / lazy loading
+  final _scrollController = ScrollController();
+  bool _isLoadingMore = false;
+
   @override
   void initState() {
     super.initState();
-
+    _scrollController.addListener(_onScroll);
     _applyFilters();
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 400) {
+      final state = context.read<TransactionBloc>().state;
+      if (state is TransactionsLoaded && state.hasMore && !_isLoadingMore) {
+        setState(() => _isLoadingMore = true);
+        final (start, end) = _datePreset.range;
+        context.read<TransactionBloc>().add(LoadMoreTransactions(
+              transactionType: _selectedType,
+              category: _selectedCategory,
+              startDate: start,
+              endDate: end,
+            ));
+      }
+    }
   }
 
   @override
@@ -200,7 +224,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
           // Transaction List
 
           Expanded(
-            child: BlocBuilder<TransactionBloc, TransactionState>(
+            child: BlocConsumer<TransactionBloc, TransactionState>(
+              listener: (context, state) {
+                if (state is TransactionsLoaded && _isLoadingMore) {
+                  setState(() => _isLoadingMore = false);
+                }
+              },
               builder: (context, state) {
                 if (state is TransactionLoading) {
                   return const Center(child: CircularProgressIndicator());
@@ -268,7 +297,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     );
                   }
 
-                  return _buildTransactionList(displayed);
+                  return _buildTransactionList(
+                    displayed,
+                    hasMore: state.hasMore && _searchQuery.isEmpty,
+                  );
                 }
 
                 return _buildEmptyState();
@@ -280,8 +312,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const AddTransactionPage()),
-        ),
+          MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: context.read<TransactionBloc>(),
+              child: const AddTransactionPage(),
+            ),
+          ),
+        ).then((_) => _applyFilters()),
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -524,8 +561,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
           OutlinedButton.icon(
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const SmsImportPage()),
-            ),
+              MaterialPageRoute(
+                builder: (_) => BlocProvider.value(
+                  value: context.read<TransactionBloc>(),
+                  child: const SmsImportPage(),
+                ),
+              ),
+            ).then((_) => _applyFilters()),
             icon: const Icon(Icons.sms_outlined),
             label: const Text('Import from SMS'),
           ),
@@ -534,7 +576,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
     );
   }
 
-  Widget _buildTransactionList(List<TransactionModel> transactions) {
+  Widget _buildTransactionList(
+    List<TransactionModel> transactions, {
+    bool hasMore = false,
+  }) {
     // Group by date
 
     final grouped = <String, List<TransactionModel>>{};
@@ -547,10 +592,22 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
 
+    // +1 for the footer loader when there are more pages
+    final itemCount = sortedKeys.length + (hasMore ? 1 : 0);
+
     return ListView.builder(
+      controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: sortedKeys.length,
+      itemCount: itemCount,
       itemBuilder: (context, index) {
+        // Footer loading indicator
+        if (index == sortedKeys.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
         final dateKey = sortedKeys[index];
 
         final dayTransactions = grouped[dateKey]!;
@@ -1763,7 +1820,10 @@ class TransactionDetailPage extends StatelessWidget {
             onPressed: () => Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (_) => AddTransactionPage(transaction: transaction),
+                builder: (_) => BlocProvider.value(
+                  value: context.read<TransactionBloc>(),
+                  child: AddTransactionPage(transaction: transaction),
+                ),
               ),
             ),
           ),

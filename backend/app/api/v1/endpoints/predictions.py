@@ -498,9 +498,12 @@ async def get_safe_to_spend(
     emergency_buffer = avg_weekly_expense * 2.0
 
     # ── Safe-to-spend totals ──────────────────────────────────────────────────
+    # NOTE: reserved_for_expenses is NOT subtracted here — it is already
+    # accounted for in safe_per_day (daily budget naturally covers daily spend).
+    # Only lock away savings goals and emergency buffer from the spendable pool.
     safe_to_spend = max(
         0.0,
-        total_balance - reserved_for_expenses - reserved_for_goals - emergency_buffer,
+        total_balance - reserved_for_goals - emergency_buffer,
     )
     safe_per_day = safe_to_spend / days_remaining
     safe_per_week = safe_to_spend / weeks_remaining

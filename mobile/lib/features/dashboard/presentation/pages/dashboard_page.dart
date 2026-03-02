@@ -1192,7 +1192,8 @@ class _RecentTransactionsSectionState
   Future<void> _load() async {
     try {
       final data = await _api.getTransactions(pageSize: 5);
-      final items = (data['items'] as List? ?? []).cast<Map<String, dynamic>>();
+      final items =
+          (data['transactions'] as List? ?? []).cast<Map<String, dynamic>>();
       if (mounted)
         setState(() {
           _transactions = items;

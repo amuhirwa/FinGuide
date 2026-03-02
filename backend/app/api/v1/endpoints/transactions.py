@@ -214,21 +214,13 @@ async def get_transaction_summary(
     """
     user_id = int(current_user.sub)
     
-    # Default to current month if no dates provided
-    if not start_date:
-        today = datetime.now()
-        start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    if not end_date:
-        end_date = datetime.now()
-    
-    # Query transactions in date range
-    transactions = db.query(Transaction).filter(
-        and_(
-            Transaction.user_id == user_id,
-            Transaction.transaction_date >= start_date,
-            Transaction.transaction_date <= end_date
-        )
-    ).all()
+    # Query transactions in date range (all-time if no dates provided)
+    query = db.query(Transaction).filter(Transaction.user_id == user_id)
+    if start_date:
+        query = query.filter(Transaction.transaction_date >= start_date)
+    if end_date:
+        query = query.filter(Transaction.transaction_date <= end_date)
+    transactions = query.all()
     
     # Calculate totals
     total_income = sum(t.amount for t in transactions if t.transaction_type == ModelTransactionType.INCOME)
