@@ -288,13 +288,13 @@ class _HomeContent extends StatelessWidget {
 
           const SizedBox(height: 32),
 
-          // Safe to Spend Section
-          const _SafeToSpendSection(),
+          // Investment & Savings Cards (side by side)
+          const _InvestmentAndSavingsRow(),
 
           const SizedBox(height: 32),
 
-          // Investment & Savings Cards (side by side)
-          const _InvestmentAndSavingsRow(),
+          // Safe to Spend Section
+          const _SafeToSpendSection(),
 
           const SizedBox(height: 32),
 
@@ -347,6 +347,9 @@ class _BalanceCardState extends State<_BalanceCard> {
     final balance = (_data?['total_balance'] as num?)?.toDouble() ?? 0.0;
     final safeToSpend = (_data?['safe_to_spend'] as num?)?.toDouble() ?? 0.0;
     final safePerDay = (_data?['safe_per_day'] as num?)?.toDouble() ?? 0.0;
+    final expensesToday = (_data?['expenses_today'] as num?)?.toDouble() ?? 0.0;
+    final dailyRemaining =
+        (safePerDay - expensesToday).clamp(0.0, double.infinity);
 
     return Container(
       width: double.infinity,
@@ -474,8 +477,8 @@ class _BalanceCardState extends State<_BalanceCard> {
                       color: Colors.white.withOpacity(0.3),
                     ),
                     _BalanceIndicator(
-                      label: 'Daily Budget',
-                      amount: _data == null ? '—' : _fmt(safePerDay),
+                      label: 'Left Today',
+                      amount: _data == null ? '—' : _fmt(dailyRemaining),
                       color: const Color(0xFFFFD54F),
                     ),
                   ],

@@ -457,11 +457,12 @@ async def get_safe_to_spend(
         Transaction.balance_after.isnot(None),
     ).order_by(Transaction.transaction_date.desc()).first()
 
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
     if latest_with_balance:
         total_balance = float(latest_with_balance.balance_after)
     else:
         # Fallback: month income − month expenses
-        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         month_transactions = db.query(Transaction).filter(
             Transaction.user_id == user_id,
             Transaction.transaction_date >= month_start,
@@ -523,17 +524,42 @@ async def get_safe_to_spend(
     expenses_this_week = sum(float(t.amount) for t in week_txns)
 
     # ── Expected income still to arrive this month ────────────────────────────
-    # Use the existing income-pattern predictor and filter for predictions
-    # whose expected date falls before month-end but after right now.
-    # Weight each prediction by its confidence score to be conservative.
-    month_end = now.replace(
-        day=days_in_month, hour=23, minute=59, second=59, microsecond=0
+    # Strategy: avg monthly income over the past 3 full months minus what has
+    # already landed this month.  This is simple, reliable, and always produces
+    # a sensible number even with irregular / manually-entered transactions.
+    three_months_ago = (month_start - timedelta(days=92)).replace(
+        day=1, hour=0, minute=0, second=0, microsecond=0
     )
-    income_predictions = mock_income_predictions(user_id, db)
-    expected_income_remaining = sum(
-        p["predicted_amount"] * p["confidence"]
-        for p in income_predictions
-        if now < p["predicted_date"] <= month_end
+
+    # Historical income: all income in the 3 full months BEFORE this month
+    hist_income_txns = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_type == ModelTransactionType.INCOME,
+        Transaction.transaction_date >= three_months_ago,
+        Transaction.transaction_date < month_start,
+    ).all()
+
+    # Income already received this month
+    this_month_income_txns = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_type == ModelTransactionType.INCOME,
+        Transaction.transaction_date >= month_start,
+        Transaction.transaction_date < now,
+    ).all()
+
+    if hist_income_txns:
+        hist_total = sum(float(t.amount) for t in hist_income_txns)
+        avg_monthly_income = hist_total / 3.0  # over exactly 3 months
+    else:
+        avg_monthly_income = 0.0
+
+    income_received_this_month = sum(float(t.amount) for t in this_month_income_txns)
+
+    # How much of the typical monthly income is yet to arrive?
+    # Use 0.85 confidence on historical average to be conservative.
+    expected_income_remaining = max(
+        0.0,
+        (avg_monthly_income - income_received_this_month) * 0.85
     )
 
     # ── Safe-to-spend totals ──────────────────────────────────────────────────
