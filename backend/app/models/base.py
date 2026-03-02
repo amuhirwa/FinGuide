@@ -4,7 +4,7 @@ Database Base Model
 SQLAlchemy declarative base and database session management.
 """
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text as _text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -42,5 +42,26 @@ def init_db():
     Initialize database tables.
     
     Creates all tables defined in the models.
+    Also applies any incremental column migrations for SQLite.
     """
     Base.metadata.create_all(bind=engine)
+    # ── SQLite column migrations ──────────────────────────────────────
+    # Add columns that were introduced after initial table creation.
+    _apply_column_migrations()
+
+
+def _apply_column_migrations():
+    """Run safe ALTER TABLE ADD COLUMN statements for new columns."""
+    migrations = [
+        "ALTER TABLE transactions ADD COLUMN linked_investment_id INTEGER REFERENCES investments(id)",
+        "ALTER TABLE recommendations ADD COLUMN trigger_type VARCHAR(20)",
+        "ALTER TABLE recommendations ADD COLUMN nudge_metadata JSON",
+    ]
+    with engine.connect() as conn:
+        for sql in migrations:
+            try:
+                conn.execute(_text(sql))
+                conn.commit()
+            except Exception:
+                # Column already exists — expected after first run
+                pass

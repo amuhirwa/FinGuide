@@ -89,11 +89,22 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   final _currencyFormat = NumberFormat('#,###', 'en_US');
 
+  // Search
+  bool _searchVisible = false;
+  String _searchQuery = '';
+  final _searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
 
     _applyFilters();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -113,6 +124,21 @@ class _TransactionsPageState extends State<TransactionsPage> {
         ),
         actions: [
           IconButton(
+            icon: Icon(
+              _searchVisible ? Icons.search_off : Icons.search,
+              color: const Color(0xFF1E293B),
+            ),
+            onPressed: () {
+              setState(() {
+                _searchVisible = !_searchVisible;
+                if (!_searchVisible) {
+                  _searchQuery = '';
+                  _searchController.clear();
+                }
+              });
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.filter_list, color: Color(0xFF1E293B)),
             onPressed: _showFilterSheet,
           ),
@@ -127,6 +153,44 @@ class _TransactionsPageState extends State<TransactionsPage> {
           // Date preset pills
 
           _buildDatePresets(),
+
+          // Search bar (toggle via search icon)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            height: _searchVisible ? 60 : 0,
+            child: _searchVisible
+                ? Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                    child: TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      onChanged: (v) =>
+                          setState(() => _searchQuery = v.toLowerCase()),
+                      decoration: InputDecoration(
+                        hintText: 'Search by name, category…',
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 18),
+                                onPressed: () => setState(() {
+                                  _searchQuery = '';
+                                  _searchController.clear();
+                                }),
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
 
           // Active filters
 
@@ -171,7 +235,40 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     return _buildEmptyState();
                   }
 
-                  return _buildTransactionList(state.transactions);
+                  // Apply client-side search filter
+                  final displayed = _searchQuery.isEmpty
+                      ? state.transactions
+                      : state.transactions.where((tx) {
+                          final q = _searchQuery;
+                          return (tx.counterpartyName
+                                      ?.toLowerCase()
+                                      .contains(q) ??
+                                  false) ||
+                              (tx.counterparty?.toLowerCase().contains(q) ??
+                                  false) ||
+                              (tx.description?.toLowerCase().contains(q) ??
+                                  false) ||
+                              tx.category.name.toLowerCase().contains(q) ||
+                              tx.transactionType.name.toLowerCase().contains(q);
+                        }).toList();
+
+                  if (displayed.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.search_off,
+                              size: 56, color: Colors.grey[300]),
+                          const SizedBox(height: 12),
+                          Text('No results for “$_searchQuery”',
+                              style:
+                                  GoogleFonts.inter(color: Colors.grey[500])),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return _buildTransactionList(displayed);
                 }
 
                 return _buildEmptyState();
@@ -623,18 +720,48 @@ class _TransactionTile extends StatelessWidget {
 
     final isIncome = transaction.transactionType == TransactionType.income;
 
+    final isSavingsOrInvestment = const {
+      TransactionCategory.savings,
+      TransactionCategory.ejo_heza,
+      TransactionCategory.investment,
+    }.contains(transaction.category);
+
+    // Gold accent for savings, teal for investment/ejo_heza
+    final accentColor = transaction.category == TransactionCategory.savings
+        ? const Color(0xFFFFB81C)
+        : const Color(0xFF00A3AD);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        padding: isSavingsOrInvestment
+            ? const EdgeInsets.fromLTRB(12, 16, 16, 16)
+            : const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
+          border: isSavingsOrInvestment
+              ? Border(
+                  left: BorderSide(color: accentColor, width: 4),
+                )
+              : null,
+          gradient: isSavingsOrInvestment
+              ? LinearGradient(
+                  colors: [
+                    accentColor.withOpacity(0.04),
+                    Colors.white,
+                  ],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                )
+              : null,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 8,
+              color: isSavingsOrInvestment
+                  ? accentColor.withOpacity(0.08)
+                  : Colors.black.withOpacity(0.02),
+              blurRadius: isSavingsOrInvestment ? 12 : 8,
               offset: const Offset(0, 2),
             ),
           ],
@@ -699,18 +826,65 @@ class _TransactionTile extends StatelessWidget {
                           ),
                         ),
                       ],
+                      if (isSavingsOrInvestment) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: accentColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                transaction.category ==
+                                        TransactionCategory.savings
+                                    ? Icons.savings_outlined
+                                    : Icons.trending_up_rounded,
+                                size: 10,
+                                color: accentColor,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                transaction.category ==
+                                        TransactionCategory.savings
+                                    ? 'Savings'
+                                    : 'Investment',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: accentColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],
               ),
             ),
-            Text(
-              '${isIncome ? '+' : '-'} RWF ${format.format(transaction.amount)}',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: isIncome ? Colors.green[700] : const Color(0xFF1E293B),
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${isIncome ? '+' : '-'} RWF ${format.format(transaction.amount)}',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: isSavingsOrInvestment
+                        ? accentColor
+                        : isIncome
+                            ? Colors.green[700]
+                            : const Color(0xFF1E293B),
+                  ),
+                ),
+                if (isSavingsOrInvestment)
+                  Icon(Icons.star_rounded, size: 12, color: accentColor),
+              ],
             ),
           ],
         ),

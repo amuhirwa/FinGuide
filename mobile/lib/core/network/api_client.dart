@@ -19,10 +19,31 @@ class ApiClient {
   // static const String baseUrl =
   // 'http://10.0.2.2:8000/api/v1'; // Android emulator
   // static const String baseUrl = 'http://localhost:8000/api/v1'; // iOS simulator
-  static const String baseUrl =
-      'http://192.168.1.73:8000/api/v1'; // iOS simulator
+  // static const String baseUrl =
+  //     'http://192.168.1.73:8000/api/v1'; // iOS simulator
+  static const String baseUrl = 'http://192.168.3.44:8000/api/v1';
 
   // ==================== Auth Endpoints ====================
+
+  /// Send OTP to phone number via Twilio SMS
+  Future<void> sendOtp({required String phoneNumber}) async {
+    await _dio.post(
+      '/auth/send-otp',
+      data: {'phone_number': phoneNumber},
+    );
+  }
+
+  /// Verify OTP code – returns the short-lived otp_token on success
+  Future<String> verifyOtp({
+    required String phoneNumber,
+    required String otpCode,
+  }) async {
+    final response = await _dio.post(
+      '/auth/verify-otp',
+      data: {'phone_number': phoneNumber, 'otp_code': otpCode},
+    );
+    return response.data['otp_token'] as String;
+  }
 
   /// Register a new user
   Future<AuthResponseModel> register({
@@ -31,6 +52,7 @@ class ApiClient {
     required String password,
     required String ubudeheCategory,
     required String incomeFrequency,
+    required String otpToken,
   }) async {
     final response = await _dio.post(
       '/auth/register',
@@ -40,6 +62,7 @@ class ApiClient {
         'password': password,
         'ubudehe_category': ubudeheCategory,
         'income_frequency': incomeFrequency,
+        'otp_token': otpToken,
       },
     );
 
@@ -50,10 +73,15 @@ class ApiClient {
   Future<AuthResponseModel> login({
     required String phoneNumber,
     required String password,
+    required String otpToken,
   }) async {
     final response = await _dio.post(
       '/auth/login',
-      data: {'phone_number': phoneNumber, 'password': password},
+      data: {
+        'phone_number': phoneNumber,
+        'password': password,
+        'otp_token': otpToken,
+      },
     );
 
     return AuthResponseModel.fromJson(response.data);
@@ -258,6 +286,16 @@ class ApiClient {
     return response.data;
   }
 
+  /// Generate fresh AI nudges for the given trigger type.
+  /// trigger_type: "income" | "daily" | "weekly" | "manual"
+  Future<List<dynamic>> generateNudges(String triggerType) async {
+    final response = await _dio.post(
+      '/insights/generate-nudges',
+      data: {'trigger_type': triggerType},
+    );
+    return response.data as List<dynamic>;
+  }
+
   /// Simulate investment
   Future<Map<String, dynamic>> simulateInvestment({
     required String investmentType,
@@ -356,6 +394,29 @@ class ApiClient {
     return response.data;
   }
 
+  /// Get transactions linked to an investment
+  Future<List<dynamic>> getLinkedTransactions(int investmentId) async {
+    final response =
+        await _dio.get('/investments/$investmentId/linked-transactions');
+    return response.data as List<dynamic>;
+  }
+
+  /// Link a transaction to an investment
+  Future<Map<String, dynamic>> linkTransaction(
+      int investmentId, int txId) async {
+    final response =
+        await _dio.post('/investments/$investmentId/link-transaction/$txId');
+    return response.data;
+  }
+
+  /// Unlink a transaction from an investment
+  Future<Map<String, dynamic>> unlinkTransaction(
+      int investmentId, int txId) async {
+    final response =
+        await _dio.delete('/investments/$investmentId/link-transaction/$txId');
+    return response.data;
+  }
+
   // ==================== Health Check ====================
 
   /// Check API health
@@ -426,6 +487,21 @@ class ApiClient {
   /// Get auto-computed savings piggybank data
   Future<Map<String, dynamic>> getPiggybank() async {
     final response = await _dio.get('/goals/piggybank');
+    return response.data;
+  }
+
+  /// Chat with the AI finance advisor
+  Future<Map<String, dynamic>> chatWithAdvisor({
+    required String message,
+    List<Map<String, dynamic>> history = const [],
+  }) async {
+    final response = await _dio.post(
+      '/insights/chat',
+      data: {
+        'message': message,
+        'history': history,
+      },
+    );
     return response.data;
   }
 

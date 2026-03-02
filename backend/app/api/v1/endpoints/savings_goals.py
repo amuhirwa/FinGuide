@@ -43,6 +43,60 @@ def calculate_targets(goal: SavingsGoal):
     return round(daily_target, 2), round(weekly_target, 2)
 
 
+def calculate_realistic(goal: SavingsGoal, user_id: int, db):
+    """
+    Compute realistic savings rate based on 8-week income/expense history.
+
+    Returns (realistic_weekly_saving, realistic_weeks, realistic_finish_date,
+             avg_weekly_income, avg_weekly_surplus).
+    Saves ~30 % of weekly surplus toward this goal.
+    """
+    from sqlalchemy import and_
+    from app.models.transaction import (
+        Transaction, TransactionType as MTxType, TransactionCategory as MCat
+    )
+
+    eight_weeks_ago = datetime.now() - timedelta(weeks=8)
+    txs = db.query(Transaction).filter(
+        and_(
+            Transaction.user_id == user_id,
+            Transaction.transaction_date >= eight_weeks_ago,
+        )
+    ).all()
+
+    total_income = sum(
+        t.amount for t in txs if t.transaction_type == MTxType.INCOME
+    )
+    total_expenses = sum(
+        t.amount for t in txs
+        if t.transaction_type == MTxType.EXPENSE
+        and t.category not in (MCat.SAVINGS, MCat.INVESTMENT, MCat.EJO_HEZA)
+    )
+
+    avg_weekly_income = round(total_income / 8, 2)
+    avg_weekly_expenses = round(total_expenses / 8, 2)
+    avg_weekly_surplus = max(0.0, avg_weekly_income - avg_weekly_expenses)
+
+    # Allocate 30 % of weekly surplus to savings (floor to 0)
+    realistic_weekly_saving = round(avg_weekly_surplus * 0.30, 2)
+
+    remaining = goal.target_amount - goal.current_amount
+    if realistic_weekly_saving > 0 and remaining > 0:
+        realistic_weeks = int((remaining / realistic_weekly_saving) + 0.999)  # ceil
+        realistic_finish_date = datetime.now() + timedelta(weeks=realistic_weeks)
+    else:
+        realistic_weeks = None
+        realistic_finish_date = None
+
+    return (
+        realistic_weekly_saving,
+        realistic_weeks,
+        realistic_finish_date,
+        avg_weekly_income,
+        avg_weekly_surplus,
+    )
+
+
 @router.get("", response_model=List[SavingsGoalResponse])
 async def get_savings_goals(
     status: str = None,
@@ -60,11 +114,11 @@ async def get_savings_goals(
     goals = query.order_by(SavingsGoal.priority.desc(), SavingsGoal.deadline).all()
     
     # Update calculated fields
+    user_id = int(current_user.sub)
     response_goals = []
     for goal in goals:
         daily, weekly = calculate_targets(goal)
-        goal.daily_target = daily
-        goal.weekly_target = weekly
+        r_weekly, r_weeks, r_finish, avg_income, avg_surplus = calculate_realistic(goal, user_id, db)
         
         response_goals.append(SavingsGoalResponse(
             id=goal.id,
@@ -81,7 +135,12 @@ async def get_savings_goals(
             progress_percentage=goal.progress_percentage,
             remaining_amount=goal.remaining_amount,
             created_at=goal.created_at,
-            completed_at=goal.completed_at
+            completed_at=goal.completed_at,
+            realistic_weekly_saving=r_weekly,
+            realistic_weeks=r_weeks,
+            realistic_finish_date=r_finish,
+            avg_weekly_income=avg_income,
+            avg_weekly_surplus=avg_surplus,
         ))
     
     return response_goals
@@ -109,6 +168,7 @@ async def create_savings_goal(
     db.refresh(goal)
     
     daily, weekly = calculate_targets(goal)
+    r_weekly, r_weeks, r_finish, avg_income, avg_surplus = calculate_realistic(goal, int(current_user.sub), db)
     
     return SavingsGoalResponse(
         id=goal.id,
@@ -125,7 +185,12 @@ async def create_savings_goal(
         progress_percentage=goal.progress_percentage,
         remaining_amount=goal.remaining_amount,
         created_at=goal.created_at,
-        completed_at=goal.completed_at
+        completed_at=goal.completed_at,
+        realistic_weekly_saving=r_weekly,
+        realistic_weeks=r_weeks,
+        realistic_finish_date=r_finish,
+        avg_weekly_income=avg_income,
+        avg_weekly_surplus=avg_surplus,
     )
 
 
@@ -216,6 +281,7 @@ async def get_savings_goal(
         )
     
     daily, weekly = calculate_targets(goal)
+    r_weekly, r_weeks, r_finish, avg_income, avg_surplus = calculate_realistic(goal, int(current_user.sub), db)
     
     contributions = [
         GoalContributionResponse(
@@ -244,6 +310,11 @@ async def get_savings_goal(
         remaining_amount=goal.remaining_amount,
         created_at=goal.created_at,
         completed_at=goal.completed_at,
+        realistic_weekly_saving=r_weekly,
+        realistic_weeks=r_weeks,
+        realistic_finish_date=r_finish,
+        avg_weekly_income=avg_income,
+        avg_weekly_surplus=avg_surplus,
         contributions=contributions
     )
 
@@ -290,6 +361,7 @@ async def update_savings_goal(
     db.refresh(goal)
     
     daily, weekly = calculate_targets(goal)
+    r_weekly, r_weeks, r_finish, avg_income, avg_surplus = calculate_realistic(goal, int(current_user.sub), db)
     
     return SavingsGoalResponse(
         id=goal.id,
@@ -306,7 +378,12 @@ async def update_savings_goal(
         progress_percentage=goal.progress_percentage,
         remaining_amount=goal.remaining_amount,
         created_at=goal.created_at,
-        completed_at=goal.completed_at
+        completed_at=goal.completed_at,
+        realistic_weekly_saving=r_weekly,
+        realistic_weeks=r_weeks,
+        realistic_finish_date=r_finish,
+        avg_weekly_income=avg_income,
+        avg_weekly_surplus=avg_surplus,
     )
 
 
@@ -381,6 +458,7 @@ async def contribute_to_goal(
     db.refresh(goal)
     
     daily, weekly = calculate_targets(goal)
+    r_weekly, r_weeks, r_finish, avg_income, avg_surplus = calculate_realistic(goal, int(current_user.sub), db)
     
     return SavingsGoalResponse(
         id=goal.id,
@@ -397,6 +475,10 @@ async def contribute_to_goal(
         progress_percentage=goal.progress_percentage,
         remaining_amount=goal.remaining_amount,
         created_at=goal.created_at,
-        completed_at=goal.completed_at
+        completed_at=goal.completed_at,
+        realistic_weekly_saving=r_weekly,
+        realistic_weeks=r_weeks,
+        realistic_finish_date=r_finish,
+        avg_weekly_income=avg_income,
+        avg_weekly_surplus=avg_surplus,
     )
-

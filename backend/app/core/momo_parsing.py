@@ -71,7 +71,7 @@ def parse_momo_sms(sms_text: str):
     # ── PATTERN 2: SENT P2P (Expense) ────────────────────────────────
     # "1500 RWF transferred to Juldas NYIRISHEMA (250788217896) at ..."
     m = re.search(
-        r'([\d,]+) RWF transferred to (.*?)\s*\((25\d{9}|07\d{8})\) at ([\d-]+ [\d:]+)',
+        r'([\d,]+) RWF transferred to (.*?)\s*\((25\d{10}|25\d{9}|07\d{8})\) at ([\d-]+ [\d:]+)',
         clean, re.IGNORECASE
     )
     if m:

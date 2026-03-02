@@ -164,7 +164,11 @@ class Recommendation(Base):
     # Validity
     valid_until = Column(DateTime(timezone=True))
     is_active = Column(Boolean, default=True)
-    
+
+    # Nudge metadata (added for Claude-powered nudges)
+    trigger_type = Column(String(20))  # income, daily, weekly, manual
+    nudge_metadata = Column(JSON)  # {tone, style, context_summary}
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships

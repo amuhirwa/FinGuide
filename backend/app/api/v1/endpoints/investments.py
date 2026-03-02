@@ -16,6 +16,7 @@ from app.models.investment import (
     InvestmentType as ModelInvestmentType,
     InvestmentStatus as ModelInvestmentStatus
 )
+from app.models.transaction import Transaction as TransactionModel
 from app.schemas.investment import (
     InvestmentCreate, InvestmentUpdate, InvestmentResponse,
     InvestmentDetailResponse, InvestmentSummary,
@@ -23,6 +24,7 @@ from app.schemas.investment import (
     InvestmentAdvice, InvestmentProjection,
     InvestmentType, InvestmentStatus
 )
+from app.schemas.transaction import TransactionResponse
 from app.schemas.user import TokenPayload
 from app.core.deps import get_current_active_user
 
@@ -427,3 +429,88 @@ async def get_contributions(
     ).order_by(InvestmentContribution.contribution_date.desc()).all()
     
     return [ContributionResponse.model_validate(c) for c in contributions]
+
+
+# ==================== Transaction Linking ====================
+
+@router.get("/{investment_id}/linked-transactions", response_model=List[TransactionResponse])
+async def get_linked_transactions(
+    investment_id: int,
+    current_user: TokenPayload = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get all transactions linked to this investment."""
+    user_id = int(current_user.sub)
+
+    investment = db.query(Investment).filter(
+        and_(Investment.id == investment_id, Investment.user_id == user_id)
+    ).first()
+    if not investment:
+        raise HTTPException(status_code=404, detail="Investment not found")
+
+    txs = db.query(TransactionModel).filter(
+        TransactionModel.linked_investment_id == investment_id
+    ).order_by(TransactionModel.transaction_date.desc()).all()
+
+    return [TransactionResponse.model_validate(tx) for tx in txs]
+
+
+@router.post(
+    "/{investment_id}/link-transaction/{tx_id}",
+    response_model=TransactionResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def link_transaction(
+    investment_id: int,
+    tx_id: int,
+    current_user: TokenPayload = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Link a transaction to this investment to track which cash movements fund it."""
+    user_id = int(current_user.sub)
+
+    investment = db.query(Investment).filter(
+        and_(Investment.id == investment_id, Investment.user_id == user_id)
+    ).first()
+    if not investment:
+        raise HTTPException(status_code=404, detail="Investment not found")
+
+    tx = db.query(TransactionModel).filter(
+        and_(TransactionModel.id == tx_id, TransactionModel.user_id == user_id)
+    ).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    tx.linked_investment_id = investment_id
+    db.commit()
+    db.refresh(tx)
+    return TransactionResponse.model_validate(tx)
+
+
+@router.delete(
+    "/{investment_id}/link-transaction/{tx_id}",
+    response_model=TransactionResponse,
+)
+async def unlink_transaction(
+    investment_id: int,
+    tx_id: int,
+    current_user: TokenPayload = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Remove the link between a transaction and an investment."""
+    user_id = int(current_user.sub)
+
+    tx = db.query(TransactionModel).filter(
+        and_(
+            TransactionModel.id == tx_id,
+            TransactionModel.user_id == user_id,
+            TransactionModel.linked_investment_id == investment_id,
+        )
+    ).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Linked transaction not found")
+
+    tx.linked_investment_id = None
+    db.commit()
+    db.refresh(tx)
+    return TransactionResponse.model_validate(tx)

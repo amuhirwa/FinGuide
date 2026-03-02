@@ -8,8 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -304,12 +306,43 @@ class _HomeContent extends StatelessWidget {
   }
 }
 
-/// Balance Card Widget
-class _BalanceCard extends StatelessWidget {
+/// Balance Card Widget — loads live safe-to-spend data
+class _BalanceCard extends StatefulWidget {
   const _BalanceCard();
 
   @override
+  State<_BalanceCard> createState() => _BalanceCardState();
+}
+
+class _BalanceCardState extends State<_BalanceCard> {
+  final ApiClient _api = getIt<ApiClient>();
+  Map<String, dynamic>? _data;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final data = await _api.getSafeToSpend();
+      if (mounted) setState(() => _data = data);
+    } catch (_) {}
+  }
+
+  String _fmt(double v) {
+    if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(1)}M';
+    if (v >= 1000) return '${(v / 1000).toStringAsFixed(0)}k';
+    return v.toStringAsFixed(0);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final balance = (_data?['total_balance'] as num?)?.toDouble() ?? 0.0;
+    final safeToSpend = (_data?['safe_to_spend'] as num?)?.toDouble() ?? 0.0;
+    final safePerDay = (_data?['safe_per_day'] as num?)?.toDouble() ?? 0.0;
+
     return Container(
       width: double.infinity,
       height: 200,
@@ -388,29 +421,38 @@ class _BalanceCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'RWF ',
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white.withOpacity(0.8),
+                    _data == null
+                        ? Container(
+                            width: 160,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          )
+                        : RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'RWF ',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white.withOpacity(0.8),
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: _fmt(balance),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                    height: 1.0,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          TextSpan(
-                            text: '850,000',
-                            style: GoogleFonts.poppins(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              height: 1.0,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
                 Row(
@@ -418,7 +460,7 @@ class _BalanceCard extends StatelessWidget {
                   children: [
                     _BalanceIndicator(
                       label: 'Safe to Spend',
-                      amount: '320k',
+                      amount: _data == null ? '—' : _fmt(safeToSpend),
                       color: const Color(0xFFB3E5FC),
                     ),
                     Container(
@@ -427,8 +469,8 @@ class _BalanceCard extends StatelessWidget {
                       color: Colors.white.withOpacity(0.3),
                     ),
                     _BalanceIndicator(
-                      label: 'Ejo Heza Savings',
-                      amount: '56k',
+                      label: 'Daily Budget',
+                      amount: _data == null ? '—' : _fmt(safePerDay),
                       color: const Color(0xFFFFD54F),
                     ),
                   ],
@@ -753,109 +795,371 @@ class _SafeToSpendSection extends StatelessWidget {
   }
 }
 
-/// AI Insights Section
-class _AIInsightsSection extends StatelessWidget {
+/// AI Insights Section — fetches live Claude-generated nudges from the backend.
+class _AIInsightsSection extends StatefulWidget {
   const _AIInsightsSection();
+
+  @override
+  State<_AIInsightsSection> createState() => _AIInsightsSectionState();
+}
+
+class _AIInsightsSectionState extends State<_AIInsightsSection> {
+  final ApiClient _api = getIt<ApiClient>();
+
+  List<Map<String, dynamic>> _nudges = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNudges();
+  }
+
+  Future<void> _loadNudges() async {
+    try {
+      final data = await _api.getRecommendations();
+      if (mounted) {
+        setState(() {
+          _nudges = data.cast<Map<String, dynamic>>();
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _refresh() async {
+    setState(() => _loading = true);
+    try {
+      await _api.generateNudges('manual');
+      await _loadNudges();
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _dismiss(int id) async {
+    await _api.updateRecommendation(id, 'dismissed');
+    setState(() => _nudges.removeWhere((n) => n['id'] == id));
+  }
+
+  Future<void> _act(int id, String actionType) async {
+    await _api.updateRecommendation(id, 'acted');
+    // Navigate based on action type
+    if (!mounted) return;
+    if (actionType == 'invest') {
+      context.push(Routes.investments);
+    } else {
+      context.push(Routes.goals);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'AI Financial Forecast',
+                'Smart Nudges',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF1E293B),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE0F2F1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Beta',
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF00695C),
+              Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE0F2F1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'AI',
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF00695C),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: _refresh,
+                    child:
+                        Icon(Icons.refresh, size: 20, color: Colors.grey[500]),
+                  ),
+                ],
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.grey.shade100),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+          if (_loading)
+            _NudgeCardShimmer()
+          else if (_nudges.isEmpty)
+            _EmptyNudgeCard(onRefresh: _refresh)
+          else
+            Column(
+              children: _nudges
+                  .take(3)
+                  .map((n) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _NudgeCard(
+                          nudge: n,
+                          onAct: () =>
+                              _act(n['id'] as int, n['action_type'] ?? 'save'),
+                          onDismiss: () => _dismiss(n['id'] as int),
+                        ),
+                      ))
+                  .toList(),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+        ],
+      ),
+    );
+  }
+}
+
+class _NudgeCard extends StatelessWidget {
+  final Map<String, dynamic> nudge;
+  final VoidCallback onAct;
+  final VoidCallback onDismiss;
+
+  const _NudgeCard({
+    required this.nudge,
+    required this.onAct,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final type = nudge['recommendation_type'] as String? ?? 'savings';
+    final urgency = nudge['urgency'] as String? ?? 'normal';
+    final title = nudge['title'] as String? ?? '';
+    final message = nudge['message'] as String? ?? '';
+    final actionType = nudge['action_type'] as String? ?? 'save';
+
+    final colors = _colorsForType(type, urgency);
+    final icon = _iconForType(type);
+    final actionLabel = _actionLabel(actionType);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors['border']!, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors['iconBg'],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 18, color: colors['iconColor']),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.auto_awesome,
-                      size: 20,
-                      color: AppColors.secondary,
-                    ),
-                    const SizedBox(width: 8),
                     Text(
-                      'Upcoming volatility detected',
+                      title,
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFF1E293B),
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        height: 1.4,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'Based on your gig patterns, your cash flow might dip around the 15th. We recommend saving RWF 15,000 extra this week.',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                    height: 1.5,
-                  ),
+              ),
+              GestureDetector(
+                onTap: onDismiss,
+                child: Icon(Icons.close, size: 16, color: Colors.grey[400]),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onAct,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors['buttonBg'],
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () => context.push(Routes.goals),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppColors.primary),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: Text(
-                      'Adjust Savings Plan',
-                      style: TextStyle(color: AppColors.primary),
-                    ),
-                  ),
+              ),
+              child: Text(
+                actionLabel,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Map<String, dynamic> _colorsForType(String type, String urgency) {
+    if (urgency == 'high') {
+      return {
+        'iconBg': const Color(0xFFFEE2E2),
+        'iconColor': const Color(0xFFDC2626),
+        'border': const Color(0xFFFECACA),
+        'buttonBg': const Color(0xFFDC2626),
+      };
+    }
+    if (type == 'investment') {
+      return {
+        'iconBg': const Color(0xFFEDE9FE),
+        'iconColor': const Color(0xFF7C3AED),
+        'border': const Color(0xFFDDD6FE),
+        'buttonBg': const Color(0xFF7C3AED),
+      };
+    }
+    if (type == 'spending') {
+      return {
+        'iconBg': const Color(0xFFFFF7ED),
+        'iconColor': const Color(0xFFEA580C),
+        'border': const Color(0xFFFED7AA),
+        'buttonBg': const Color(0xFFEA580C),
+      };
+    }
+    // savings (default)
+    return {
+      'iconBg': const Color(0xFFE0F2F1),
+      'iconColor': AppColors.primary,
+      'border': const Color(0xFFB2DFDB),
+      'buttonBg': AppColors.primary,
+    };
+  }
+
+  IconData _iconForType(String type) {
+    switch (type) {
+      case 'investment':
+        return Icons.trending_up;
+      case 'spending':
+        return Icons.warning_amber_outlined;
+      default:
+        return Icons.savings_outlined;
+    }
+  }
+
+  String _actionLabel(String actionType) {
+    switch (actionType) {
+      case 'invest':
+        return 'Invest Now';
+      case 'reduce_spending':
+        return 'View Spending';
+      case 'view_goals':
+        return 'View Goals';
+      default:
+        return 'Save Now';
+    }
+  }
+}
+
+class _NudgeCardShimmer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 120,
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyNudgeCard extends StatelessWidget {
+  final VoidCallback onRefresh;
+  const _EmptyNudgeCard({required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.lightbulb_outline, color: Colors.grey[400], size: 32),
+          const SizedBox(height: 8),
+          Text(
+            'No nudges yet',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[500],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Keep transacting and we\'ll personalise your advice.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[400]),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: onRefresh,
+            child: Text(
+              'Generate nudge',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -865,8 +1169,128 @@ class _AIInsightsSection extends StatelessWidget {
 }
 
 /// Recent Transactions Section
-class _RecentTransactionsSection extends StatelessWidget {
+class _RecentTransactionsSection extends StatefulWidget {
   const _RecentTransactionsSection();
+
+  @override
+  State<_RecentTransactionsSection> createState() =>
+      _RecentTransactionsSectionState();
+}
+
+class _RecentTransactionsSectionState
+    extends State<_RecentTransactionsSection> {
+  final ApiClient _api = getIt<ApiClient>();
+  List<Map<String, dynamic>> _transactions = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final data = await _api.getTransactions(pageSize: 5);
+      final items = (data['items'] as List? ?? []).cast<Map<String, dynamic>>();
+      if (mounted)
+        setState(() {
+          _transactions = items;
+          _loading = false;
+        });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  String _fmtDate(String? raw) {
+    if (raw == null) return '';
+    try {
+      final dt = DateTime.parse(raw).toLocal();
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final txDay = DateTime(dt.year, dt.month, dt.day);
+      final diff = today.difference(txDay).inDays;
+      final time = DateFormat('h:mm a').format(dt);
+      if (diff == 0) return 'Today, $time';
+      if (diff == 1) return 'Yesterday, $time';
+      return DateFormat('MMM d, h:mm a').format(dt);
+    } catch (_) {
+      return raw;
+    }
+  }
+
+  _TileConfig _configFor(Map<String, dynamic> tx) {
+    final type = (tx['transaction_type'] as String? ?? '').toLowerCase();
+    final category = (tx['category'] as String? ?? '').toLowerCase();
+    final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+    final formatted = NumberFormat('#,###').format(amount.round());
+
+    if (type == 'income') {
+      return _TileConfig(
+        title: tx['counterparty_name'] as String? ?? 'Income',
+        subtitle: tx['description'] as String? ?? '',
+        amount: '+ RWF $formatted',
+        isPositive: true,
+        icon: Icons.arrow_downward_rounded,
+        color: Colors.green.shade100,
+        iconColor: Colors.green.shade700,
+      );
+    }
+    if (type == 'savings') {
+      return _TileConfig(
+        title: tx['counterparty_name'] as String? ?? 'Savings',
+        subtitle: tx['description'] as String? ?? '',
+        amount: '- RWF $formatted',
+        isPositive: false,
+        icon: Icons.shield_outlined,
+        color: Colors.orange.shade100,
+        iconColor: Colors.orange.shade700,
+      );
+    }
+    // expense — icon by category
+    IconData icon = Icons.remove_circle_outline;
+    Color bg = Colors.grey.shade100;
+    Color fg = Colors.grey.shade700;
+    if (category.contains('food') || category.contains('grocer')) {
+      icon = Icons.restaurant;
+      bg = Colors.red.shade100;
+      fg = Colors.red.shade700;
+    } else if (category.contains('transport')) {
+      icon = Icons.directions_bus;
+      bg = Colors.blue.shade100;
+      fg = Colors.blue.shade700;
+    } else if (category.contains('airtime') || category.contains('data')) {
+      icon = Icons.wifi;
+      bg = Colors.blue.shade100;
+      fg = Colors.blue.shade700;
+    } else if (category.contains('util')) {
+      icon = Icons.bolt;
+      bg = Colors.yellow.shade100;
+      fg = Colors.yellow.shade800;
+    } else if (category.contains('entertainment')) {
+      icon = Icons.movie_outlined;
+      bg = Colors.purple.shade100;
+      fg = Colors.purple.shade700;
+    } else if (category.contains('health')) {
+      icon = Icons.local_hospital_outlined;
+      bg = Colors.teal.shade100;
+      fg = Colors.teal.shade700;
+    } else if (category.contains('momo') || category.contains('transfer')) {
+      icon = Icons.smartphone;
+      bg = Colors.green.shade100;
+      fg = Colors.green.shade700;
+    }
+    return _TileConfig(
+      title: tx['counterparty_name'] as String? ?? 'Expense',
+      subtitle: tx['description'] as String? ?? '',
+      amount: '- RWF $formatted',
+      isPositive: false,
+      icon: icon,
+      color: bg,
+      iconColor: fg,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -900,41 +1324,64 @@ class _RecentTransactionsSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          _TransactionTile(
-            title: 'MoMo Transfer',
-            subtitle: 'Payment from Client A',
-            amount: '+ RWF 50,000',
-            isPositive: true,
-            date: 'Today, 10:30 AM',
-            icon: Icons.smartphone,
-            color: Colors.green.shade100,
-            iconColor: Colors.green.shade700,
-          ),
-          _TransactionTile(
-            title: 'Airtime Bundle',
-            subtitle: 'MTN Rwanda',
-            amount: '- RWF 2,000',
-            isPositive: false,
-            date: 'Yesterday, 4:15 PM',
-            icon: Icons.wifi,
-            color: Colors.blue.shade100,
-            iconColor: Colors.blue.shade700,
-          ),
-          _TransactionTile(
-            title: 'Ejo Heza Contribution',
-            subtitle: 'Long term savings',
-            amount: '- RWF 5,000',
-            isPositive: false,
-            date: 'Feb 1, 09:00 AM',
-            icon: Icons.shield_outlined,
-            color: Colors.orange.shade100,
-            iconColor: Colors.orange.shade700,
-          ),
+          if (_loading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else if (_transactions.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                'No recent transactions',
+                style: GoogleFonts.inter(
+                  color: Colors.grey[500],
+                  fontSize: 14,
+                ),
+              ),
+            )
+          else
+            ...List.generate(_transactions.length, (i) {
+              final tx = _transactions[i];
+              final cfg = _configFor(tx);
+              return _TransactionTile(
+                title: cfg.title,
+                subtitle: cfg.subtitle,
+                amount: cfg.amount,
+                isPositive: cfg.isPositive,
+                date: _fmtDate(tx['transaction_date'] as String?),
+                icon: cfg.icon,
+                color: cfg.color,
+                iconColor: cfg.iconColor,
+              );
+            }),
           const SizedBox(height: 80),
         ],
       ),
     );
   }
+}
+
+/// Helper data class for transaction tile configuration
+class _TileConfig {
+  final String title;
+  final String subtitle;
+  final String amount;
+  final bool isPositive;
+  final IconData icon;
+  final Color color;
+  final Color iconColor;
+  const _TileConfig({
+    required this.title,
+    required this.subtitle,
+    required this.amount,
+    required this.isPositive,
+    required this.icon,
+    required this.color,
+    required this.iconColor,
+  });
 }
 
 /// Transaction Tile Widget
@@ -1095,6 +1542,90 @@ class _InsightsContent extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
+            // Finance Advisor Card
+            GestureDetector(
+              onTap: () => context.push(Routes.advisor),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary,
+                      AppColors.primary.withOpacity(0.85),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.auto_awesome,
+                          color: Colors.white, size: 26),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Finance Advisor',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Ask anything about your money',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.white.withOpacity(0.85),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'AI',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward_ios,
+                        color: Colors.white, size: 16),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             // Health Score Card
             GestureDetector(
               onTap: () => context.push(Routes.financialHealth),

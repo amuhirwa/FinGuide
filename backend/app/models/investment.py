@@ -86,6 +86,7 @@ class Investment(Base):
     # Relationships
     user = relationship("User", back_populates="investments")
     contributions = relationship("InvestmentContribution", back_populates="investment", cascade="all, delete-orphan")
+    linked_transactions = relationship("Transaction", foreign_keys="Transaction.linked_investment_id", back_populates="linked_investment")
 
 
 class InvestmentContribution(Base):

@@ -11,19 +11,30 @@ import '../models/user_model.dart';
 
 /// Auth remote data source interface
 abstract class AuthRemoteDataSource {
-  /// Register a new user
+  /// Send OTP via Twilio SMS to the given phone number
+  Future<void> sendOtp({required String phoneNumber});
+
+  /// Verify OTP and receive a short-lived otp_token
+  Future<String> verifyOtp({
+    required String phoneNumber,
+    required String otpCode,
+  });
+
+  /// Register a new user (requires otp_token)
   Future<AuthResponseModel> register({
     required String phoneNumber,
     required String fullName,
     required String password,
     required String ubudeheCategory,
     required String incomeFrequency,
+    required String otpToken,
   });
 
-  /// Login user
+  /// Login user (requires otp_token)
   Future<AuthResponseModel> login({
     required String phoneNumber,
     required String password,
+    required String otpToken,
   });
 
   /// Get current user profile
@@ -35,7 +46,31 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final ApiClient _apiClient;
 
   AuthRemoteDataSourceImpl({required ApiClient apiClient})
-    : _apiClient = apiClient;
+      : _apiClient = apiClient;
+
+  @override
+  Future<void> sendOtp({required String phoneNumber}) async {
+    try {
+      await _apiClient.sendOtp(phoneNumber: phoneNumber);
+    } catch (e) {
+      throw ServerException(message: _extractErrorMessage(e));
+    }
+  }
+
+  @override
+  Future<String> verifyOtp({
+    required String phoneNumber,
+    required String otpCode,
+  }) async {
+    try {
+      return await _apiClient.verifyOtp(
+        phoneNumber: phoneNumber,
+        otpCode: otpCode,
+      );
+    } catch (e) {
+      throw ServerException(message: _extractErrorMessage(e));
+    }
+  }
 
   @override
   Future<AuthResponseModel> register({
@@ -44,6 +79,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String password,
     required String ubudeheCategory,
     required String incomeFrequency,
+    required String otpToken,
   }) async {
     try {
       return await _apiClient.register(
@@ -52,6 +88,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         password: password,
         ubudeheCategory: ubudeheCategory,
         incomeFrequency: incomeFrequency,
+        otpToken: otpToken,
       );
     } catch (e) {
       throw ServerException(message: _extractErrorMessage(e));
@@ -62,11 +99,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<AuthResponseModel> login({
     required String phoneNumber,
     required String password,
+    required String otpToken,
   }) async {
     try {
       return await _apiClient.login(
         phoneNumber: phoneNumber,
         password: password,
+        otpToken: otpToken,
       );
     } catch (e) {
       throw ServerException(message: _extractErrorMessage(e));

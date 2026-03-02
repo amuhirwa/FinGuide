@@ -90,6 +90,7 @@ class TransactionResponse(TransactionBase):
     is_recurring: bool = False
     is_verified: bool = False
     confidence_score: float = 1.0
+    linked_investment_id: Optional[int] = None
     created_at: datetime
 
     class Config:

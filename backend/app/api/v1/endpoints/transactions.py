@@ -6,11 +6,11 @@ CRUD operations and SMS parsing for transactions.
 
 from typing import List, Optional
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 
-from app.models.base import get_db
+from app.models.base import get_db, SessionLocal
 from app.models.transaction import Transaction, CounterpartyMapping, TransactionType as ModelTransactionType
 from app.models.transaction import TransactionCategory as ModelCategory, NeedWantCategory as ModelNeedWant
 from app.schemas.transaction import (
@@ -25,7 +25,25 @@ from app.core.deps import get_current_active_user
 from app.core.momo_parsing import parse_momo_sms as _parse_momo_sms
 from app.models.rnit import RnitPurchase
 from app.services.rnit_nav import get_nav_on_date
+from app.core import nudge_service
 import hashlib
+
+
+def _trigger_income_nudge(user_id: int, income_amount: float, income_source: Optional[str]) -> None:
+    """Background task: generate an income nudge via Claude after an income SMS is parsed."""
+    db = SessionLocal()
+    try:
+        nudge_service.generate_nudges(
+            user_id=user_id,
+            db=db,
+            trigger_type="income",
+            income_amount=income_amount,
+            income_source=income_source,
+        )
+    except Exception:
+        pass
+    finally:
+        db.close()
 
 
 def _adapt_parsed(result: dict, raw_sms: str) -> dict:
@@ -336,11 +354,13 @@ async def delete_transaction(
 @router.post("/parse-sms", response_model=SMSParseResponse)
 async def parse_sms_messages(
     request: SMSParseRequest,
+    background_tasks: BackgroundTasks,
     current_user: TokenPayload = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     Parse SMS messages and create transactions.
+    Triggers an AI income nudge in the background when income is detected.
     """
     user_id = int(current_user.sub)
     parsed_transactions = []
@@ -423,11 +443,25 @@ async def parse_sms_messages(
                 db.commit()
 
             parsed_transactions.append(transaction)
-            
+
         except Exception as e:
             failed_count += 1
             continue
-    
+
+    # Fire income nudge in background for any income transactions parsed
+    income_transactions = [
+        t for t in parsed_transactions if t.transaction_type == ModelTransactionType.INCOME
+    ]
+    if income_transactions:
+        total_income = sum(t.amount for t in income_transactions)
+        latest_income = max(income_transactions, key=lambda t: t.amount)
+        background_tasks.add_task(
+            _trigger_income_nudge,
+            user_id,
+            total_income,
+            latest_income.counterparty_name or latest_income.counterparty,
+        )
+
     return SMSParseResponse(
         parsed_count=len(parsed_transactions),
         failed_count=failed_count,

@@ -66,6 +66,9 @@ class _RegisterPageState extends State<RegisterPage> {
           context.go(Routes.dashboard);
         } else if (state is AuthShowSmsConsent) {
           context.go(Routes.smsConsent);
+        } else if (state is AuthOtpPending) {
+          // OTP sent – navigate to verification page
+          context.go(Routes.otp, extra: state.phoneNumber);
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

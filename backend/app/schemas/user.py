@@ -112,7 +112,11 @@ class UserCreate(UserBase):
         default=IncomeFrequency.IRREGULAR,
         description="How frequently the user receives income"
     )
-    
+    otp_token: str = Field(
+        ...,
+        description="Short-lived OTP verification token obtained from /auth/verify-otp"
+    )
+
     @field_validator("password")
     @classmethod
     def validate_password(cls, v: str) -> str:
@@ -135,6 +139,10 @@ class UserLogin(BaseModel):
     password: str = Field(
         ...,
         description="Account password"
+    )
+    otp_token: str = Field(
+        ...,
+        description="Short-lived OTP verification token obtained from /auth/verify-otp"
     )
 
     @field_validator("phone_number")

@@ -54,6 +54,7 @@ class TransactionModel extends Equatable {
   final DateTime transactionDate;
   final double? confidenceScore;
   final bool isVerified;
+  final int? linkedInvestmentId;
   final DateTime createdAt;
 
   const TransactionModel({
@@ -69,6 +70,7 @@ class TransactionModel extends Equatable {
     required this.transactionDate,
     this.confidenceScore,
     required this.isVerified,
+    this.linkedInvestmentId,
     required this.createdAt,
   });
 
@@ -95,6 +97,7 @@ class TransactionModel extends Equatable {
       transactionDate: DateTime.parse(json['transaction_date']),
       confidenceScore: json['confidence_score']?.toDouble(),
       isVerified: json['is_verified'] ?? false,
+      linkedInvestmentId: json['linked_investment_id'],
       createdAt: DateTime.parse(json['created_at']),
     );
   }

@@ -239,6 +239,26 @@ class _GoalsPageState extends State<GoalsPage> {
 
   void _showContributeDialog(SavingsGoalModel goal) {
     final controller = TextEditingController();
+    final fmt = NumberFormat('#,###', 'en_US');
+    final remaining = goal.targetAmount - goal.currentAmount;
+    final daysLeft = goal.deadline != null
+        ? goal.deadline!.difference(DateTime.now()).inDays
+        : null;
+
+    // Estimate weeks to finish at current weekly target rate
+    final weeksToFinish =
+        goal.weeklyTarget > 0 ? (remaining / goal.weeklyTarget).ceil() : null;
+
+    // Colour-code feasibility: green = on track, amber = tight, red = behind
+    Color feasibilityColor(double target) {
+      if (daysLeft == null) return Colors.teal;
+      final requiredPerDay = remaining / daysLeft.clamp(1, 99999);
+      final dailyEquiv = target / 7.0; // if weekly
+      if (dailyEquiv >= requiredPerDay) return Colors.green.shade600;
+      if (dailyEquiv >= requiredPerDay * 0.7) return Colors.orange.shade700;
+      return Colors.red.shade600;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -263,14 +283,105 @@ class _GoalsPageState extends State<GoalsPage> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Suggested: RWF ${NumberFormat('#,###').format(goal.weeklyTarget)} this week',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: Colors.grey[600],
+            const SizedBox(height: 16),
+
+            // ── Feasibility card ───────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FAFA),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+              ),
+              child: Column(
+                children: [
+                  _FeasibilityRow(
+                    icon: Icons.calendar_today_outlined,
+                    label: 'Daily target',
+                    value: 'RWF ${fmt.format(goal.dailyTarget.toInt())}',
+                    valueColor: feasibilityColor(goal.dailyTarget * 7),
+                  ),
+                  const SizedBox(height: 8),
+                  _FeasibilityRow(
+                    icon: Icons.date_range_outlined,
+                    label: 'Weekly target',
+                    value: 'RWF ${fmt.format(goal.weeklyTarget.toInt())}',
+                    valueColor: feasibilityColor(goal.weeklyTarget),
+                  ),
+                  if (daysLeft != null) ...[
+                    const SizedBox(height: 8),
+                    _FeasibilityRow(
+                      icon: Icons.hourglass_bottom_outlined,
+                      label: 'Deadline',
+                      value: daysLeft <= 0
+                          ? 'Overdue!'
+                          : '$daysLeft day${daysLeft == 1 ? '' : 's'} left',
+                      valueColor: daysLeft <= 7
+                          ? Colors.red.shade600
+                          : daysLeft <= 30
+                              ? Colors.orange.shade700
+                              : Colors.green.shade600,
+                    ),
+                  ],
+                  if (weeksToFinish != null && daysLeft == null) ...[
+                    const SizedBox(height: 8),
+                    _FeasibilityRow(
+                      icon: Icons.flag_outlined,
+                      label: 'Finish in',
+                      value: weeksToFinish == 1
+                          ? '~1 week at this pace'
+                          : '~$weeksToFinish weeks at this pace',
+                      valueColor: Colors.teal.shade700,
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  _FeasibilityRow(
+                    icon: Icons.savings_outlined,
+                    label: 'Still needed',
+                    value: 'RWF ${fmt.format(remaining.toInt())}',
+                    valueColor: const Color(0xFF1E293B),
+                  ),
+                  if (goal.realisticWeeklySaving > 0) ...[
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Divider(height: 1, color: Color(0xFFDDEEEE)),
+                    ),
+                    _FeasibilityRow(
+                      icon: Icons.trending_up,
+                      label: 'Avg weekly surplus',
+                      value: 'RWF ${fmt.format(goal.avgWeeklySurplus.toInt())}',
+                      valueColor: Colors.teal.shade700,
+                    ),
+                    const SizedBox(height: 8),
+                    _FeasibilityRow(
+                      icon: Icons.auto_awesome_outlined,
+                      label: 'Affordable (30%)',
+                      value:
+                          'RWF ${fmt.format(goal.realisticWeeklySaving.toInt())}/wk',
+                      valueColor:
+                          goal.realisticWeeklySaving >= goal.weeklyTarget
+                              ? Colors.green.shade600
+                              : goal.realisticWeeklySaving >=
+                                      goal.weeklyTarget * 0.7
+                                  ? Colors.orange.shade700
+                                  : Colors.red.shade600,
+                    ),
+                    if (goal.realisticWeeks != null) ...[
+                      const SizedBox(height: 8),
+                      _FeasibilityRow(
+                        icon: Icons.flag_outlined,
+                        label: 'Realistic finish',
+                        value: goal.realisticWeeks! < 52
+                            ? '~${goal.realisticWeeks} wks · ${DateFormat('MMM yyyy').format(goal.realisticFinishDate!)}'
+                            : '~${(goal.realisticWeeks! / 52).toStringAsFixed(1)} yrs · ${DateFormat('MMM yyyy').format(goal.realisticFinishDate!)}',
+                        valueColor: Colors.teal.shade700,
+                      ),
+                    ],
+                  ],
+                ],
               ),
             ),
+
             const SizedBox(height: 20),
             TextField(
               controller: controller,
@@ -278,6 +389,11 @@ class _GoalsPageState extends State<GoalsPage> {
               autofocus: true,
               decoration: InputDecoration(
                 labelText: 'Amount (RWF)',
+                hintText: goal.realisticWeeklySaving > 0
+                    ? 'Suggested: ${fmt.format(goal.realisticWeeklySaving.toInt())} (affordable)'
+                    : goal.weeklyTarget > 0
+                        ? 'Needed: ${fmt.format(goal.weeklyTarget.toInt())}/wk'
+                        : 'Enter amount',
                 filled: true,
                 fillColor: Colors.grey[100],
                 border: OutlineInputBorder(
@@ -600,16 +716,91 @@ class _GoalCard extends StatelessWidget {
                     color: Colors.grey[600],
                   ),
                 ),
-                if (!isCompleted && goal.weeklyTarget > 0)
-                  Text(
-                    'Save RWF ${format.format(goal.weeklyTarget)}/week',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: AppColors.secondary,
-                    ),
-                  ),
+                if (!isCompleted && goal.deadline != null)
+                  Builder(builder: (_) {
+                    final daysLeft =
+                        goal.deadline!.difference(DateTime.now()).inDays;
+                    return Text(
+                      daysLeft <= 0
+                          ? 'Overdue'
+                          : daysLeft == 1
+                              ? '1 day left'
+                              : '$daysLeft days left',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: daysLeft <= 7
+                            ? Colors.red.shade600
+                            : daysLeft <= 30
+                                ? Colors.orange.shade700
+                                : Colors.grey[500],
+                      ),
+                    );
+                  }),
               ],
             ),
+            if (!isCompleted &&
+                (goal.weeklyTarget > 0 || goal.realisticWeeklySaving > 0)) ...[
+              const SizedBox(height: 8),
+              Builder(builder: (_) {
+                final r = goal.realisticWeeklySaving;
+                final rWeeks = goal.realisticWeeks;
+                final rDate = goal.realisticFinishDate;
+                final hasRealistic = r > 0 && rWeeks != null;
+                return Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withOpacity(0.07),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      if (goal.weeklyTarget > 0)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Needed/wk (deadline)',
+                                style: GoogleFonts.inter(
+                                    fontSize: 10, color: Colors.grey[600])),
+                            Text(
+                              'RWF ${format.format(goal.weeklyTarget.toInt())}',
+                              style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF1E293B)),
+                            ),
+                          ],
+                        ),
+                      if (goal.weeklyTarget > 0 && hasRealistic)
+                        const SizedBox(height: 4),
+                      if (hasRealistic)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(children: [
+                              Icon(Icons.trending_up,
+                                  size: 11, color: AppColors.primary),
+                              const SizedBox(width: 3),
+                              Text('Affordable pace',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 10, color: AppColors.primary)),
+                            ]),
+                            Text(
+                              'RWF ${format.format(r.toInt())}/wk · '
+                              '~${rWeeks! < 52 ? '${rWeeks}wks' : '${(rWeeks / 52).toStringAsFixed(1)}yrs'}'
+                              ' · ${DateFormat('MMM yy').format(rDate!)}',
+                              style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                );
+              }),
+            ],
           ],
         ),
       ),
@@ -1059,6 +1250,151 @@ class GoalDetailPage extends StatelessWidget {
                   ),
                 ],
               ),
+              if (goal.weeklyTarget > 0) ...[
+                const SizedBox(height: 12),
+                Builder(builder: (_) {
+                  final fmt = NumberFormat('#,###', 'en_US');
+                  // Income-based realistic
+                  final r = goal.realisticWeeklySaving;
+                  final rWeeks = goal.realisticWeeks;
+                  final rDate = goal.realisticFinishDate;
+                  final hasRealistic = r > 0 && rWeeks != null;
+                  // Deadline-based
+                  final dWeeks = goal.weeklyTarget > 0 &&
+                          goal.remainingAmount > 0
+                      ? ((goal.remainingAmount / goal.weeklyTarget) + 0.9999)
+                          .toInt()
+                      : null;
+                  final dDate = dWeeks != null
+                      ? DateTime.now().add(Duration(days: dWeeks * 7))
+                      : null;
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.secondary.withOpacity(0.12),
+                          AppColors.primary.withOpacity(0.08),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          const Icon(Icons.timeline_outlined,
+                              size: 16, color: Color(0xFF00A3AD)),
+                          const SizedBox(width: 6),
+                          Text('Timeframe Analysis',
+                              style: GoogleFonts.inter(
+                                  fontSize: 12, color: Colors.grey[600])),
+                        ]),
+                        const SizedBox(height: 12),
+                        if (hasRealistic) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(children: [
+                                    Icon(Icons.trending_up,
+                                        size: 13, color: AppColors.primary),
+                                    const SizedBox(width: 4),
+                                    Text('Affordable pace',
+                                        style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.primary)),
+                                  ]),
+                                  Text(
+                                    'RWF ${fmt.format(r.toInt())}/wk',
+                                    style: GoogleFonts.poppins(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF1E293B)),
+                                  ),
+                                  Text(
+                                      '30% of ~RWF ${fmt.format(goal.avgWeeklySurplus.toInt())} avg surplus',
+                                      style: GoogleFonts.inter(
+                                          fontSize: 11,
+                                          color: Colors.grey[500])),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                      rWeeks! < 52
+                                          ? '~$rWeeks weeks'
+                                          : '~${(rWeeks / 52).toStringAsFixed(1)} years',
+                                      style: GoogleFonts.poppins(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primary)),
+                                  Text(DateFormat('MMM d, yyyy').format(rDate!),
+                                      style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.grey[600])),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (hasRealistic && dDate != null)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 10),
+                            child: Divider(height: 1),
+                          ),
+                        if (goal.weeklyTarget > 0 && dDate != null)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('To meet deadline',
+                                      style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.grey[700])),
+                                  Text(
+                                      'Needs RWF ${fmt.format(goal.weeklyTarget.toInt())}/wk',
+                                      style: GoogleFonts.inter(
+                                          fontSize: 11,
+                                          color: Colors.grey[500])),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text('~$dWeeks wks',
+                                      style: GoogleFonts.inter(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey[700])),
+                                  Text(DateFormat('MMM d, yyyy').format(dDate),
+                                      style: GoogleFonts.inter(
+                                          fontSize: 11,
+                                          color: Colors.grey[500])),
+                                ],
+                              ),
+                            ],
+                          ),
+                        if (!hasRealistic && goal.weeklyTarget == 0)
+                          Text(
+                            'Add transactions to enable income-based forecasting.',
+                            style: GoogleFonts.inter(
+                                fontSize: 12, color: Colors.grey[500]),
+                          ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
               const SizedBox(height: 24),
             ],
 
@@ -1721,6 +2057,45 @@ class _PiggyStatBox extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+// ── Feasibility row widget used inside the contribution dialog ─────────────
+
+class _FeasibilityRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color valueColor;
+
+  const _FeasibilityRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey[500]),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[600]),
+          ),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: valueColor,
+          ),
+        ),
+      ],
     );
   }
 }

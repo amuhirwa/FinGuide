@@ -20,6 +20,7 @@ from app.models.user import User
 from app.models.transaction import Transaction, CounterpartyMapping
 from app.models.savings_goal import SavingsGoal, GoalContribution
 from app.models.prediction import IncomePrediction, ExpensePrediction, FinancialHealthScore, Recommendation
+from app.models.otp import OTPCode  # OTP codes for phone verification
 from app.models.rnit import RnitPurchase, RnitNavCache
 
 

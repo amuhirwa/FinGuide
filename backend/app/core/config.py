@@ -51,7 +51,16 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_URL: str = "sqlite:///./finguide.db"
-    
+
+    SMS_USERNAME: str
+    SMS_PASSWORD: str
+    SMS_AUTH: str
+    SMS_SEND: str
+
+    ANTHROPIC_API_KEY: str = ""
+
+    OTP_EXPIRE_MINUTES: int = 5  # OTP validity window in minutes
+
     # Environment
     ENVIRONMENT: str = "development"
     

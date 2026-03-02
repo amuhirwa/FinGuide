@@ -21,8 +21,38 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
     required AuthRemoteDataSource remoteDataSource,
     required AuthLocalDataSource localDataSource,
-  }) : _remoteDataSource = remoteDataSource,
-       _localDataSource = localDataSource;
+  })  : _remoteDataSource = remoteDataSource,
+        _localDataSource = localDataSource;
+
+  @override
+  Future<Either<Failure, void>> sendOtp({required String phoneNumber}) async {
+    try {
+      await _remoteDataSource.sendOtp(phoneNumber: phoneNumber);
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(UnknownFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> verifyOtp({
+    required String phoneNumber,
+    required String otpCode,
+  }) async {
+    try {
+      final otpToken = await _remoteDataSource.verifyOtp(
+        phoneNumber: phoneNumber,
+        otpCode: otpCode,
+      );
+      return Right(otpToken);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(UnknownFailure(message: e.toString()));
+    }
+  }
 
   @override
   Future<Either<Failure, User>> register({
@@ -31,6 +61,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
     required String ubudeheCategory,
     required String incomeFrequency,
+    required String otpToken,
   }) async {
     try {
       final response = await _remoteDataSource.register(
@@ -39,6 +70,7 @@ class AuthRepositoryImpl implements AuthRepository {
         password: password,
         ubudeheCategory: ubudeheCategory,
         incomeFrequency: incomeFrequency,
+        otpToken: otpToken,
       );
 
       // Save token and user data locally
@@ -59,11 +91,13 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, User>> login({
     required String phoneNumber,
     required String password,
+    required String otpToken,
   }) async {
     try {
       final response = await _remoteDataSource.login(
         phoneNumber: phoneNumber,
         password: password,
+        otpToken: otpToken,
       );
 
       // Save token and user data locally

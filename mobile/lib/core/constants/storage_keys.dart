@@ -25,4 +25,7 @@ class StorageKeys {
   // SMS Consent
   static const String smsConsentGiven = 'sms_consent_given';
   static const String smsInitialImportDone = 'sms_initial_import_done';
+
+  // SMS Sync
+  static const String lastSmsSyncTimestamp = 'last_sms_sync_timestamp';
 }

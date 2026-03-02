@@ -12,6 +12,7 @@ import 'package:telephony/telephony.dart';
 
 import '../network/api_client.dart';
 import '../network/api_interceptor.dart';
+import '../services/nudge_notification_service.dart';
 import '../services/sms_service.dart';
 import '../services/report_service.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
@@ -21,6 +22,8 @@ import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/login_usecase.dart';
 import '../../features/auth/domain/usecases/register_usecase.dart';
 import '../../features/auth/domain/usecases/check_auth_usecase.dart';
+import '../../features/auth/domain/usecases/send_otp_usecase.dart';
+import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 
 // Transactions
@@ -105,6 +108,8 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton(() => LoginUseCase(getIt<AuthRepository>()));
   getIt.registerLazySingleton(() => RegisterUseCase(getIt<AuthRepository>()));
   getIt.registerLazySingleton(() => CheckAuthUseCase(getIt<AuthRepository>()));
+  getIt.registerLazySingleton(() => SendOtpUseCase(getIt<AuthRepository>()));
+  getIt.registerLazySingleton(() => VerifyOtpUseCase(getIt<AuthRepository>()));
 
   // BLoC
   getIt.registerFactory<AuthBloc>(
@@ -112,6 +117,8 @@ Future<void> configureDependencies() async {
       loginUseCase: getIt<LoginUseCase>(),
       registerUseCase: getIt<RegisterUseCase>(),
       checkAuthUseCase: getIt<CheckAuthUseCase>(),
+      sendOtpUseCase: getIt<SendOtpUseCase>(),
+      verifyOtpUseCase: getIt<VerifyOtpUseCase>(),
       localDataSource: getIt<AuthLocalDataSource>(),
     ),
   );
@@ -174,6 +181,11 @@ Future<void> configureDependencies() async {
     () => ReportBloc(getIt<ReportsRepository>()),
   );
 
+  // ==================== Nudge Notification Service ====================
+  final nudgeNotificationService = NudgeNotificationService();
+  await nudgeNotificationService.initialize();
+  getIt.registerSingleton<NudgeNotificationService>(nudgeNotificationService);
+
   // ==================== SMS Service ====================
   getIt.registerLazySingleton<Telephony>(() => Telephony.instance);
 
@@ -182,6 +194,7 @@ Future<void> configureDependencies() async {
       telephony: getIt<Telephony>(),
       apiClient: getIt<ApiClient>(),
       prefs: getIt<SharedPreferences>(),
+      nudgeService: getIt<NudgeNotificationService>(),
     ),
   );
 
@@ -192,9 +205,11 @@ Future<void> configureDependencies() async {
     ),
   );
 
-  // Auto-start SMS listener if user previously gave consent
+  // Auto-start SMS listener + delta-sync if user previously gave consent
   final smsService = getIt<SmsService>();
   if (smsService.hasConsented) {
     smsService.startListening();
+    // Import any MoMo SMS that arrived since the last time the app was open
+    smsService.syncNewMessages();
   }
 }

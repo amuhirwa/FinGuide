@@ -11,19 +11,30 @@ import '../entities/user.dart';
 
 /// Authentication repository interface
 abstract class AuthRepository {
-  /// Register a new user
+  /// Send OTP via SMS to the given phone number
+  Future<Either<Failure, void>> sendOtp({required String phoneNumber});
+
+  /// Verify OTP code – returns short-lived otp_token on success
+  Future<Either<Failure, String>> verifyOtp({
+    required String phoneNumber,
+    required String otpCode,
+  });
+
+  /// Register a new user (requires otp_token)
   Future<Either<Failure, User>> register({
     required String phoneNumber,
     required String fullName,
     required String password,
     required String ubudeheCategory,
     required String incomeFrequency,
+    required String otpToken,
   });
 
-  /// Login user with phone and password
+  /// Login user with phone and password (requires otp_token)
   Future<Either<Failure, User>> login({
     required String phoneNumber,
     required String password,
+    required String otpToken,
   });
 
   /// Logout current user
