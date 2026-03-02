@@ -16,7 +16,7 @@ class TransactionRepository {
 
   Future<Either<String, List<TransactionModel>>> getTransactions({
     int page = 1,
-    int pageSize = 20,
+    int pageSize = 50,
     String? transactionType,
     String? category,
     DateTime? startDate,

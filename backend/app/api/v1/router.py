@@ -6,7 +6,7 @@ Main router aggregating all v1 API endpoints.
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, transactions, savings_goals, predictions, investments, reports
+from app.api.v1.endpoints import auth, users, transactions, savings_goals, predictions, investments, reports, rnit
 
 api_router = APIRouter()
 
@@ -50,6 +50,13 @@ api_router.include_router(
     investments.router,
     prefix="/investments",
     tags=["Investments"]
+)
+
+# RNIT investment endpoints
+api_router.include_router(
+    rnit.router,
+    prefix="/rnit",
+    tags=["RNIT Investment"]
 )
 
 # Reports / Export endpoints

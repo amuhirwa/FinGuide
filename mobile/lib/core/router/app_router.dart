@@ -21,7 +21,8 @@ import '../../features/sms_consent/presentation/pages/sms_consent_page.dart';
 
 // Transactions
 import '../../features/transactions/presentation/bloc/transaction_bloc.dart';
-import '../../features/transactions/presentation/pages/transactions_page.dart';
+import '../../features/transactions/presentation/pages/transactions_page.dart'
+    hide FinancialHealthPage;
 
 // Goals
 import '../../features/goals/presentation/bloc/goals_bloc.dart';
@@ -33,7 +34,9 @@ import '../../features/insights/presentation/pages/insights_pages.dart';
 
 // Investments
 import '../../features/investments/presentation/bloc/investment_bloc.dart';
+import '../../features/investments/presentation/bloc/rnit_bloc.dart';
 import '../../features/investments/presentation/pages/investments_page.dart';
+import '../../features/investments/presentation/pages/rnit_detail_page.dart';
 
 // Reports
 import '../../features/reports/presentation/pages/reports_page.dart';
@@ -196,10 +199,18 @@ class AppRouter {
       GoRoute(
         path: Routes.investments,
         name: 'investments',
-        builder: (context, state) => BlocProvider(
-          create: (_) => getIt<InvestmentBloc>(),
+        builder: (context, state) => MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => getIt<InvestmentBloc>()),
+            BlocProvider(create: (_) => getIt<RnitBloc>()),
+          ],
           child: const InvestmentsPage(),
         ),
+      ),
+      GoRoute(
+        path: '/rnit-detail',
+        name: 'rnitDetail',
+        builder: (context, state) => const RnitDetailPage(),
       ),
       GoRoute(
         path: Routes.addInvestment,

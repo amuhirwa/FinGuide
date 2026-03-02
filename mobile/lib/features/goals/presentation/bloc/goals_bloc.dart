@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Goals BLoC
  * ==========
  * State management for savings goals
@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/models/savings_goal_model.dart';
 import '../../data/repositories/goals_repository.dart';
+import '../../../investments/data/models/rnit_model.dart';
 
 // Events
 abstract class GoalsEvent extends Equatable {
@@ -76,11 +77,18 @@ class GoalsLoading extends GoalsState {}
 
 class GoalsLoaded extends GoalsState {
   final List<SavingsGoalModel> goals;
+  final PiggyBankModel? piggybank;
 
-  GoalsLoaded(this.goals);
+  GoalsLoaded(this.goals, {this.piggybank});
+
+  GoalsLoaded copyWith(
+      {List<SavingsGoalModel>? goals, PiggyBankModel? piggybank}) {
+    return GoalsLoaded(goals ?? this.goals,
+        piggybank: piggybank ?? this.piggybank);
+  }
 
   @override
-  List<Object?> get props => [goals];
+  List<Object?> get props => [goals, piggybank];
 }
 
 class GoalCreated extends GoalsState {
@@ -138,9 +146,13 @@ class GoalsBloc extends Bloc<GoalsEvent, GoalsState> {
 
     final result = await _repository.getGoals(status: event.status);
 
-    result.fold(
-      (error) => emit(GoalsError(error)),
-      (goals) => emit(GoalsLoaded(goals)),
+    await result.fold(
+      (error) async => emit(GoalsError(error)),
+      (goals) async {
+        final piggyResult = await _repository.getPiggybank();
+        final piggy = piggyResult.fold((l) => null, (r) => r);
+        emit(GoalsLoaded(goals, piggybank: piggy));
+      },
     );
   }
 

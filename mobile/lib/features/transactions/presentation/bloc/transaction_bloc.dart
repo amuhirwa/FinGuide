@@ -33,7 +33,15 @@ class LoadTransactions extends TransactionEvent {
   List<Object?> get props => [transactionType, category, startDate, endDate];
 }
 
-class LoadTransactionSummary extends TransactionEvent {}
+class LoadTransactionSummary extends TransactionEvent {
+  final DateTime? startDate;
+  final DateTime? endDate;
+
+  LoadTransactionSummary({this.startDate, this.endDate});
+
+  @override
+  List<Object?> get props => [startDate, endDate];
+}
 
 class CreateTransaction extends TransactionEvent {
   final Map<String, dynamic> data;
@@ -134,11 +142,25 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       category: event.category,
       startDate: event.startDate,
       endDate: event.endDate,
+      pageSize: 200,
     );
 
-    result.fold(
-      (error) => emit(TransactionError(error)),
-      (transactions) => emit(TransactionsLoaded(transactions)),
+    if (result.isLeft()) {
+      result.fold((error) => emit(TransactionError(error)), (_) {});
+      return;
+    }
+
+    final transactions = result.getOrElse(() => []);
+
+    // Also fetch summary for the same window so card stays in sync
+    final summaryResult = await _repository.getTransactionSummary(
+      startDate: event.startDate,
+      endDate: event.endDate,
+    );
+
+    summaryResult.fold(
+      (_) => emit(TransactionsLoaded(transactions)),
+      (summary) => emit(TransactionsLoaded(transactions, summary: summary)),
     );
   }
 
@@ -153,7 +175,10 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       transactions = currentState.transactions;
     }
 
-    final result = await _repository.getTransactionSummary();
+    final result = await _repository.getTransactionSummary(
+      startDate: event.startDate,
+      endDate: event.endDate,
+    );
 
     result.fold(
       (error) => emit(TransactionError(error)),
