@@ -459,7 +459,7 @@ class _BalanceCardState extends State<_BalanceCard> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _BalanceIndicator(
-                      label: 'Safe to Spend',
+                      label: 'Rest of Month',
                       amount: _data == null ? '—' : _fmt(safeToSpend),
                       color: const Color(0xFFB3E5FC),
                     ),
@@ -570,10 +570,17 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-/// AI Insights Section
 /// Safe to Spend Section
-class _SafeToSpendSection extends StatelessWidget {
+class _SafeToSpendSection extends StatefulWidget {
   const _SafeToSpendSection();
+
+  @override
+  State<_SafeToSpendSection> createState() => _SafeToSpendSectionState();
+}
+
+class _SafeToSpendSectionState extends State<_SafeToSpendSection> {
+  // 0 = Today, 1 = This Week, 2 = This Month
+  int _selectedPeriod = 2;
 
   @override
   Widget build(BuildContext context) {
@@ -599,8 +606,12 @@ class _SafeToSpendSection extends StatelessWidget {
 
           if (state is SafeToSpendLoaded) {
             final data = state.safeToSpend;
-            final safeAmount =
+            final safeMonth =
                 (data['safe_to_spend'] as num?)?.toDouble() ?? 0.0;
+            final safePerDay =
+                (data['safe_per_day'] as num?)?.toDouble() ?? 0.0;
+            final safePerWeek =
+                (data['safe_per_week'] as num?)?.toDouble() ?? 0.0;
             final totalBalance =
                 (data['total_balance'] as num?)?.toDouble() ?? 0.0;
             final reservedExpenses =
@@ -609,59 +620,47 @@ class _SafeToSpendSection extends StatelessWidget {
                 (data['reserved_for_goals'] as num?)?.toDouble() ?? 0.0;
             final emergencyBuffer =
                 (data['emergency_buffer'] as num?)?.toDouble() ?? 0.0;
+            final expectedIncome =
+                (data['expected_income_remaining'] as num?)?.toDouble() ?? 0.0;
             final explanation = data['explanation'] as String? ?? '';
 
-            final isPositive = safeAmount > 0;
-            final isLow = safeAmount < 10000 && safeAmount > 0;
+            final displayAmount = _selectedPeriod == 0
+                ? safePerDay
+                : _selectedPeriod == 1
+                    ? safePerWeek
+                    : safeMonth;
+
+            final periodLabel = _selectedPeriod == 0
+                ? 'today'
+                : _selectedPeriod == 1
+                    ? 'this week'
+                    : 'this month';
+
+            final isPositive = displayAmount > 0;
+            final isLow = displayAmount < 10000 && displayAmount > 0;
 
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    'Safe to Spend',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Period toggle
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Safe to Spend',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1E293B),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isPositive
-                              ? const Color(0xFFE8F5E9)
-                              : const Color(0xFFFFEBEE),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              isPositive ? Icons.check_circle : Icons.warning,
-                              size: 14,
-                              color: isPositive
-                                  ? const Color(0xFF2E7D32)
-                                  : const Color(0xFFC62828),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              isPositive ? 'Available' : 'Over Budget',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: isPositive
-                                    ? const Color(0xFF2E7D32)
-                                    : const Color(0xFFC62828),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      _buildPeriodChip('Today', 0),
+                      const SizedBox(width: 8),
+                      _buildPeriodChip('This Week', 1),
+                      const SizedBox(width: 8),
+                      _buildPeriodChip('This Month', 2),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -703,21 +702,30 @@ class _SafeToSpendSection extends StatelessWidget {
                       children: [
                         // Amount
                         Text(
-                          'RWF ${safeAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
+                          'RWF ${displayAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
                           style: GoogleFonts.poppins(
                             fontSize: 36,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Safe to spend $periodLabel',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.85),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
                         Text(
                           explanation.isNotEmpty
                               ? explanation
                               : 'After covering all expenses, goals, and emergencies',
                           style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.75),
                             height: 1.4,
                           ),
                         ),
@@ -730,6 +738,16 @@ class _SafeToSpendSection extends StatelessWidget {
                           Icons.account_balance_wallet,
                           Colors.white,
                         ),
+                        if (expectedIncome > 0) ...[
+                          const SizedBox(height: 12),
+                          _buildBreakdownRow(
+                            'Expected Income',
+                            expectedIncome,
+                            Icons.trending_up,
+                            const Color(0xFFB9F6CA), // lighter green — additive
+                            prefix: '+',
+                          ),
+                        ],
                         const SizedBox(height: 12),
                         _buildBreakdownRow(
                           'Reserved for Expenses',
@@ -766,8 +784,32 @@ class _SafeToSpendSection extends StatelessWidget {
     );
   }
 
+  Widget _buildPeriodChip(String label, int index) {
+    final selected = _selectedPeriod == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedPeriod = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF2E7D32) : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            color: selected ? Colors.white : Colors.grey.shade600,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildBreakdownRow(
-      String label, double amount, IconData icon, Color color) {
+      String label, double amount, IconData icon, Color color,
+      {String prefix = ''}) {
     return Row(
       children: [
         Icon(icon, size: 16, color: color),
@@ -783,7 +825,7 @@ class _SafeToSpendSection extends StatelessWidget {
           ),
         ),
         Text(
-          'RWF ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
+          '${prefix.isNotEmpty ? '$prefix ' : ''}RWF ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
           style: GoogleFonts.inter(
             fontSize: 13,
             color: color,

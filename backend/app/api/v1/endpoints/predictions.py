@@ -482,14 +482,21 @@ async def get_safe_to_spend(
     weeks_remaining = days_remaining / 7.0
 
     # ── Active savings goals ──────────────────────────────────────────────────
+    # Reserve only what remains to meet each goal (target − already saved),
+    # capped at the weekly pace × weeks left so we don't over-reserve when
+    # the goal is almost complete or the deadline is close.
     active_goals = db.query(SavingsGoal).filter(
         SavingsGoal.user_id == user_id,
         SavingsGoal.status == GoalStatus.ACTIVE,
     ).all()
 
     reserved_for_goals = sum(
-        float(g.weekly_target or 0) for g in active_goals
-    ) * weeks_remaining
+        min(
+            float(g.remaining_amount),                    # actual shortfall
+            float(g.weekly_target or 0) * weeks_remaining  # pace-based cap
+        )
+        for g in active_goals
+    )
 
     # ── Predicted remaining expenses (rolling average × weeks left) ───────────
     reserved_for_expenses = avg_weekly_expense * weeks_remaining
@@ -497,27 +504,46 @@ async def get_safe_to_spend(
     # ── Emergency buffer (2 weeks of average weekly spend) ───────────────────
     emergency_buffer = avg_weekly_expense * 2.0
 
+    # ── Expected income still to arrive this month ────────────────────────────
+    # Use the existing income-pattern predictor and filter for predictions
+    # whose expected date falls before month-end but after right now.
+    # Weight each prediction by its confidence score to be conservative.
+    month_end = now.replace(
+        day=days_in_month, hour=23, minute=59, second=59, microsecond=0
+    )
+    income_predictions = mock_income_predictions(user_id, db)
+    expected_income_remaining = sum(
+        p["predicted_amount"] * p["confidence"]
+        for p in income_predictions
+        if now < p["predicted_date"] <= month_end
+    )
+
     # ── Safe-to-spend totals ──────────────────────────────────────────────────
-    # NOTE: reserved_for_expenses is NOT subtracted here — it is already
-    # accounted for in safe_per_day (daily budget naturally covers daily spend).
-    # Only lock away savings goals and emergency buffer from the spendable pool.
+    # Balance + income still coming in − goals shortfall − emergency buffer.
+    # reserved_for_expenses is intentionally excluded from the deduction —
+    # it is already reflected in safe_per_day (daily budget covers daily spend).
     safe_to_spend = max(
         0.0,
-        total_balance - reserved_for_goals - emergency_buffer,
+        total_balance + expected_income_remaining - reserved_for_goals - emergency_buffer,
     )
     safe_per_day = safe_to_spend / days_remaining
     safe_per_week = safe_to_spend / weeks_remaining
 
     # ── Human-readable explanation ────────────────────────────────────────────
+    income_note = (
+        f" + RWF {expected_income_remaining:,.0f} expected income"
+        if expected_income_remaining > 0 else ""
+    )
     if avg_weekly_expense > 0:
         explanation = (
             f"Based on your {len(non_zero)}-week weighted spending average "
-            f"(needs 100%, wants 70%) of RWF {avg_weekly_expense:,.0f}/week, "
-            f"with {days_remaining} days remaining this month"
+            f"(needs 100%, wants 70%) of RWF {avg_weekly_expense:,.0f}/week"
+            f"{income_note}, with {days_remaining} days remaining this month"
         )
     else:
         explanation = (
-            f"Not enough expense history yet. "
+            f"Not enough expense history yet."
+            f"{(' ' + income_note.strip()) if income_note else ''} "
             f"Add more transactions to get an accurate safe-to-spend figure."
         )
 
@@ -533,6 +559,7 @@ async def get_safe_to_spend(
         weeks_remaining=round(weeks_remaining, 1),
         days_remaining=days_remaining,
         avg_weekly_expense=round(avg_weekly_expense, 2),
+        expected_income_remaining=round(expected_income_remaining, 2),
     )
 
 

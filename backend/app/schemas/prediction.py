@@ -89,6 +89,8 @@ class SafeToSpendResponse(BaseModel):
     weeks_remaining: float = 0.0
     days_remaining: int = 0
     avg_weekly_expense: float = 0.0
+    # Expected income remaining this month (confidence-weighted prediction)
+    expected_income_remaining: float = 0.0
 
 
 class ChatMessage(BaseModel):
