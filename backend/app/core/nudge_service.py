@@ -41,12 +41,21 @@ def _get_user_context(user_id: int, db: Session) -> dict:
     now = datetime.now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     thirty_days_ago = now - timedelta(days=30)
+    ninety_days_ago = now - timedelta(days=90)
 
-    # Last 30 days transactions
+    # Try last 30 days first; fall back to 90 days so Claude always has real data
     transactions = db.query(Transaction).filter(
         Transaction.user_id == user_id,
         Transaction.transaction_date >= thirty_days_ago,
     ).all()
+
+    context_window_days = 30
+    if not transactions:
+        transactions = db.query(Transaction).filter(
+            Transaction.user_id == user_id,
+            Transaction.transaction_date >= ninety_days_ago,
+        ).all()
+        context_window_days = 90
 
     income_total = sum(t.amount for t in transactions if t.transaction_type == TransactionType.INCOME)
     expense_total = sum(t.amount for t in transactions if t.transaction_type == TransactionType.EXPENSE)
@@ -134,6 +143,7 @@ def _get_user_context(user_id: int, db: Session) -> dict:
         estimated_balance = max(0, income_total - expense_total)
 
     return {
+        "context_window_days": context_window_days,
         "income_30d": round(income_total, 0),
         "expenses_30d": round(expense_total, 0),
         "estimated_balance": round(estimated_balance, 0),
@@ -432,8 +442,8 @@ def chat_with_advisor(
     )
 
     context_block = f"""User's financial snapshot ({now.strftime('%B %Y')}):
-• Income (last 30 days):   RWF {context['income_30d']:,.0f}
-• Expenses (last 30 days): RWF {context['expenses_30d']:,.0f}
+• Income (last {context['context_window_days']} days):   RWF {context['income_30d']:,.0f}
+• Expenses (last {context['context_window_days']} days): RWF {context['expenses_30d']:,.0f}
 • Estimated balance:       RWF {context['estimated_balance']:,.0f}
 • Savings this month:      RWF {context['savings_this_month']:,.0f}
 • Savings rate:            {savings_rate}
