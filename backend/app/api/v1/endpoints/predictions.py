@@ -524,9 +524,10 @@ async def get_safe_to_spend(
     expenses_this_week = sum(float(t.amount) for t in week_txns)
 
     # ── Expected income still to arrive this month ────────────────────────────
-    # Strategy: avg monthly income over the past 3 full months minus what has
-    # already landed this month.  This is simple, reliable, and always produces
-    # a sensible number even with irregular / manually-entered transactions.
+    # Strategy: median monthly income over the past 3 full months minus what
+    # has already landed this month.  Using the median (not the mean) makes
+    # it naturally robust to one-off large transfers (bonuses, loan repayments,
+    # asset sales) that would otherwise inflate the estimate badly.
     three_months_ago = (month_start - timedelta(days=92)).replace(
         day=1, hour=0, minute=0, second=0, microsecond=0
     )
@@ -548,18 +549,30 @@ async def get_safe_to_spend(
     ).all()
 
     if hist_income_txns:
-        hist_total = sum(float(t.amount) for t in hist_income_txns)
-        avg_monthly_income = hist_total / 3.0  # over exactly 3 months
+        # Bucket transactions into their calendar month
+        monthly_buckets: dict[tuple, float] = {}
+        for t in hist_income_txns:
+            key = (t.transaction_date.year, t.transaction_date.month)
+            monthly_buckets[key] = monthly_buckets.get(key, 0.0) + float(t.amount)
+        monthly_totals = sorted(monthly_buckets.values())
+        # Median of the monthly totals — immune to one outlier month
+        n = len(monthly_totals)
+        if n == 0:
+            median_monthly_income = 0.0
+        elif n % 2 == 1:
+            median_monthly_income = monthly_totals[n // 2]
+        else:
+            median_monthly_income = (monthly_totals[n // 2 - 1] + monthly_totals[n // 2]) / 2.0
     else:
-        avg_monthly_income = 0.0
+        median_monthly_income = 0.0
 
     income_received_this_month = sum(float(t.amount) for t in this_month_income_txns)
 
     # How much of the typical monthly income is yet to arrive?
-    # Use 0.85 confidence on historical average to be conservative.
+    # 0.85 factor = conservative discount for variability.
     expected_income_remaining = max(
         0.0,
-        (avg_monthly_income - income_received_this_month) * 0.85
+        (median_monthly_income - income_received_this_month) * 0.85
     )
 
     # ── Safe-to-spend totals ──────────────────────────────────────────────────
