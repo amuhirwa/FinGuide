@@ -74,6 +74,9 @@ def _adapt_parsed(result: dict, raw_sms: str) -> dict:
     category = result.get("category", "other")
     need_want = need_want_map.get(category, "uncategorized")
 
+    raw_balance = result.get("balance") or result.get("balance_after")
+    balance_after = float(raw_balance) if raw_balance else None
+
     return {
         "transaction_type": result.get("type", "expense"),
         "amount": result.get("amount", 0.0),
@@ -86,6 +89,7 @@ def _adapt_parsed(result: dict, raw_sms: str) -> dict:
         "transaction_date": transaction_date,
         "confidence": 0.9,
         "is_rnit": result.get("is_rnit", False),
+        "balance_after": balance_after,
     }
 
 
@@ -418,6 +422,7 @@ async def parse_sms_messages(
                 raw_sms=sms_text,
                 transaction_date=parsed["transaction_date"],
                 confidence_score=parsed.get("confidence", 0.8),
+                balance_after=parsed.get("balance_after"),
                 is_verified=False
             )
             

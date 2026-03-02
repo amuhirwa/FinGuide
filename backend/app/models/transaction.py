@@ -107,6 +107,7 @@ class Transaction(Base):
     # SMS Data
     raw_sms = Column(Text)
     sms_sender = Column(String(50))
+    balance_after = Column(Float, nullable=True)  # Wallet balance after this transaction (from SMS)
 
     # Investment Link (optional: which investment funded/represents this transaction)
     linked_investment_id = Column(Integer, ForeignKey("investments.id"), nullable=True, index=True)
