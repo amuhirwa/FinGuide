@@ -17,15 +17,23 @@ import 'package:finguide/features/auth/domain/usecases/login_usecase.dart';
 import 'package:finguide/features/auth/domain/usecases/register_usecase.dart';
 import 'package:finguide/features/auth/domain/usecases/send_otp_usecase.dart';
 import 'package:finguide/features/auth/domain/usecases/verify_otp_usecase.dart';
+import 'package:finguide/features/auth/domain/repositories/auth_repository.dart';
 import 'package:finguide/features/auth/presentation/bloc/auth_bloc.dart';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
+class MockAuthRepository extends Mock implements AuthRepository {}
+
 class MockSendOtpUseCase extends Mock implements SendOtpUseCase {}
+
 class MockVerifyOtpUseCase extends Mock implements VerifyOtpUseCase {}
+
 class MockLoginUseCase extends Mock implements LoginUseCase {}
+
 class MockRegisterUseCase extends Mock implements RegisterUseCase {}
+
 class MockCheckAuthUseCase extends Mock implements CheckAuthUseCase {}
+
 class MockAuthLocalDataSource extends Mock implements AuthLocalDataSource {}
 
 // ── Test Data ─────────────────────────────────────────────────────────────────
@@ -58,6 +66,7 @@ AuthBloc _makeBloc({
   required MockRegisterUseCase register,
   required MockCheckAuthUseCase checkAuth,
   required MockAuthLocalDataSource localDS,
+  MockAuthRepository? authRepository,
 }) {
   return AuthBloc(
     sendOtpUseCase: sendOtp,
@@ -66,6 +75,7 @@ AuthBloc _makeBloc({
     registerUseCase: register,
     checkAuthUseCase: checkAuth,
     localDataSource: localDS,
+    authRepository: authRepository ?? MockAuthRepository(),
   );
 }
 
@@ -87,7 +97,8 @@ void main() {
 
     // Fallback registrations required by mocktail
     registerFallbackValue(const SendOtpParams(phoneNumber: kPhone));
-    registerFallbackValue(const VerifyOtpParams(phoneNumber: kPhone, otpCode: kOtpCode));
+    registerFallbackValue(
+        const VerifyOtpParams(phoneNumber: kPhone, otpCode: kOtpCode));
     registerFallbackValue(LoginParams(
       phoneNumber: kPhone,
       password: kPassword,
@@ -109,10 +120,15 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'emits [AuthLoading, AuthShowOnboarding] when onboarding not seen',
       build: () {
-        when(() => mockLocalDS.hasSeenOnboarding()).thenAnswer((_) async => false);
+        when(() => mockLocalDS.hasSeenOnboarding())
+            .thenAnswer((_) async => false);
         return _makeBloc(
-          sendOtp: mockSendOtp, verifyOtp: mockVerifyOtp, login: mockLogin,
-          register: mockRegister, checkAuth: mockCheckAuth, localDS: mockLocalDS,
+          sendOtp: mockSendOtp,
+          verifyOtp: mockVerifyOtp,
+          login: mockLogin,
+          register: mockRegister,
+          checkAuth: mockCheckAuth,
+          localDS: mockLocalDS,
         );
       },
       act: (bloc) => bloc.add(AuthCheckRequested()),
@@ -122,13 +138,18 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'emits [AuthLoading, AuthUnauthenticated] when onboarding seen but no token',
       build: () {
-        when(() => mockLocalDS.hasSeenOnboarding()).thenAnswer((_) async => true);
+        when(() => mockLocalDS.hasSeenOnboarding())
+            .thenAnswer((_) async => true);
         when(() => mockCheckAuth()).thenAnswer(
           (_) async => const Left(AuthFailure(message: 'No token found')),
         );
         return _makeBloc(
-          sendOtp: mockSendOtp, verifyOtp: mockVerifyOtp, login: mockLogin,
-          register: mockRegister, checkAuth: mockCheckAuth, localDS: mockLocalDS,
+          sendOtp: mockSendOtp,
+          verifyOtp: mockVerifyOtp,
+          login: mockLogin,
+          register: mockRegister,
+          checkAuth: mockCheckAuth,
+          localDS: mockLocalDS,
         );
       },
       act: (bloc) => bloc.add(AuthCheckRequested()),
@@ -138,12 +159,18 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'emits [AuthLoading, AuthAuthenticated] when token valid and SMS consent done',
       build: () {
-        when(() => mockLocalDS.hasSeenOnboarding()).thenAnswer((_) async => true);
+        when(() => mockLocalDS.hasSeenOnboarding())
+            .thenAnswer((_) async => true);
         when(() => mockCheckAuth()).thenAnswer((_) async => Right(kTestUser));
-        when(() => mockLocalDS.hasSmsConsentCompleted()).thenAnswer((_) async => true);
+        when(() => mockLocalDS.hasSmsConsentCompleted())
+            .thenAnswer((_) async => true);
         return _makeBloc(
-          sendOtp: mockSendOtp, verifyOtp: mockVerifyOtp, login: mockLogin,
-          register: mockRegister, checkAuth: mockCheckAuth, localDS: mockLocalDS,
+          sendOtp: mockSendOtp,
+          verifyOtp: mockVerifyOtp,
+          login: mockLogin,
+          register: mockRegister,
+          checkAuth: mockCheckAuth,
+          localDS: mockLocalDS,
         );
       },
       act: (bloc) => bloc.add(AuthCheckRequested()),
@@ -157,12 +184,18 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'emits [AuthLoading, AuthShowSmsConsent] when token valid but no SMS consent',
       build: () {
-        when(() => mockLocalDS.hasSeenOnboarding()).thenAnswer((_) async => true);
+        when(() => mockLocalDS.hasSeenOnboarding())
+            .thenAnswer((_) async => true);
         when(() => mockCheckAuth()).thenAnswer((_) async => Right(kTestUser));
-        when(() => mockLocalDS.hasSmsConsentCompleted()).thenAnswer((_) async => false);
+        when(() => mockLocalDS.hasSmsConsentCompleted())
+            .thenAnswer((_) async => false);
         return _makeBloc(
-          sendOtp: mockSendOtp, verifyOtp: mockVerifyOtp, login: mockLogin,
-          register: mockRegister, checkAuth: mockCheckAuth, localDS: mockLocalDS,
+          sendOtp: mockSendOtp,
+          verifyOtp: mockVerifyOtp,
+          login: mockLogin,
+          register: mockRegister,
+          checkAuth: mockCheckAuth,
+          localDS: mockLocalDS,
         );
       },
       act: (bloc) => bloc.add(AuthCheckRequested()),
@@ -176,10 +209,15 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'emits [AuthLoading, AuthOtpPending] on successful OTP send',
       build: () {
-        when(() => mockSendOtp(any())).thenAnswer((_) async => const Right(null));
+        when(() => mockSendOtp(any()))
+            .thenAnswer((_) async => const Right(null));
         return _makeBloc(
-          sendOtp: mockSendOtp, verifyOtp: mockVerifyOtp, login: mockLogin,
-          register: mockRegister, checkAuth: mockCheckAuth, localDS: mockLocalDS,
+          sendOtp: mockSendOtp,
+          verifyOtp: mockVerifyOtp,
+          login: mockLogin,
+          register: mockRegister,
+          checkAuth: mockCheckAuth,
+          localDS: mockLocalDS,
         );
       },
       act: (bloc) => bloc.add(const AuthLoginRequested(
@@ -203,8 +241,12 @@ void main() {
           (_) async => const Left(kServerFailure),
         );
         return _makeBloc(
-          sendOtp: mockSendOtp, verifyOtp: mockVerifyOtp, login: mockLogin,
-          register: mockRegister, checkAuth: mockCheckAuth, localDS: mockLocalDS,
+          sendOtp: mockSendOtp,
+          verifyOtp: mockVerifyOtp,
+          login: mockLogin,
+          register: mockRegister,
+          checkAuth: mockCheckAuth,
+          localDS: mockLocalDS,
         );
       },
       act: (bloc) => bloc.add(const AuthLoginRequested(
@@ -221,10 +263,15 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'emits [AuthLoading, AuthOtpPending] on successful OTP send',
       build: () {
-        when(() => mockSendOtp(any())).thenAnswer((_) async => const Right(null));
+        when(() => mockSendOtp(any()))
+            .thenAnswer((_) async => const Right(null));
         return _makeBloc(
-          sendOtp: mockSendOtp, verifyOtp: mockVerifyOtp, login: mockLogin,
-          register: mockRegister, checkAuth: mockCheckAuth, localDS: mockLocalDS,
+          sendOtp: mockSendOtp,
+          verifyOtp: mockVerifyOtp,
+          login: mockLogin,
+          register: mockRegister,
+          checkAuth: mockCheckAuth,
+          localDS: mockLocalDS,
         );
       },
       act: (bloc) => bloc.add(const AuthRegisterRequested(
@@ -244,8 +291,12 @@ void main() {
           (_) async => const Left(kServerFailure),
         );
         return _makeBloc(
-          sendOtp: mockSendOtp, verifyOtp: mockVerifyOtp, login: mockLogin,
-          register: mockRegister, checkAuth: mockCheckAuth, localDS: mockLocalDS,
+          sendOtp: mockSendOtp,
+          verifyOtp: mockVerifyOtp,
+          login: mockLogin,
+          register: mockRegister,
+          checkAuth: mockCheckAuth,
+          localDS: mockLocalDS,
         );
       },
       act: (bloc) => bloc.add(const AuthRegisterRequested(
@@ -265,8 +316,12 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'emits [AuthOtpError] when no pending phone',
       build: () => _makeBloc(
-        sendOtp: mockSendOtp, verifyOtp: mockVerifyOtp, login: mockLogin,
-        register: mockRegister, checkAuth: mockCheckAuth, localDS: mockLocalDS,
+        sendOtp: mockSendOtp,
+        verifyOtp: mockVerifyOtp,
+        login: mockLogin,
+        register: mockRegister,
+        checkAuth: mockCheckAuth,
+        localDS: mockLocalDS,
       ),
       act: (bloc) => bloc.add(const AuthOtpAutoDetected(otpCode: kOtpCode)),
       expect: () => [isA<AuthOtpError>()],
@@ -278,11 +333,16 @@ void main() {
   });
 
   group('AuthOtpAutoDetected — login path', () {
-    AuthBloc buildBlocWithPendingLogin(MockVerifyOtpUseCase vOtp, MockLoginUseCase login) {
+    AuthBloc buildBlocWithPendingLogin(
+        MockVerifyOtpUseCase vOtp, MockLoginUseCase login) {
       when(() => mockSendOtp(any())).thenAnswer((_) async => const Right(null));
       return _makeBloc(
-        sendOtp: mockSendOtp, verifyOtp: vOtp, login: login,
-        register: mockRegister, checkAuth: mockCheckAuth, localDS: mockLocalDS,
+        sendOtp: mockSendOtp,
+        verifyOtp: vOtp,
+        login: login,
+        register: mockRegister,
+        checkAuth: mockCheckAuth,
+        localDS: mockLocalDS,
       );
     }
 
@@ -296,7 +356,8 @@ void main() {
       },
       act: (bloc) async {
         // Prime the pending state via a login request
-        bloc.add(const AuthLoginRequested(phoneNumber: kPhone, password: kPassword));
+        bloc.add(
+            const AuthLoginRequested(phoneNumber: kPhone, password: kPassword));
         await Future.delayed(Duration.zero);
         bloc.add(const AuthOtpAutoDetected(otpCode: kOtpCode));
       },
@@ -311,11 +372,13 @@ void main() {
           (_) async => const Right(kOtpToken),
         );
         when(() => mockLogin(any())).thenAnswer((_) async => Right(kTestUser));
-        when(() => mockLocalDS.hasSmsConsentCompleted()).thenAnswer((_) async => true);
+        when(() => mockLocalDS.hasSmsConsentCompleted())
+            .thenAnswer((_) async => true);
         return buildBlocWithPendingLogin(mockVerifyOtp, mockLogin);
       },
       act: (bloc) async {
-        bloc.add(const AuthLoginRequested(phoneNumber: kPhone, password: kPassword));
+        bloc.add(
+            const AuthLoginRequested(phoneNumber: kPhone, password: kPassword));
         await Future.delayed(Duration.zero);
         bloc.add(const AuthOtpAutoDetected(otpCode: kOtpCode));
       },
@@ -330,11 +393,13 @@ void main() {
           (_) async => const Right(kOtpToken),
         );
         when(() => mockLogin(any())).thenAnswer((_) async => Right(kTestUser));
-        when(() => mockLocalDS.hasSmsConsentCompleted()).thenAnswer((_) async => false);
+        when(() => mockLocalDS.hasSmsConsentCompleted())
+            .thenAnswer((_) async => false);
         return buildBlocWithPendingLogin(mockVerifyOtp, mockLogin);
       },
       act: (bloc) async {
-        bloc.add(const AuthLoginRequested(phoneNumber: kPhone, password: kPassword));
+        bloc.add(
+            const AuthLoginRequested(phoneNumber: kPhone, password: kPassword));
         await Future.delayed(Duration.zero);
         bloc.add(const AuthOtpAutoDetected(otpCode: kOtpCode));
       },
@@ -354,7 +419,8 @@ void main() {
         return buildBlocWithPendingLogin(mockVerifyOtp, mockLogin);
       },
       act: (bloc) async {
-        bloc.add(const AuthLoginRequested(phoneNumber: kPhone, password: kPassword));
+        bloc.add(
+            const AuthLoginRequested(phoneNumber: kPhone, password: kPassword));
         await Future.delayed(Duration.zero);
         bloc.add(const AuthOtpAutoDetected(otpCode: kOtpCode));
       },
@@ -367,8 +433,12 @@ void main() {
     AuthBloc buildBlocWithPendingRegister() {
       when(() => mockSendOtp(any())).thenAnswer((_) async => const Right(null));
       return _makeBloc(
-        sendOtp: mockSendOtp, verifyOtp: mockVerifyOtp, login: mockLogin,
-        register: mockRegister, checkAuth: mockCheckAuth, localDS: mockLocalDS,
+        sendOtp: mockSendOtp,
+        verifyOtp: mockVerifyOtp,
+        login: mockLogin,
+        register: mockRegister,
+        checkAuth: mockCheckAuth,
+        localDS: mockLocalDS,
       );
     }
 
@@ -378,8 +448,10 @@ void main() {
         when(() => mockVerifyOtp(any())).thenAnswer(
           (_) async => const Right(kOtpToken),
         );
-        when(() => mockRegister(any())).thenAnswer((_) async => Right(kTestUser));
-        when(() => mockLocalDS.hasSmsConsentCompleted()).thenAnswer((_) async => true);
+        when(() => mockRegister(any()))
+            .thenAnswer((_) async => Right(kTestUser));
+        when(() => mockLocalDS.hasSmsConsentCompleted())
+            .thenAnswer((_) async => true);
         return buildBlocWithPendingRegister();
       },
       act: (bloc) async {
@@ -430,8 +502,12 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'emits [AuthOtpError] when no pending phone (no prior login/register)',
       build: () => _makeBloc(
-        sendOtp: mockSendOtp, verifyOtp: mockVerifyOtp, login: mockLogin,
-        register: mockRegister, checkAuth: mockCheckAuth, localDS: mockLocalDS,
+        sendOtp: mockSendOtp,
+        verifyOtp: mockVerifyOtp,
+        login: mockLogin,
+        register: mockRegister,
+        checkAuth: mockCheckAuth,
+        localDS: mockLocalDS,
       ),
       act: (bloc) => bloc.add(AuthOtpResendRequested()),
       expect: () => [isA<AuthOtpError>()],
@@ -440,15 +516,21 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'emits [AuthLoading, AuthOtpPending] when resend succeeds',
       build: () {
-        when(() => mockSendOtp(any())).thenAnswer((_) async => const Right(null));
+        when(() => mockSendOtp(any()))
+            .thenAnswer((_) async => const Right(null));
         return _makeBloc(
-          sendOtp: mockSendOtp, verifyOtp: mockVerifyOtp, login: mockLogin,
-          register: mockRegister, checkAuth: mockCheckAuth, localDS: mockLocalDS,
+          sendOtp: mockSendOtp,
+          verifyOtp: mockVerifyOtp,
+          login: mockLogin,
+          register: mockRegister,
+          checkAuth: mockCheckAuth,
+          localDS: mockLocalDS,
         );
       },
       act: (bloc) async {
         // Set pending state via login
-        bloc.add(const AuthLoginRequested(phoneNumber: kPhone, password: kPassword));
+        bloc.add(
+            const AuthLoginRequested(phoneNumber: kPhone, password: kPassword));
         await Future.delayed(Duration.zero);
         bloc.add(AuthOtpResendRequested());
       },
@@ -459,16 +541,24 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'emits [AuthOtpError] when resend fails',
       build: () {
-        when(() => mockSendOtp(any()))
-            .thenAnswer((_) async => const Right(null)) // first call (login) succeeds
-            .thenAnswer((_) async => const Left(kServerFailure)); // resend fails
+        var callCount = 0;
+        when(() => mockSendOtp(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) return const Right(null); // login succeeds
+          return const Left(kServerFailure); // resend fails
+        });
         return _makeBloc(
-          sendOtp: mockSendOtp, verifyOtp: mockVerifyOtp, login: mockLogin,
-          register: mockRegister, checkAuth: mockCheckAuth, localDS: mockLocalDS,
+          sendOtp: mockSendOtp,
+          verifyOtp: mockVerifyOtp,
+          login: mockLogin,
+          register: mockRegister,
+          checkAuth: mockCheckAuth,
+          localDS: mockLocalDS,
         );
       },
       act: (bloc) async {
-        bloc.add(const AuthLoginRequested(phoneNumber: kPhone, password: kPassword));
+        bloc.add(
+            const AuthLoginRequested(phoneNumber: kPhone, password: kPassword));
         await Future.delayed(Duration.zero);
         bloc.add(AuthOtpResendRequested());
       },
@@ -485,8 +575,12 @@ void main() {
       build: () {
         when(() => mockLocalDS.clearAll()).thenAnswer((_) async {});
         return _makeBloc(
-          sendOtp: mockSendOtp, verifyOtp: mockVerifyOtp, login: mockLogin,
-          register: mockRegister, checkAuth: mockCheckAuth, localDS: mockLocalDS,
+          sendOtp: mockSendOtp,
+          verifyOtp: mockVerifyOtp,
+          login: mockLogin,
+          register: mockRegister,
+          checkAuth: mockCheckAuth,
+          localDS: mockLocalDS,
         );
       },
       act: (bloc) => bloc.add(AuthLogoutRequested()),

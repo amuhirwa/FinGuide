@@ -39,6 +39,9 @@ abstract class AuthRemoteDataSource {
 
   /// Get current user profile
   Future<UserModel> getCurrentUser();
+
+  /// Update user profile
+  Future<UserModel> updateProfile(Map<String, dynamic> data);
 }
 
 /// Auth remote data source implementation
@@ -116,6 +119,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<UserModel> getCurrentUser() async {
     try {
       return await _apiClient.getCurrentUser();
+    } catch (e) {
+      throw ServerException(message: _extractErrorMessage(e));
+    }
+  }
+
+  @override
+  Future<UserModel> updateProfile(Map<String, dynamic> data) async {
+    try {
+      final response = await _apiClient.updateProfile(data);
+      return UserModel.fromJson(response);
     } catch (e) {
       throw ServerException(message: _extractErrorMessage(e));
     }

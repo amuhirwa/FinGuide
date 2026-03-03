@@ -44,6 +44,10 @@ const List<String> _momoKeywords = [
   'payment of',
   'transaction of',
   'FT Id',
+  // MoKash (savings account) messages
+  'Mokash',
+  'from your Mokash account',
+  'to your Mokash account',
 ];
 
 /// Keywords that indicate this SMS is an income (money received) message.

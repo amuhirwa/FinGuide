@@ -8,6 +8,8 @@
 
  */
 
+import 'dart:math' as math;
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -342,9 +344,21 @@ class _TransactionsPageState extends State<TransactionsPage> {
           expenses = summary.totalExpenses;
         }
 
-        final savingsRate = income > 0
-            ? ((income - expenses) / income * 100).clamp(0, 100)
-            : 0.0;
+        final savings = income - expenses;
+        final spendRatio =
+            income > 0 ? (expenses / income).clamp(0.0, 1.0) : 0.0;
+        final savingsPct =
+            income > 0 ? ((savings / income) * 100).clamp(-100.0, 100.0) : 0.0;
+        final isPositive = savings >= 0;
+
+        Color barColor;
+        if (spendRatio <= 0.5) {
+          barColor = const Color(0xFF10B981);
+        } else if (spendRatio <= 0.8) {
+          barColor = const Color(0xFFF59E0B);
+        } else {
+          barColor = const Color(0xFFEF4444);
+        }
 
         return GestureDetector(
           onTap: summary != null
@@ -359,88 +373,113 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   )
               : null,
           child: Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(20),
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF00A3AD), Color(0xFF00838F)],
+              ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: const Color(0xFF00A3AD).withOpacity(0.35),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _SummaryItem(
-                        label: 'Income',
-                        amount: income,
-                        color: Colors.green,
-                        icon: Icons.arrow_downward,
-                      ),
-                    ),
-                    Container(
-                      width: 1,
-                      height: 50,
-                      color: Colors.grey[200],
-                    ),
-                    Expanded(
-                      child: _SummaryItem(
-                        label: 'Expenses',
-                        amount: expenses,
-                        color: Colors.red,
-                        icon: Icons.arrow_upward,
-                      ),
-                    ),
-                  ],
-                ),
-                if (income > 0) ...[
-                  const SizedBox(height: 14),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: (expenses / income).clamp(0, 1),
-                      minHeight: 6,
-                      backgroundColor: Colors.white24,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        expenses / income > 0.9
-                            ? Colors.red.shade300
-                            : expenses / income > 0.7
-                                ? Colors.orange.shade300
-                                : Colors.greenAccent.shade200,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Spending ${(expenses / income * 100).toStringAsFixed(0)}% of income',
-                        style: GoogleFonts.inter(
-                            fontSize: 11, color: Colors.white70),
+                      Expanded(
+                        child: _SummaryItem(
+                          label: 'Income',
+                          amount: income,
+                          color: const Color(0xFF6EE7B7),
+                          icon: Icons.arrow_downward_rounded,
+                          light: true,
+                        ),
                       ),
-                      Row(
-                        children: [
-                          Text(
-                            'Tap for health report',
-                            style: GoogleFonts.inter(
-                                fontSize: 11, color: Colors.white60),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.chevron_right,
-                              size: 14, color: Colors.white60),
-                        ],
+                      Container(
+                        width: 1,
+                        height: 60,
+                        color: Colors.white.withOpacity(0.2),
+                      ),
+                      Expanded(
+                        child: _SummaryItem(
+                          label: 'Expenses',
+                          amount: expenses,
+                          color: const Color(0xFFFCA5A5),
+                          icon: Icons.arrow_upward_rounded,
+                          light: true,
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 60,
+                        color: Colors.white.withOpacity(0.2),
+                      ),
+                      Expanded(
+                        child: _SummaryItem(
+                          label: isPositive ? 'Saved' : 'Deficit',
+                          amount: savings.abs(),
+                          color: isPositive
+                              ? const Color(0xFFFDE68A)
+                              : const Color(0xFFFCA5A5),
+                          icon: isPositive
+                              ? Icons.trending_up_rounded
+                              : Icons.trending_down_rounded,
+                          light: true,
+                        ),
                       ),
                     ],
                   ),
+                  if (income > 0) ...[
+                    const SizedBox(height: 14),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: spendRatio,
+                        minHeight: 6,
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                        valueColor: AlwaysStoppedAnimation<Color>(barColor),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Spending ${(spendRatio * 100).toStringAsFixed(0)}%  •  Saving ${savingsPct.toStringAsFixed(0)}%',
+                          style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: Colors.white.withOpacity(0.75)),
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                              'Health report',
+                              style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: Colors.white.withOpacity(0.75)),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(Icons.chevron_right,
+                                size: 14,
+                                color: Colors.white.withOpacity(0.75)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );
@@ -449,20 +488,17 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   Widget _buildDatePresets() {
-    return SizedBox(
-      height: 40,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
         children: _DatePreset.values.map((p) {
           final selected = _datePreset == p;
-
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
               onTap: () {
                 setState(() => _datePreset = p);
-
                 _applyFilters();
               },
               child: AnimatedContainer(
@@ -657,6 +693,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
   void _showFilterSheet() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -666,12 +704,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
         onApply: (type, category) {
           setState(() {
             _selectedType = type;
-
             _selectedCategory = category;
           });
-
           _applyFilters();
-
           Navigator.pop(context);
         },
       ),
@@ -776,6 +811,11 @@ class _TransactionTile extends StatelessWidget {
     final format = NumberFormat('#,###', 'en_US');
 
     final isIncome = transaction.transactionType == TransactionType.income;
+    final isTransfer = transaction.transactionType == TransactionType.transfer;
+
+    // MoKash withdrawal: savings + transfer type = money coming back from savings
+    final isMoKashReturn =
+        isTransfer && transaction.category == TransactionCategory.savings;
 
     final isSavingsOrInvestment = const {
       TransactionCategory.savings,
@@ -843,7 +883,10 @@ class _TransactionTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    transaction.description ?? transaction.categoryDisplay,
+                    isMoKashReturn
+                        ? 'MoKash Withdrawal'
+                        : (transaction.description ??
+                            transaction.categoryDisplay),
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
@@ -856,7 +899,11 @@ class _TransactionTile extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        transaction.categoryDisplay,
+                        isMoKashReturn
+                            ? 'MoKash Withdrawal'
+                            : (isTransfer
+                                ? 'Transfer'
+                                : transaction.categoryDisplay),
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           color: Colors.grey[500],
@@ -928,7 +975,7 @@ class _TransactionTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${isIncome ? '+' : '-'} RWF ${format.format(transaction.amount)}',
+                  '${isIncome ? '+' : isTransfer ? '\u21C4' : '-'} RWF ${format.format(transaction.amount)}',
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
@@ -936,7 +983,9 @@ class _TransactionTile extends StatelessWidget {
                         ? accentColor
                         : isIncome
                             ? Colors.green[700]
-                            : const Color(0xFF1E293B),
+                            : isTransfer
+                                ? Colors.blueGrey[600]
+                                : const Color(0xFF1E293B),
                   ),
                 ),
                 if (isSavingsOrInvestment)
@@ -1072,6 +1121,188 @@ class _TransactionTile extends StatelessWidget {
   }
 }
 
+// ── Category constants for filter sheet ───────────────────────────────────────
+const _kIncomeCategories = [
+  TransactionCategory.salary,
+  TransactionCategory.freelance,
+  TransactionCategory.business,
+  TransactionCategory.gift_received,
+  TransactionCategory.refund,
+  TransactionCategory.other_income,
+];
+
+const _kExpenseCategories = [
+  TransactionCategory.food_groceries,
+  TransactionCategory.dining_out,
+  TransactionCategory.transport,
+  TransactionCategory.utilities,
+  TransactionCategory.rent,
+  TransactionCategory.healthcare,
+  TransactionCategory.education,
+  TransactionCategory.entertainment,
+  TransactionCategory.shopping,
+  TransactionCategory.airtime_data,
+  TransactionCategory.subscriptions,
+  TransactionCategory.savings,
+  TransactionCategory.ejo_heza,
+  TransactionCategory.investment,
+  TransactionCategory.transfer_out,
+  TransactionCategory.fees,
+  TransactionCategory.other,
+];
+
+/// A filter chip that shows an icon and proper label for a TransactionCategory.
+class _FilterCategoryChip extends StatelessWidget {
+  final TransactionCategory category;
+  final bool selected;
+  final VoidCallback onSelected;
+
+  const _FilterCategoryChip({
+    required this.category,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onSelected,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : Colors.grey[100],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? AppColors.primary : Colors.grey[300]!,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _iconFor(category),
+              size: 14,
+              color: selected ? Colors.white : Colors.grey[600],
+            ),
+            const SizedBox(width: 5),
+            Text(
+              _labelFor(category),
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: selected ? Colors.white : Colors.grey[700],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _labelFor(TransactionCategory c) {
+    switch (c) {
+      case TransactionCategory.salary:
+        return 'Salary';
+      case TransactionCategory.freelance:
+        return 'Freelance';
+      case TransactionCategory.business:
+        return 'Business';
+      case TransactionCategory.gift_received:
+        return 'Gift';
+      case TransactionCategory.refund:
+        return 'Refund';
+      case TransactionCategory.other_income:
+        return 'Other Income';
+      case TransactionCategory.food_groceries:
+        return 'Food & Groceries';
+      case TransactionCategory.dining_out:
+        return 'Dining Out';
+      case TransactionCategory.transport:
+        return 'Transport';
+      case TransactionCategory.utilities:
+        return 'Utilities';
+      case TransactionCategory.rent:
+        return 'Rent';
+      case TransactionCategory.healthcare:
+        return 'Healthcare';
+      case TransactionCategory.education:
+        return 'Education';
+      case TransactionCategory.entertainment:
+        return 'Entertainment';
+      case TransactionCategory.shopping:
+        return 'Shopping';
+      case TransactionCategory.airtime_data:
+        return 'Airtime/Data';
+      case TransactionCategory.subscriptions:
+        return 'Subscriptions';
+      case TransactionCategory.savings:
+        return 'Savings';
+      case TransactionCategory.ejo_heza:
+        return 'Ejo Heza';
+      case TransactionCategory.investment:
+        return 'Investment';
+      case TransactionCategory.transfer_out:
+        return 'Transfer';
+      case TransactionCategory.fees:
+        return 'Fees';
+      case TransactionCategory.other:
+        return 'Other';
+    }
+  }
+
+  static IconData _iconFor(TransactionCategory c) {
+    switch (c) {
+      case TransactionCategory.salary:
+        return Icons.work_outline;
+      case TransactionCategory.freelance:
+        return Icons.laptop;
+      case TransactionCategory.business:
+        return Icons.store;
+      case TransactionCategory.gift_received:
+        return Icons.card_giftcard;
+      case TransactionCategory.refund:
+        return Icons.replay;
+      case TransactionCategory.other_income:
+        return Icons.attach_money;
+      case TransactionCategory.food_groceries:
+        return Icons.restaurant;
+      case TransactionCategory.dining_out:
+        return Icons.local_dining;
+      case TransactionCategory.transport:
+        return Icons.directions_bus;
+      case TransactionCategory.utilities:
+        return Icons.flash_on;
+      case TransactionCategory.rent:
+        return Icons.home;
+      case TransactionCategory.healthcare:
+        return Icons.local_hospital;
+      case TransactionCategory.education:
+        return Icons.school;
+      case TransactionCategory.entertainment:
+        return Icons.movie;
+      case TransactionCategory.shopping:
+        return Icons.shopping_bag;
+      case TransactionCategory.airtime_data:
+        return Icons.phone_android;
+      case TransactionCategory.subscriptions:
+        return Icons.subscriptions;
+      case TransactionCategory.savings:
+        return Icons.savings;
+      case TransactionCategory.ejo_heza:
+        return Icons.account_balance;
+      case TransactionCategory.investment:
+        return Icons.trending_up;
+      case TransactionCategory.transfer_out:
+        return Icons.swap_horiz;
+      case TransactionCategory.fees:
+        return Icons.receipt_long;
+      case TransactionCategory.other:
+        return Icons.receipt;
+    }
+  }
+}
+
 class _FilterSheet extends StatefulWidget {
   final String? selectedType;
 
@@ -1105,91 +1336,167 @@ class _FilterSheetState extends State<_FilterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Filter Transactions',
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Transaction Type',
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            children: [
-              _FilterChip(
-                label: 'All',
-                selected: _type == null,
-                onSelected: () => setState(() => _type = null),
-              ),
-              _FilterChip(
-                label: 'Income',
-                selected: _type == 'income',
-                onSelected: () => setState(() => _type = 'income'),
-              ),
-              _FilterChip(
-                label: 'Expense',
-                selected: _type == 'expense',
-                onSelected: () => setState(() => _type = 'expense'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Category',
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _FilterChip(
-                label: 'All',
-                selected: _category == null,
-                onSelected: () => setState(() => _category = null),
-              ),
-              ...TransactionCategory.values.take(8).map(
-                    (c) => _FilterChip(
-                      label: c.name,
-                      selected: _category == c.name,
-                      onSelected: () => setState(() => _category = c.name),
-                    ),
-                  ),
-            ],
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => widget.onApply(_type, _category),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      maxChildSize: 0.95,
+      minChildSize: 0.4,
+      expand: false,
+      builder: (_, controller) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              child: const Text('Apply Filters'),
             ),
-          ),
-        ],
+            Text(
+              'Filter Transactions',
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tap a category to filter. Types auto-select on category tap.',
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[500]),
+            ),
+            const SizedBox(height: 16),
+            // Reset chip
+            GestureDetector(
+              onTap: () => setState(() {
+                _type = null;
+                _category = null;
+              }),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: (_type == null && _category == null)
+                      ? AppColors.primary
+                      : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: (_type == null && _category == null)
+                          ? AppColors.primary
+                          : Colors.grey[300]!),
+                ),
+                child: Text(
+                  'All Transactions',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: (_type == null && _category == null)
+                        ? Colors.white
+                        : Colors.grey[700],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView(
+                controller: controller,
+                children: [
+                  // ── Income Categories ────────────────────────────────
+                  Text(
+                    'Income Categories',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _FilterChip(
+                        label: 'All Income',
+                        selected: _category == null && _type == 'income',
+                        onSelected: () => setState(() {
+                          _category = null;
+                          _type = 'income';
+                        }),
+                      ),
+                      ..._kIncomeCategories.map(
+                        (c) => _FilterCategoryChip(
+                          category: c,
+                          selected: _category == c.name,
+                          onSelected: () => setState(() {
+                            _category = c.name;
+                            _type = 'income';
+                          }),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // ── Expense Categories ───────────────────────────────
+                  Text(
+                    'Expense Categories',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _FilterChip(
+                        label: 'All Expenses',
+                        selected: _category == null && _type == 'expense',
+                        onSelected: () => setState(() {
+                          _category = null;
+                          _type = 'expense';
+                        }),
+                      ),
+                      ..._kExpenseCategories.map(
+                        (c) => _FilterCategoryChip(
+                          category: c,
+                          selected: _category == c.name,
+                          onSelected: () => setState(() {
+                            _category = c.name;
+                            _type = 'expense';
+                          }),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => widget.onApply(_type, _category),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Apply Filters'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1782,6 +2089,9 @@ class TransactionDetailPage extends StatelessWidget {
     final format = NumberFormat('#,###', 'en_US');
 
     final isIncome = transaction.transactionType == TransactionType.income;
+    final isTransfer = transaction.transactionType == TransactionType.transfer;
+    final isMoKashReturn =
+        isTransfer && transaction.category == TransactionCategory.savings;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FD),
@@ -1840,7 +2150,11 @@ class TransactionDetailPage extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: isIncome ? Colors.green : Colors.white,
+                color: isIncome
+                    ? Colors.green
+                    : isTransfer
+                        ? const Color(0xFF546E7A)
+                        : Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
@@ -1853,19 +2167,27 @@ class TransactionDetailPage extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    isIncome ? 'Income' : 'Expense',
+                    isMoKashReturn
+                        ? 'MoKash Withdrawal'
+                        : (isTransfer
+                            ? 'Transfer'
+                            : (isIncome ? 'Income' : 'Expense')),
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: isIncome ? Colors.white70 : Colors.grey[600],
+                      color: (isIncome || isTransfer)
+                          ? Colors.white70
+                          : Colors.grey[600],
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${isIncome ? '+' : '-'} RWF ${format.format(transaction.amount)}',
+                    '${isIncome ? '+' : isTransfer ? '\u21C4' : '-'} RWF ${format.format(transaction.amount)}',
                     style: GoogleFonts.poppins(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: isIncome ? Colors.white : const Color(0xFF1E293B),
+                      color: (isIncome || isTransfer)
+                          ? Colors.white
+                          : const Color(0xFF1E293B),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -1992,21 +2314,29 @@ class _DetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: Colors.grey[600],
+        SizedBox(
+          width: 110,
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
           ),
         ),
-        Text(
-          value,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: valueColor ?? const Color(0xFF1E293B),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: valueColor ?? const Color(0xFF1E293B),
+            ),
+            textAlign: TextAlign.right,
+            softWrap: true,
           ),
         ),
       ],
@@ -2101,6 +2431,38 @@ class FinancialHealthPage extends StatelessWidget {
         .split(' ')
         .map((w) => w.isEmpty ? '' : w[0].toUpperCase() + w.substring(1))
         .join(' ');
+  }
+
+  static const _kPieColors = [
+    Color(0xFF00A3AD),
+    Color(0xFFFFB81C),
+    Color(0xFF10B981),
+    Color(0xFFEF4444),
+    Color(0xFF8B5CF6),
+    Color(0xFFF59E0B),
+  ];
+
+  static List<PieChartSectionData> _buildPieSections(
+    List<MapEntry<String, double>> entries,
+    double total,
+  ) {
+    return entries.asMap().entries.map((e) {
+      final pct =
+          total > 0 ? (e.value.value / total * 100).clamp(0.0, 100.0) : 0.0;
+      final color = _kPieColors[e.key % _kPieColors.length];
+      return PieChartSectionData(
+        value: e.value.value,
+        color: color,
+        radius: pct > 20 ? 36 : 30,
+        showTitle: pct >= 8,
+        title: '${pct.toStringAsFixed(0)}%',
+        titleStyle: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      );
+    }).toList();
   }
 
   @override
@@ -2317,56 +2679,148 @@ class FinancialHealthPage extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // Category breakdown card
-
+                  // Category breakdown card with pie chart
                   if (sortedCategories.isNotEmpty)
                     _HealthCard(
                       title: 'Top Spending Categories',
                       child: Column(
-                        children: sortedCategories.take(6).map((e) {
-                          final pct = expenses > 0
-                              ? (e.value / expenses).clamp(0.0, 1.0)
-                              : 0.0;
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Pie chart
+                          SizedBox(
+                            height: 200,
+                            child: Row(
                               children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      _formatCategoryName(e.key),
-                                      style: GoogleFonts.inter(
-                                          fontSize: 13,
-                                          color: const Color(0xFF1E293B)),
+                                Expanded(
+                                  flex: 5,
+                                  child: PieChart(
+                                    PieChartData(
+                                      sections: _buildPieSections(
+                                          sortedCategories.take(6).toList(),
+                                          expenses),
+                                      sectionsSpace: 2,
+                                      centerSpaceRadius: 36,
+                                      startDegreeOffset: -90,
                                     ),
-                                    Text(
-                                      'RWF ${format.format(e.value)}',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                                const SizedBox(height: 4),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(3),
-                                  child: LinearProgressIndicator(
-                                    value: pct,
-                                    minHeight: 5,
-                                    backgroundColor: Colors.grey[200],
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        AppColors.primary),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  flex: 5,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      ...sortedCategories
+                                          .take(6)
+                                          .toList()
+                                          .asMap()
+                                          .entries
+                                          .map((entry) {
+                                        final color = _kPieColors[
+                                            entry.key % _kPieColors.length];
+                                        final pct = expenses > 0
+                                            ? (entry.value.value /
+                                                    expenses *
+                                                    100)
+                                                .clamp(0.0, 100.0)
+                                            : 0.0;
+                                        return Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 6),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 10,
+                                                height: 10,
+                                                decoration: BoxDecoration(
+                                                  color: color,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  _formatCategoryName(
+                                                      entry.value.key),
+                                                  style: GoogleFonts.inter(
+                                                      fontSize: 11,
+                                                      color: const Color(
+                                                          0xFF374151)),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              Text(
+                                                '${pct.toStringAsFixed(0)}%',
+                                                style: GoogleFonts.inter(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: color),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                          );
-                        }).toList(),
+                          ),
+                          const SizedBox(height: 12),
+                          const Divider(height: 1),
+                          const SizedBox(height: 12),
+                          // Bars list
+                          ...sortedCategories.take(6).map((e) {
+                            final pct = expenses > 0
+                                ? (e.value / expenses).clamp(0.0, 1.0)
+                                : 0.0;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          _formatCategoryName(e.key),
+                                          style: GoogleFonts.inter(
+                                              fontSize: 13,
+                                              color: const Color(0xFF1E293B)),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'RWF ${format.format(e.value)}',
+                                        style: GoogleFonts.inter(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(3),
+                                    child: LinearProgressIndicator(
+                                      value: pct,
+                                      minHeight: 5,
+                                      backgroundColor: Colors.grey[200],
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
+                                              AppColors.primary),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                        ],
                       ),
                     ),
                 ],
@@ -2963,9 +3417,12 @@ class _CounterpartyTransactionsPageState
   void initState() {
     super.initState();
 
-    // Load all transactions so we can filter client-side
-
-    context.read<TransactionBloc>().add(LoadTransactions());
+    // Load with a large page size and no date filter to get the full history,
+    // so the client-side counterparty filter sees all transactions.
+    context.read<TransactionBloc>().add(LoadTransactions(
+          startDate: DateTime(2020),
+          pageSize: 500,
+        ));
   }
 
   @override
@@ -3073,7 +3530,7 @@ class _CounterpartyList extends StatelessWidget {
         .fold(0.0, (s, t) => s + t.amount);
 
     final totalOut = transactions
-        .where((t) => t.transactionType != TransactionType.income)
+        .where((t) => t.transactionType == TransactionType.expense)
         .fold(0.0, (s, t) => s + t.amount);
 
     // Group by date

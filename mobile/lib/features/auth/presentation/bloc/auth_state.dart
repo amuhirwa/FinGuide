@@ -69,3 +69,26 @@ class AuthError extends AuthState {
   @override
   List<Object?> get props => [message];
 }
+
+/// Profile update in progress
+class AuthProfileUpdating extends AuthState {}
+
+/// Profile update succeeded – carries the refreshed user
+class AuthProfileUpdated extends AuthState {
+  final User user;
+
+  const AuthProfileUpdated(this.user);
+
+  @override
+  List<Object?> get props => [user];
+}
+
+/// Profile update failed
+class AuthProfileUpdateError extends AuthState {
+  final String message;
+
+  const AuthProfileUpdateError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}

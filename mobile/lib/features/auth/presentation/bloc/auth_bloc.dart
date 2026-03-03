@@ -18,6 +18,7 @@ import 'package:equatable/equatable.dart';
 
 import '../../data/datasources/auth_local_datasource.dart';
 import '../../domain/entities/user.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 import '../../domain/usecases/check_auth_usecase.dart';
@@ -35,6 +36,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SendOtpUseCase _sendOtpUseCase;
   final VerifyOtpUseCase _verifyOtpUseCase;
   final AuthLocalDataSource _localDataSource;
+  final AuthRepository _authRepository;
 
   // ── Pending action storage ──────────────────────────────────────────────
   // Stored while waiting for OTP auto-detection on the OTP page.
@@ -59,12 +61,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required SendOtpUseCase sendOtpUseCase,
     required VerifyOtpUseCase verifyOtpUseCase,
     required AuthLocalDataSource localDataSource,
+    required AuthRepository authRepository,
   })  : _loginUseCase = loginUseCase,
         _registerUseCase = registerUseCase,
         _checkAuthUseCase = checkAuthUseCase,
         _sendOtpUseCase = sendOtpUseCase,
         _verifyOtpUseCase = verifyOtpUseCase,
         _localDataSource = localDataSource,
+        _authRepository = authRepository,
         super(AuthInitial()) {
     on<AuthCheckRequested>(_onAuthCheckRequested);
     on<AuthLoginRequested>(_onLoginRequested);
@@ -72,6 +76,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthOtpAutoDetected>(_onOtpAutoDetected);
     on<AuthOtpResendRequested>(_onOtpResendRequested);
     on<AuthLogoutRequested>(_onLogoutRequested);
+    on<AuthProfileUpdateRequested>(_onProfileUpdateRequested);
   }
 
   // ── Handlers ─────────────────────────────────────────────────────────────
@@ -211,6 +216,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     await _localDataSource.clearAll();
     emit(AuthUnauthenticated());
+  }
+
+  /// Handle profile update
+  Future<void> _onProfileUpdateRequested(
+    AuthProfileUpdateRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthProfileUpdating());
+    final result = await _authRepository.updateProfile(event.data);
+    result.fold(
+      (failure) => emit(AuthProfileUpdateError(failure.message)),
+      (user) => emit(AuthProfileUpdated(user)),
+    );
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────

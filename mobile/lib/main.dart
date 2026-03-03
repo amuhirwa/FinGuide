@@ -1,12 +1,3 @@
-/*
- * FinGuide - AI-Driven Financial Advisor
- * =======================================
- * Main Application Entry Point
- * 
- * This application helps Rwandan youth manage irregular income
- * through AI-powered forecasting and personalized savings recommendations.
- */
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_cubit.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 
 void main() async {
@@ -38,12 +30,17 @@ void main() async {
     ),
   );
 
-  runApp(const FinGuideApp());
+  // Init theme cubit from persisted prefs
+  final themeCubit = ThemeCubit();
+  await themeCubit.init();
+
+  runApp(FinGuideApp(themeCubit: themeCubit));
 }
 
 /// Main application widget
 class FinGuideApp extends StatelessWidget {
-  const FinGuideApp({super.key});
+  final ThemeCubit themeCubit;
+  const FinGuideApp({super.key, required this.themeCubit});
 
   @override
   Widget build(BuildContext context) {
@@ -52,14 +49,19 @@ class FinGuideApp extends StatelessWidget {
         BlocProvider(
           create: (_) => getIt<AuthBloc>()..add(AuthCheckRequested()),
         ),
+        BlocProvider.value(value: themeCubit),
       ],
-      child: MaterialApp.router(
-        title: 'FinGuide',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.light,
-        routerConfig: AppRouter.router,
+      child: BlocBuilder<ThemeCubit, ThemeMode>(
+        builder: (context, themeMode) {
+          return MaterialApp.router(
+            title: 'FinGuide',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeMode,
+            routerConfig: AppRouter.router,
+          );
+        },
       ),
     );
   }

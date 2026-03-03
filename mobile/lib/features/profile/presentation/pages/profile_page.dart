@@ -10,7 +10,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/theme_cubit.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import 'edit_profile_page.dart';
+import 'notification_settings_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -100,10 +103,13 @@ class ProfilePage extends StatelessWidget {
                       // Edit button
                       IconButton(
                         onPressed: () {
-                          // TODO: Navigate to edit profile
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Edit profile coming soon!'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => BlocProvider.value(
+                                value: context.read<AuthBloc>(),
+                                child: const EditProfilePage(),
+                              ),
                             ),
                           );
                         },
@@ -125,7 +131,15 @@ class ProfilePage extends StatelessWidget {
                   title: 'Ubudehe Category',
                   subtitle: user.ubudeheCategoryDisplay,
                   onTap: () {
-                    // TODO: Update Ubudehe category
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BlocProvider.value(
+                          value: context.read<AuthBloc>(),
+                          child: const EditProfilePage(),
+                        ),
+                      ),
+                    );
                   },
                 ),
                 _SettingsTile(
@@ -133,7 +147,15 @@ class ProfilePage extends StatelessWidget {
                   title: 'Income Frequency',
                   subtitle: user.incomeFrequencyDisplay,
                   onTap: () {
-                    // TODO: Update income frequency
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BlocProvider.value(
+                          value: context.read<AuthBloc>(),
+                          child: const EditProfilePage(),
+                        ),
+                      ),
+                    );
                   },
                 ),
                 const SizedBox(height: AppSpacing.xl),
@@ -144,23 +166,33 @@ class ProfilePage extends StatelessWidget {
                   title: 'App Settings',
                 ),
                 const SizedBox(height: AppSpacing.md),
-                _SettingsTile(
-                  icon: Icons.dark_mode,
-                  title: 'Dark Mode',
-                  subtitle: 'Coming soon',
-                  trailing: Switch(
-                    value: false,
-                    onChanged: null, // TODO: Implement dark mode
-                    activeColor: AppColors.primary,
-                  ),
-                  onTap: null,
+                BlocBuilder<ThemeCubit, ThemeMode>(
+                  builder: (context, themeMode) {
+                    final isDark = themeMode == ThemeMode.dark;
+                    return _SettingsTile(
+                      icon: isDark ? Icons.dark_mode : Icons.light_mode,
+                      title: 'Dark Mode',
+                      subtitle: isDark ? 'On' : 'Off',
+                      trailing: Switch(
+                        value: isDark,
+                        onChanged: (_) => context.read<ThemeCubit>().toggle(),
+                        activeColor: AppColors.primary,
+                      ),
+                      onTap: () => context.read<ThemeCubit>().toggle(),
+                    );
+                  },
                 ),
                 _SettingsTile(
                   icon: Icons.notifications,
                   title: 'Notifications',
                   subtitle: 'Manage notification preferences',
                   onTap: () {
-                    // TODO: Navigate to notifications settings
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationSettingsPage(),
+                      ),
+                    );
                   },
                 ),
                 _SettingsTile(

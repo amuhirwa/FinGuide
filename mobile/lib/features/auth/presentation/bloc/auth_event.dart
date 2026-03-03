@@ -63,3 +63,13 @@ class AuthOtpResendRequested extends AuthEvent {}
 
 /// Logout request
 class AuthLogoutRequested extends AuthEvent {}
+
+/// Update profile fields (fullName, ubudeheCategory, incomeFrequency)
+class AuthProfileUpdateRequested extends AuthEvent {
+  final Map<String, dynamic> data;
+
+  const AuthProfileUpdateRequested(this.data);
+
+  @override
+  List<Object?> get props => [data];
+}

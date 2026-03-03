@@ -8,13 +8,34 @@ def _title_case(name: str) -> str:
         return name
     return name.title() if name == name.upper() else name
 
+
+def _parse_mokash_datetime(date_str: str, time_str: str) -> str | None:
+    """
+    Parse MoKash date/time into 'YYYY-MM-DD HH:MM:SS' string.
+    Handles e.g. date="28/02/2026", time="11:29 AM" or "1:08 AM".
+    Returns None if parsing fails.
+    """
+    time_clean = time_str.strip().upper()
+    try:
+        dt = datetime.strptime(f"{date_str.strip()} {time_clean}", "%d/%m/%Y %I:%M %p")
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        pass
+    # Try without AM/PM (24-hour)
+    try:
+        dt = datetime.strptime(f"{date_str.strip()} {time_str.strip()}", "%d/%m/%Y %H:%M")
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return None
+
+
 def parse_momo_sms(sms_text: str):
     """
-    Parse an MTN MoMo SMS into structured transaction data.
+    Parse an MTN MoMo or MoKash SMS into structured transaction data.
 
     Returns a dict with keys:
-        date, amount, type (income/expense), category, party_name,
-        party_phone, balance, raw_text
+        date, amount, type (income/expense/transfer), category, party_name,
+        party_phone, balance, raw_text, is_mokash_withdrawal (bool, optional)
     or None if the message could not be parsed.
     """
     if not sms_text:
@@ -30,8 +51,8 @@ def parse_momo_sms(sms_text: str):
     clean = re.sub(r'\*16\d\*S\*', '', clean)
     # Closing tags
     clean = clean.replace("*EN##", "").replace("*EN#", "")
-    # "Y'ello, " opener
-    clean = re.sub(r"^Y'ello,\s*", '', clean.strip(), flags=re.IGNORECASE)
+    # "Y'ello, " or "Y'ello. " opener (both comma and period used by MTN)
+    clean = re.sub(r"^Y'ello[.,]\s*", '', clean.strip(), flags=re.IGNORECASE)
     # Trailing promotional / download links
     clean = re.sub(r'Download\s+MoMo.*$', '', clean, flags=re.IGNORECASE | re.DOTALL)
     clean = clean.strip()
@@ -46,6 +67,48 @@ def parse_momo_sms(sms_text: str):
         "balance": 0.0,
         "raw_text": sms_text,
     }
+
+    # ── PATTERN 0A: MOKASH WITHDRAWAL ────────────────────────────────
+    # "You have transferred RWF 20000 from your Mokash account on 28/02/2026
+    #  at 11:29 AM. Mokash balance is RWF 408. Ref 26385922529"
+    # This is money LEAVING MoKash and returning to MoMo wallet.
+    # We record it as type="transfer" so it is excluded from income/expense totals.
+    # The corresponding MoMo "received" SMS (Pattern 1) will be skipped in the
+    # endpoint when a matching MoKash withdrawal is detected.
+    m = re.search(
+        r'You have transferred RWF ([\d,]+) from your Mokash account'
+        r' on (\d{1,2}/\d{1,2}/\d{4}) at ([\d:]+\s*(?:AM|PM))',
+        clean, re.IGNORECASE
+    )
+    if m:
+        data["type"] = "transfer"
+        data["category"] = "savings"
+        data["amount"] = float(m.group(1).replace(",", ""))
+        data["party_name"] = "MoKash Savings"
+        data["is_mokash_withdrawal"] = True
+        parsed_date = _parse_mokash_datetime(m.group(2), m.group(3))
+        if parsed_date:
+            data["date"] = parsed_date
+        m_bal = re.search(r'Mokash balance is RWF ([\d,]+)', clean, re.IGNORECASE)
+        if m_bal:
+            data["balance"] = float(m_bal.group(1).replace(",", ""))
+        m_ref = re.search(r'Ref\s+(\d+)', clean, re.IGNORECASE)
+        if m_ref:
+            data["mokash_ref"] = m_ref.group(1)
+        return data
+
+    # ── PATTERN 0B: MOKASH DEPOSIT CONFIRMATION ───────────────────────
+    # "RWF 100000 transferred to your Mokash account on 1:08 AM at 07/02/2026.
+    #  Your new Mokash account balance is RWF 250000.Ref 25928379434"
+    # This is the MoKash side confirmation when the user deposits.
+    # Pattern 4 ("Your payment of X RWF to Mokash Savings...") from the MoMo
+    # debit SMS already records the same event as an expense/savings.
+    # We return None here to avoid double-counting.
+    if re.search(
+        r'RWF [\d,]+ transferred to your Mokash account',
+        clean, re.IGNORECASE
+    ):
+        return None
 
     # ── PATTERN 1: RECEIVED (Income) ─────────────────────────────────
     # "You have received 20000 RWF from MUTONI BRICE QUERCY (*********726) at ..."

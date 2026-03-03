@@ -14,6 +14,7 @@ from app.models.base import get_db, SessionLocal
 from app.models.transaction import Transaction, CounterpartyMapping, TransactionType as ModelTransactionType
 from app.models.transaction import TransactionCategory as ModelCategory, NeedWantCategory as ModelNeedWant
 from app.models.prediction import Recommendation
+from app.models.user import User as UserModel
 from app.schemas.transaction import (
     TransactionCreate, TransactionUpdate, TransactionResponse,
     TransactionListResponse, TransactionSummary,
@@ -28,6 +29,29 @@ from app.models.rnit import RnitPurchase
 from app.services.rnit_nav import get_nav_on_date
 from app.core import nudge_service
 import hashlib
+import re as _re
+
+
+def _has_recent_mokash_withdrawal(db: Session, user_id: int, amount: float) -> bool:
+    """Check if a MoKash withdrawal of ``amount`` was saved in the last 2 hours.
+
+    Used to detect when the corresponding MoMo 'received' SMS is a self-transfer
+    (money returning from MoKash savings) rather than genuine income.
+    """
+    from datetime import timedelta
+    cutoff = datetime.now() - timedelta(hours=2)
+    return (
+        db.query(Transaction)
+        .filter(
+            Transaction.user_id == user_id,
+            Transaction.transaction_type == ModelTransactionType.TRANSFER,
+            Transaction.category == ModelCategory.SAVINGS,
+            Transaction.amount == amount,
+            Transaction.transaction_date >= cutoff,
+        )
+        .first()
+        is not None
+    )
 
 
 def _trigger_income_nudge(user_id: int, income_amount: float, income_source: Optional[str]) -> None:
@@ -76,7 +100,7 @@ def _adapt_parsed(result: dict, raw_sms: str) -> dict:
         except ValueError:
             pass
 
-    reference = hashlib.md5(raw_sms.encode()).hexdigest()[:12].upper()
+    reference = result.get("mokash_ref") or hashlib.md5(raw_sms.encode()).hexdigest()[:12].upper()
 
     party_name = result.get("party_name") or result.get("party")
     party_phone = result.get("party_phone")
@@ -226,13 +250,14 @@ async def get_transaction_summary(
     total_income = sum(t.amount for t in transactions if t.transaction_type == ModelTransactionType.INCOME)
     total_expenses = sum(t.amount for t in transactions if t.transaction_type == ModelTransactionType.EXPENSE)
     
-    # Category breakdown
+    # Category breakdown (expenses only — transfers excluded)
     category_breakdown = {}
     for t in transactions:
-        cat = t.category.value if t.category else "other"
-        if cat not in category_breakdown:
-            category_breakdown[cat] = 0
-        category_breakdown[cat] += t.amount
+        if t.transaction_type == ModelTransactionType.EXPENSE:
+            cat = t.category.value if t.category else "other"
+            if cat not in category_breakdown:
+                category_breakdown[cat] = 0
+            category_breakdown[cat] += t.amount
     
     # Need/Want breakdown
     need_want_breakdown = {"need": 0, "want": 0, "savings": 0, "uncategorized": 0}
@@ -382,6 +407,24 @@ async def parse_sms_messages(
     user_id = int(current_user.sub)
     parsed_transactions = []
     failed_count = 0
+
+    # Get user's phone number suffix (last 3 digits) for self-transfer detection.
+    # When money comes back from MoKash, MTN sends a 'received' SMS where the
+    # sender phone shows the user's own number (masked). We compare the last 3
+    # digits to detect and skip these false-income entries.
+    user_obj = db.query(UserModel).filter(UserModel.id == user_id).first()
+    user_phone_suffix = ""
+    if user_obj and user_obj.phone_number:
+        user_phone_digits = _re.sub(r'\D', '', user_obj.phone_number)
+        user_phone_suffix = user_phone_digits[-3:] if len(user_phone_digits) >= 3 else ""
+
+    # First pass: collect MoKash withdrawal amounts present in THIS batch so we
+    # can skip the corresponding duplicate MoMo 'received' SMS below.
+    mokash_withdrawal_amounts: set[float] = set()
+    for sms_text in request.messages:
+        raw = _parse_momo_sms(sms_text)
+        if raw and raw.get("is_mokash_withdrawal"):
+            mokash_withdrawal_amounts.add(float(raw["amount"]))
     
     # Get user's counterparty mappings for auto-categorization
     mappings = db.query(CounterpartyMapping).filter(
@@ -396,6 +439,20 @@ async def parse_sms_messages(
             if parsed is None:
                 failed_count += 1
                 continue
+
+            # ── Self-transfer detection ──────────────────────────────────
+            # When the user withdraws money from MoKash, they receive TWO SMS:
+            #   1. MoKash SMS → parsed above as type=transfer/category=savings ✓
+            #   2. MoMo 'received' SMS from their own number → would be income ✗
+            # Skip the second SMS to avoid inflating income.
+            if parsed["transaction_type"] == "income" and user_phone_suffix:
+                party_phone = parsed.get("counterparty") or ""
+                phone_digits = _re.sub(r'\D', '', party_phone)
+                if phone_digits.endswith(user_phone_suffix):
+                    amount = float(parsed.get("amount", 0))
+                    if (amount in mokash_withdrawal_amounts
+                            or _has_recent_mokash_withdrawal(db, user_id, amount)):
+                        continue  # skip — money returning from own MoKash savings
             
             # Check for duplicate
             if parsed.get("reference"):

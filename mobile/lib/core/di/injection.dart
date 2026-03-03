@@ -120,6 +120,7 @@ Future<void> configureDependencies() async {
       sendOtpUseCase: getIt<SendOtpUseCase>(),
       verifyOtpUseCase: getIt<VerifyOtpUseCase>(),
       localDataSource: getIt<AuthLocalDataSource>(),
+      authRepository: getIt<AuthRepository>(),
     ),
   );
 

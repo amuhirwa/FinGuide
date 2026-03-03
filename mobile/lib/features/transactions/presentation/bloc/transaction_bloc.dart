@@ -11,6 +11,7 @@ import '../../data/models/transaction_model.dart';
 import '../../data/repositories/transaction_repository.dart';
 
 const _kPageSize = 50;
+const _kAllPageSize = 500; // large page for "all transactions" views
 
 // Events
 abstract class TransactionEvent extends Equatable {
@@ -23,16 +24,18 @@ class LoadTransactions extends TransactionEvent {
   final String? category;
   final DateTime? startDate;
   final DateTime? endDate;
+  final int pageSize;
 
   LoadTransactions({
     this.transactionType,
     this.category,
     this.startDate,
     this.endDate,
+    this.pageSize = _kPageSize,
   });
 
   @override
-  List<Object?> get props => [transactionType, category, startDate, endDate];
+  List<Object?> get props => [transactionType, category, startDate, endDate, pageSize];
 }
 
 /// Load the next page and append to the existing list.
@@ -171,7 +174,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       startDate: event.startDate,
       endDate: event.endDate,
       page: 1,
-      pageSize: _kPageSize,
+      pageSize: event.pageSize,
     );
 
     if (pageResult.isLeft()) {

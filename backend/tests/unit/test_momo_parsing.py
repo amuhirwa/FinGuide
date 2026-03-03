@@ -351,3 +351,87 @@ class TestAmountEdgeCases:
         result = parse_momo_sms(sms)
         assert result is not None
         assert result["balance"] == 0.0
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# MoKash SMS patterns (Pattern 0A / 0B)
+# ──────────────────────────────────────────────────────────────────────────────
+
+class TestMoKashMessages:
+    # Real-world withdrawal SMS (money coming OUT of MoKash savings → MoMo wallet)
+    WITHDRAWAL_SMS = (
+        "Y'ello. You have transferred RWF 20000 from your Mokash account "
+        "on 28/02/2026 at 11:29 AM. Mokash balance is RWF 408. Ref 26385922529"
+    )
+
+    # Real-world deposit confirmation SMS (money going INTO MoKash → should be deduplicated)
+    DEPOSIT_CONFIRM_SMS = (
+        "Y'ello. RWF 100000 transferred to your Mokash account on 1:08 AM "
+        "at 07/02/2026. Your new Mokash account balance is RWF 250000. Ref 25928379434"
+    )
+
+    # Withdrawal with comma-separated Y'ello (alternate punctuation)
+    WITHDRAWAL_SMS_COMMA = (
+        "Y'ello, You have transferred RWF 5000 from your Mokash account "
+        "on 15/03/2026 at 2:45 PM. Mokash balance is RWF 12000. Ref 99887766554"
+    )
+
+    # ── Pattern 0A: withdrawal ─────────────────────────────────────────────
+
+    def test_mokash_withdrawal_type_is_transfer(self):
+        result = parse_momo_sms(self.WITHDRAWAL_SMS)
+        assert result is not None
+        assert result["type"] == "transfer"
+
+    def test_mokash_withdrawal_category_is_savings(self):
+        result = parse_momo_sms(self.WITHDRAWAL_SMS)
+        assert result is not None
+        assert result["category"] == "savings"
+
+    def test_mokash_withdrawal_amount(self):
+        result = parse_momo_sms(self.WITHDRAWAL_SMS)
+        assert result is not None
+        assert result["amount"] == 20000.0
+
+    def test_mokash_withdrawal_has_flag(self):
+        result = parse_momo_sms(self.WITHDRAWAL_SMS)
+        assert result is not None
+        assert result.get("is_mokash_withdrawal") is True
+
+    def test_mokash_withdrawal_ref(self):
+        result = parse_momo_sms(self.WITHDRAWAL_SMS)
+        assert result is not None
+        assert result.get("mokash_ref") == "26385922529"
+
+    def test_mokash_withdrawal_date_parsed(self):
+        result = parse_momo_sms(self.WITHDRAWAL_SMS)
+        assert result is not None
+        # Date should be 2026-02-28 11:29:00
+        assert result["date"].startswith("2026-02-28")
+        assert "11:29" in result["date"]
+
+    def test_mokash_withdrawal_balance(self):
+        result = parse_momo_sms(self.WITHDRAWAL_SMS)
+        assert result is not None
+        assert result["balance"] == 408.0
+
+    def test_mokash_withdrawal_comma_variant(self):
+        """Y'ello, (comma instead of period) should still parse."""
+        result = parse_momo_sms(self.WITHDRAWAL_SMS_COMMA)
+        assert result is not None
+        assert result["type"] == "transfer"
+        assert result["amount"] == 5000.0
+        assert result.get("mokash_ref") == "99887766554"
+
+    # ── Pattern 0B: deposit confirmation ──────────────────────────────────
+
+    def test_mokash_deposit_confirm_returns_none(self):
+        """Deposit confirmation must be silenced to avoid double-counting Pattern 4."""
+        result = parse_momo_sms(self.DEPOSIT_CONFIRM_SMS)
+        assert result is None
+
+    def test_mokash_deposit_non_withdrawal_no_flag(self):
+        """Deposit confirmation must NOT have is_mokash_withdrawal flag."""
+        result = parse_momo_sms(self.DEPOSIT_CONFIRM_SMS)
+        # result is None, so the flag can't possibly be True — assertion is implicit
+        assert result is None

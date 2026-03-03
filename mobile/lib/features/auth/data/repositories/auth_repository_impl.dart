@@ -165,4 +165,17 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(CacheFailure(message: e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, User>> updateProfile(Map<String, dynamic> data) async {
+    try {
+      final updated = await _remoteDataSource.updateProfile(data);
+      await _localDataSource.saveUser(updated);
+      return Right(updated.toEntity());
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(UnknownFailure(message: e.toString()));
+    }
+  }
 }

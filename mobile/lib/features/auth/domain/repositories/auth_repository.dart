@@ -45,4 +45,7 @@ abstract class AuthRepository {
 
   /// Get cached user data
   Future<Either<Failure, User?>> getCachedUser();
+
+  /// Update user profile
+  Future<Either<Failure, User>> updateProfile(Map<String, dynamic> data);
 }
