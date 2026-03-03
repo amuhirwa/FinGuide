@@ -2144,57 +2144,57 @@ class _InsightsContent extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             // Predictions Card
-            GestureDetector(
-              onTap: () => context.push(Routes.predictions),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child:
-                          const Icon(Icons.auto_awesome, color: Colors.white),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'AI Predictions',
-                            style: GoogleFonts.inter(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                              color: const Color(0xFF1E293B),
-                            ),
-                          ),
-                          Text(
-                            'Forecast income & expenses',
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.arrow_forward_ios,
-                        color: AppColors.primary, size: 18),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
+            // GestureDetector(
+            //   onTap: () => context.push(Routes.predictions),
+            //   child: Container(
+            //     width: double.infinity,
+            //     padding: const EdgeInsets.all(20),
+            //     decoration: BoxDecoration(
+            //       color: AppColors.primary.withOpacity(0.1),
+            //       borderRadius: BorderRadius.circular(16),
+            //       border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+            //     ),
+            //     child: Row(
+            //       children: [
+            //         Container(
+            //           padding: const EdgeInsets.all(12),
+            //           decoration: BoxDecoration(
+            //             color: AppColors.primary,
+            //             borderRadius: BorderRadius.circular(12),
+            //           ),
+            //           child:
+            //               const Icon(Icons.auto_awesome, color: Colors.white),
+            //         ),
+            //         const SizedBox(width: 16),
+            //         Expanded(
+            //           child: Column(
+            //             crossAxisAlignment: CrossAxisAlignment.start,
+            //             children: [
+            //               Text(
+            //                 'AI Predictions',
+            //                 style: GoogleFonts.inter(
+            //                   fontWeight: FontWeight.w600,
+            //                   fontSize: 16,
+            //                   color: const Color(0xFF1E293B),
+            //                 ),
+            //               ),
+            //               Text(
+            //                 'Forecast income & expenses',
+            //                 style: GoogleFonts.inter(
+            //                   fontSize: 13,
+            //                   color: Colors.grey[600],
+            //                 ),
+            //               ),
+            //             ],
+            //           ),
+            //         ),
+            //         Icon(Icons.arrow_forward_ios,
+            //             color: AppColors.primary, size: 18),
+            //       ],
+            //     ),
+            //   ),
+            // ),
+            // const SizedBox(height: 16),
             // Investment Simulation
             GestureDetector(
               onTap: () => context.push(Routes.investmentSimulator),

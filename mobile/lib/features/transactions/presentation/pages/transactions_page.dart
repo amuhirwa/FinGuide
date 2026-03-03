@@ -883,42 +883,42 @@ class _TransactionTile extends StatelessWidget {
                           ),
                         ),
                       ],
-                      if (isSavingsOrInvestment) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: accentColor.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                transaction.category ==
-                                        TransactionCategory.savings
-                                    ? Icons.savings_outlined
-                                    : Icons.trending_up_rounded,
-                                size: 10,
-                                color: accentColor,
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                transaction.category ==
-                                        TransactionCategory.savings
-                                    ? 'Savings'
-                                    : 'Investment',
-                                style: GoogleFonts.inter(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: accentColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                      // if (isSavingsOrInvestment) ...[
+                      //   const SizedBox(width: 6),
+                      //   Container(
+                      //     padding: const EdgeInsets.symmetric(
+                      //         horizontal: 6, vertical: 2),
+                      //     decoration: BoxDecoration(
+                      //       color: accentColor.withOpacity(0.12),
+                      //       borderRadius: BorderRadius.circular(4),
+                      //     ),
+                      //     child: Row(
+                      //       mainAxisSize: MainAxisSize.min,
+                      //       children: [
+                      //         Icon(
+                      //           transaction.category ==
+                      //                   TransactionCategory.savings
+                      //               ? Icons.savings_outlined
+                      //               : Icons.trending_up_rounded,
+                      //           size: 10,
+                      //           color: accentColor,
+                      //         ),
+                      //         const SizedBox(width: 3),
+                      //         Text(
+                      //           transaction.category ==
+                      //                   TransactionCategory.savings
+                      //               ? 'Savings'
+                      //               : 'Investment',
+                      //           style: GoogleFonts.inter(
+                      //             fontSize: 10,
+                      //             fontWeight: FontWeight.w600,
+                      //             color: accentColor,
+                      //           ),
+                      //         ),
+                      //       ],
+                      //     ),
+                      //   ),
+                      // ],
                     ],
                   ),
                 ],
@@ -1801,6 +1801,7 @@ class TransactionDetailPage extends StatelessWidget {
               icon: const Icon(Icons.auto_fix_high),
               label: const Text('Set Rule'),
               backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
             )
           : null,
       appBar: AppBar(
