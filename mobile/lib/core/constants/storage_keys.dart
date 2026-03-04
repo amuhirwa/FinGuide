@@ -28,4 +28,7 @@ class StorageKeys {
 
   // SMS Sync
   static const String lastSmsSyncTimestamp = 'last_sms_sync_timestamp';
+
+  // Background SMS queue (filled by background isolate, drained on foreground)
+  static const String pendingBackgroundSms = 'pending_background_sms';
 }

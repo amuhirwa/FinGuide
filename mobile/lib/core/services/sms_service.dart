@@ -13,6 +13,8 @@
 
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:telephony/telephony.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
@@ -57,6 +59,104 @@ const List<String> _incomeKeywords = [
   'has been deposited',
   'Cash In',
 ];
+
+/// Extract the first RWF amount from an SMS string.
+/// Duplicated here at the top level because [SmsService._extractAmount] is an
+/// instance method and is not reachable from the background isolate.
+double? _extractAmountBackground(String body) {
+  final match =
+      RegExp(r'([\d,]+)\s*RWF', caseSensitive: false).firstMatch(body);
+  if (match == null) return null;
+  return double.tryParse(match.group(1)!.replaceAll(',', ''));
+}
+
+/// Top-level background SMS handler required by the `telephony` package when
+/// [listenInBackground] is `true`.
+///
+/// Android wakes this isolate (even when the app is killed) for every
+/// incoming SMS.  We:
+///   1. Initialize Flutter bindings so platform channels work.
+///   2. Persist the body to SharedPreferences so the foreground delta-sync
+///      can forward it to the backend for AI nudge generation.
+///   3. If the message is a significant MoMo transaction (≥ 40 000 RWF),
+///      fire an **immediate** local notification without contacting the
+///      backend.  The AI-personalised nudge is shown on the next resume.
+@pragma('vm:entry-point')
+Future<void> backgroundSmsHandler(SmsMessage message) async {
+  final body = message.body ?? '';
+  if (body.isEmpty) return;
+
+  // Initialize Flutter engine bindings so platform channels are available.
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 1. Persist to queue for backend sync on next foreground.
+  final prefs = await SharedPreferences.getInstance();
+  final pending = prefs.getStringList(StorageKeys.pendingBackgroundSms) ?? [];
+  if (!pending.contains(body)) {
+    pending.add(body);
+    await prefs.setStringList(StorageKeys.pendingBackgroundSms, pending);
+  }
+
+  // 2. Is this a MoMo message worth notifying on?
+  final bodyLower = body.toLowerCase();
+  final addressLower = (message.address ?? '').toLowerCase();
+  final isMomo =
+      _momoKeywords.any((k) => bodyLower.contains(k.toLowerCase())) ||
+          _momoSenders.any((s) => addressLower.contains(s.toLowerCase()));
+  if (!isMomo) return;
+
+  final amount = _extractAmountBackground(body);
+  // Only notify immediately for meaningful amounts (40 000 RWF baseline).
+  if (amount == null || amount < 40000) return;
+
+  final isIncome = _incomeKeywords.any(
+    (k) => bodyLower.contains(k.toLowerCase()),
+  );
+
+  // 3. Show immediate local notification (no backend call).
+  final plugin = FlutterLocalNotificationsPlugin();
+  await plugin.initialize(
+    const InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+    ),
+  );
+
+  await plugin
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          NudgeNotificationService.channelId,
+          NudgeNotificationService.channelName,
+          description: NudgeNotificationService.channelDesc,
+          importance: Importance.high,
+          playSound: true,
+        ),
+      );
+
+  final fmt = amount >= 1000000
+      ? '${(amount / 1000000).toStringAsFixed(1)}M'
+      : '${(amount / 1000).toStringAsFixed(0)}k';
+  final title = isIncome ? 'RWF $fmt received!' : 'RWF $fmt spent';
+  final notifBody = isIncome
+      ? 'Remember to save or invest. Open FinGuide to get your personalised savings nudge.'
+      : 'Stay aware of your spending. Open FinGuide to check your safe-to-spend balance.';
+
+  await plugin.show(
+    DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    title,
+    notifBody,
+    NotificationDetails(
+      android: AndroidNotificationDetails(
+        NudgeNotificationService.channelId,
+        NudgeNotificationService.channelName,
+        importance: Importance.high,
+        priority: Priority.high,
+        styleInformation: BigTextStyleInformation(notifBody),
+      ),
+    ),
+  );
+}
 
 /// Service responsible for reading & listening to MoMo SMS messages.
 class SmsService {
@@ -180,9 +280,15 @@ class SmsService {
 
   /// Import only MoMo SMS that arrived after the last successful sync.
   ///
+  /// Also drains any messages that were captured by [backgroundSmsHandler]
+  /// while the app was not in the foreground.
+  ///
   /// Call this every time the app is foregrounded / opened so the user
   /// always sees up-to-date transactions without re-scanning all history.
   Future<int> syncNewMessages() async {
+    // Process any SMS queued by the background isolate handler first.
+    await _drainBackgroundQueue();
+
     final lastTimestamp = _prefs.getInt(StorageKeys.lastSmsSyncTimestamp) ?? 0;
     final now = DateTime.now().millisecondsSinceEpoch;
 
@@ -251,15 +357,47 @@ class SmsService {
     }
   }
 
+  // ─── Background queue drain ─────────────────────────────────────────
+
+  /// Send any SMS bodies that were queued by [backgroundSmsHandler] to the
+  /// backend and clear the queue.
+  Future<void> _drainBackgroundQueue() async {
+    final pending =
+        _prefs.getStringList(StorageKeys.pendingBackgroundSms) ?? [];
+    if (pending.isEmpty) return;
+
+    // Clear immediately so a crash doesn't reprocess stale entries.
+    await _prefs.remove(StorageKeys.pendingBackgroundSms);
+    _log.i('Draining ${pending.length} background-queued SMS');
+
+    try {
+      for (var i = 0; i < pending.length; i += 50) {
+        final batch = pending.sublist(
+          i,
+          (i + 50) > pending.length ? pending.length : i + 50,
+        );
+        await _apiClient.parseSmsMessages(batch);
+      }
+    } catch (e) {
+      _log.e('Failed to drain background SMS queue', error: e);
+    }
+  }
+
   // ─── Real-time listener ───────────────────────────────────────────
 
-  /// Start listening for new incoming MoMo SMS in the foreground.
+  /// Start listening for new incoming MoMo SMS.
+  ///
+  /// [listenInBackground] is `true` so `backgroundSmsHandler` (a top-level
+  /// function) captures messages even when the app is backgrounded or killed.
+  /// Those messages are drained back into the pipeline by [syncNewMessages]
+  /// the next time the app is foregrounded.
   void startListening() {
     _telephony.listenIncomingSms(
       onNewMessage: _onNewSms,
-      listenInBackground: false,
+      listenInBackground: true,
+      onBackgroundMessage: backgroundSmsHandler,
     );
-    _log.i('SMS listener started');
+    _log.i('SMS listener started (background enabled)');
   }
 
   /// Handle an incoming SMS.

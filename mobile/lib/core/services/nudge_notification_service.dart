@@ -17,9 +17,9 @@ class NudgeNotificationService {
       FlutterLocalNotificationsPlugin();
   final Logger _log = Logger();
 
-  static const String _channelId = 'finguide_nudges';
-  static const String _channelName = 'FinGuide Smart Nudges';
-  static const String _channelDesc =
+  static const String channelId = 'finguide_nudges';
+  static const String channelName = 'FinGuide Smart Nudges';
+  static const String channelDesc =
       'Personalized saving and investment reminders';
 
   /// Initialise the plugin. Must be called before [showNudge].
@@ -40,9 +40,9 @@ class NudgeNotificationService {
 
     // Create Android notification channel
     const channel = AndroidNotificationChannel(
-      _channelId,
-      _channelName,
-      description: _channelDesc,
+      channelId,
+      channelName,
+      description: channelDesc,
       importance: Importance.high,
       playSound: true,
     );
@@ -68,9 +68,9 @@ class NudgeNotificationService {
     final color = _colorForType(type);
 
     final androidDetails = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: _channelDesc,
+      channelId,
+      channelName,
+      channelDescription: channelDesc,
       importance: Importance.high,
       priority: Priority.high,
       color: color,

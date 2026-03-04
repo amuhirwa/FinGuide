@@ -2621,7 +2621,7 @@ class FinancialHealthPage extends StatelessWidget {
                         _HealthRow('Expenses', expenses, Colors.red, format),
                         const Divider(height: 20),
                         _HealthRow(
-                          savings >= 0 ? 'Saved' : 'Deficit',
+                          savings >= 0 ? 'Remaining' : 'Deficit',
                           savings.abs(),
                           savings >= 0 ? Colors.blue : Colors.orange,
                           format,
