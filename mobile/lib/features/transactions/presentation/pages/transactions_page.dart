@@ -784,12 +784,24 @@ class _SummaryItem extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
+        // Always show "RWF" on its own line so layout is uniform regardless
+        // of how many digits the amount has.
         Text(
-          'RWF ${format.format(amount)}',
+          'RWF',
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+            color: amountColor.withOpacity(0.75),
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 1),
+        Text(
+          format.format(amount),
           style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
             color: amountColor,
           ),
         ),
@@ -2553,17 +2565,19 @@ class FinancialHealthPage extends StatelessWidget {
 
                   Center(
                     child: SizedBox(
-                      width: 160,
-                      height: 160,
+                      width: 210,
+                      height: 210,
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          CircularProgressIndicator(
-                            value: score / 100,
-                            strokeWidth: 14,
-                            backgroundColor: Colors.grey[200],
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(_scoreColor),
+                          SizedBox.expand(
+                            child: CircularProgressIndicator(
+                              value: score / 100,
+                              strokeWidth: 16,
+                              backgroundColor: Colors.grey[200],
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(_scoreColor),
+                            ),
                           ),
                           Column(
                             mainAxisSize: MainAxisSize.min,
@@ -2571,7 +2585,7 @@ class FinancialHealthPage extends StatelessWidget {
                               Text(
                                 score.toStringAsFixed(0),
                                 style: GoogleFonts.poppins(
-                                  fontSize: 40,
+                                  fontSize: 44,
                                   fontWeight: FontWeight.bold,
                                   color: _scoreColor,
                                 ),

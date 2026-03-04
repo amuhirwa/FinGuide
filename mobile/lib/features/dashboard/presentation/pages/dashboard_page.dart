@@ -17,6 +17,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../transactions/presentation/bloc/transaction_bloc.dart';
 import '../../../transactions/presentation/pages/transactions_page.dart';
+import '../../../transactions/data/models/transaction_model.dart';
 import '../../../goals/presentation/bloc/goals_bloc.dart';
 import '../../../goals/presentation/pages/goals_page.dart';
 import '../../../insights/presentation/bloc/insights_bloc.dart';
@@ -1949,8 +1950,78 @@ class _NavItem extends StatelessWidget {
 
 // ==================== Profile Content ====================
 
-class _InsightsContent extends StatelessWidget {
+class _InsightsContent extends StatefulWidget {
   const _InsightsContent();
+
+  @override
+  State<_InsightsContent> createState() => _InsightsContentState();
+}
+
+class _InsightsContentState extends State<_InsightsContent> {
+  double _score = 0;
+  bool _scoreLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadScore();
+  }
+
+  Future<void> _loadScore() async {
+    try {
+      final raw = await getIt<ApiClient>().getTransactionSummary();
+      final summary = TransactionSummary.fromJson(raw);
+      final income = summary.totalIncome;
+      final expenses = summary.totalExpenses;
+      double score = 0;
+      if (income > 0) {
+        final savingsRate = ((income - expenses) / income).clamp(0.0, 1.0);
+        final needsAmt = summary.needWantBreakdown['need'] ?? 0;
+        final wantsAmt = summary.needWantBreakdown['want'] ?? 0;
+        final needsRatio =
+            expenses > 0 ? (needsAmt / expenses).clamp(0.0, 1.0) : 0.0;
+        final wantsRatio =
+            expenses > 0 ? (wantsAmt / expenses).clamp(0.0, 1.0) : 0.0;
+        score = (savingsRate * 40 + needsRatio * 30 + (1 - wantsRatio) * 30)
+            .clamp(0.0, 100.0);
+      }
+      if (mounted)
+        setState(() {
+          _score = score;
+          _scoreLoaded = true;
+        });
+    } catch (_) {
+      if (mounted) setState(() => _scoreLoaded = true);
+    }
+  }
+
+  String get _letterGrade {
+    if (_score < 30) return 'F';
+    if (_score < 40) return 'D';
+    if (_score < 50) return 'C';
+    if (_score < 60) return 'C+';
+    if (_score < 70) return 'B';
+    if (_score < 80) return 'B+';
+    if (_score < 90) return 'A';
+    return 'A+';
+  }
+
+  String get _scoreLabel {
+    if (_score < 30) return 'Critical — immediate action needed.';
+    if (_score < 50) return 'Warning — spending exceeds healthy levels.';
+    if (_score < 70) return 'Fair — room to improve your savings rate.';
+    if (_score < 85)
+      return 'Good — solid health! Keep building your emergency buffer.';
+    return 'Excellent — consider investing your surplus.';
+  }
+
+  Color get _scoreColor {
+    if (_score < 30) return Colors.red.shade700;
+    if (_score < 50) return Colors.orange.shade700;
+    if (_score < 70) return Colors.amber.shade700;
+    if (_score < 85) return Colors.lightGreen.shade700;
+    return Colors.green.shade700;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2096,17 +2167,28 @@ class _InsightsContent extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.green.shade100,
+                            color: _scoreLoaded
+                                ? _scoreColor.withOpacity(0.12)
+                                : Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Text(
-                            'B+',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green.shade700,
-                            ),
-                          ),
+                          child: _scoreLoaded
+                              ? Text(
+                                  _letterGrade,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: _scoreColor,
+                                  ),
+                                )
+                              : SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                ),
                         ),
                       ],
                     ),
@@ -2114,11 +2196,11 @@ class _InsightsContent extends StatelessWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: LinearProgressIndicator(
-                        value: 0.72,
+                        value: _score / 100,
                         minHeight: 12,
                         backgroundColor: Colors.grey.shade200,
-                        valueColor:
-                            AlwaysStoppedAnimation(Colors.green.shade500),
+                        valueColor: AlwaysStoppedAnimation(
+                            _scoreLoaded ? _scoreColor : Colors.grey.shade400),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -2127,7 +2209,9 @@ class _InsightsContent extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            'Your finances are looking healthy! Keep building your emergency buffer.',
+                            _scoreLoaded
+                                ? _scoreLabel
+                                : 'Calculating your score...',
                             style: GoogleFonts.inter(
                               fontSize: 13,
                               color: Colors.grey[600],

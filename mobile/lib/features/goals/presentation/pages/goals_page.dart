@@ -259,18 +259,22 @@ class _GoalsPageState extends State<GoalsPage> {
       return Colors.red.shade600;
     }
 
+    // Capture the BLoC before entering the modal route, whose context
+    // does not inherit BlocProviders from the page's widget tree.
+    final goalsBloc = context.read<GoalsBloc>();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
+      builder: (sheetCtx) => Padding(
         padding: EdgeInsets.only(
           left: 24,
           right: 24,
           top: 24,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 24,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -409,10 +413,8 @@ class _GoalsPageState extends State<GoalsPage> {
                 onPressed: () {
                   final amount = double.tryParse(controller.text);
                   if (amount != null && amount > 0) {
-                    context
-                        .read<GoalsBloc>()
-                        .add(ContributeToGoal(goal.id, amount));
-                    Navigator.pop(context);
+                    goalsBloc.add(ContributeToGoal(goal.id, amount));
+                    Navigator.pop(sheetCtx);
                   }
                 },
                 style: ElevatedButton.styleFrom(
