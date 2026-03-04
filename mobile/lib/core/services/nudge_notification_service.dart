@@ -9,6 +9,7 @@
  *   - Weekly financial review runs
  */
 
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:logger/logger.dart';
 
@@ -97,15 +98,15 @@ class NudgeNotificationService {
   }
 
   /// Returns an accent color for each nudge type.
-  dynamic _colorForType(String type) {
+  Color? _colorForType(String type) {
     switch (type) {
       case 'investment':
-        return const Object(); // placeholder — use theme color in real impl
+        return const Color(0xFF10B981); // teal
       case 'spending':
-        return const Object();
+        return const Color(0xFFEF4444); // red
       case 'savings':
       default:
-        return const Object();
+        return const Color(0xFFFFB81C); // gold
     }
   }
 }

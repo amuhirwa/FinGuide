@@ -2,6 +2,8 @@
     <!-- SMS Permissions for MoMo transaction reading and OTP auto-detection -->
     <uses-permission android:name="android.permission.READ_SMS"/>
     <uses-permission android:name="android.permission.RECEIVE_SMS"/>
+    <!-- Required to show notifications on Android 13+ -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
         android:label="FinGuide"
@@ -31,6 +33,19 @@
             android:permission="android.permission.BROADCAST_SMS"
             android:exported="true">
             <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
+            </intent-filter>
+        </receiver>
+
+        <!-- FinGuide native receiver: fires even when the app is killed.
+             Shows an immediate notification for significant MoMo transactions
+             (≥ 40 000 RWF). The SMS stays in the device inbox so
+             SmsService.syncNewMessages() picks it up on next app open. -->
+        <receiver
+            android:name=".MomoSmsReceiver"
+            android:exported="false"
+            android:enabled="true">
+            <intent-filter android:priority="999">
                 <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
             </intent-filter>
         </receiver>

@@ -385,19 +385,19 @@ class SmsService {
 
   // ─── Real-time listener ───────────────────────────────────────────
 
-  /// Start listening for new incoming MoMo SMS.
+  /// Start listening for new incoming MoMo SMS in the foreground.
   ///
-  /// [listenInBackground] is `true` so `backgroundSmsHandler` (a top-level
-  /// function) captures messages even when the app is backgrounded or killed.
-  /// Those messages are drained back into the pipeline by [syncNewMessages]
-  /// the next time the app is foregrounded.
+  /// Note: [listenInBackground] is intentionally `false`.  The `telephony`
+  /// package (v0.2.0) does not properly annotate its background channel
+  /// entry point for AOT compilation and crashes the engine when enabled.
+  /// Missed messages are caught by [syncNewMessages] every time the app is
+  /// foregrounded via the [WidgetsBindingObserver] in main.dart.
   void startListening() {
     _telephony.listenIncomingSms(
       onNewMessage: _onNewSms,
-      listenInBackground: true,
-      onBackgroundMessage: backgroundSmsHandler,
+      listenInBackground: false,
     );
-    _log.i('SMS listener started (background enabled)');
+    _log.i('SMS listener started (foreground only)');
   }
 
   /// Handle an incoming SMS.

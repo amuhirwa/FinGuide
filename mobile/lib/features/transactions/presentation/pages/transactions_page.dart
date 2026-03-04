@@ -429,7 +429,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       ),
                       Expanded(
                         child: _SummaryItem(
-                          label: isPositive ? 'Saved' : 'Deficit',
+                          label: isPositive ? 'Remainder' : 'Deficit',
                           amount: savings.abs(),
                           color: isPositive
                               ? const Color(0xFFFDE68A)
@@ -2635,7 +2635,7 @@ class FinancialHealthPage extends StatelessWidget {
                         _HealthRow('Expenses', expenses, Colors.red, format),
                         const Divider(height: 20),
                         _HealthRow(
-                          savings >= 0 ? 'Remaining' : 'Deficit',
+                          savings >= 0 ? 'Saved' : 'Deficit',
                           savings.abs(),
                           savings >= 0 ? Colors.blue : Colors.orange,
                           format,
