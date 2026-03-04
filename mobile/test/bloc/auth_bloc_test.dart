@@ -539,7 +539,7 @@ void main() {
     );
 
     blocTest<AuthBloc, AuthState>(
-      'emits [AuthOtpError] when resend fails',
+      'emits [AuthLoading, AuthOtpError] when resend fails',
       build: () {
         var callCount = 0;
         when(() => mockSendOtp(any())).thenAnswer((_) async {
@@ -563,7 +563,7 @@ void main() {
         bloc.add(AuthOtpResendRequested());
       },
       skip: 2,
-      expect: () => [isA<AuthOtpError>()],
+      expect: () => [isA<AuthLoading>(), isA<AuthOtpError>()],
     );
   });
 

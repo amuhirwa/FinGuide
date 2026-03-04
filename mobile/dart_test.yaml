@@ -1,0 +1,29 @@
+# dart_test.yaml — Flutter/Dart test configuration
+# Run all tests:            flutter test
+# Run with coverage:        flutter test --coverage
+# View coverage (requires lcov):
+#   genhtml coverage/lcov.info -o coverage/html && start coverage/html/index.html
+
+# ── Timeout ──────────────────────────────────────────────────────────────────
+timeout: 30s
+
+# ── Tags ─────────────────────────────────────────────────────────────────────
+# Mark tests to let you run subsets:
+#   @Tag('unit')    — fast, no platform channels
+#   @Tag('bloc')    — BLoC state-machine tests
+#   @Tag('widget')  — widget tree tests
+#
+# Run only bloc tests: flutter test --tags bloc
+# Skip widget tests:   flutter test --exclude-tags widget
+
+tags:
+  unit:
+    timeout: 10s
+  bloc:
+    timeout: 15s
+  widget:
+    timeout: 30s
+
+# ── Concurrency ───────────────────────────────────────────────────────────────
+# Flutter overrides this, but kept for `dart test` compatibility
+concurrency: 4

@@ -11,16 +11,32 @@ import 'package:flutter_test/flutter_test.dart';
 // ─── Mirrored constants from sms_service.dart ────────────────────────────────
 
 const _momoSenders = [
-  'M-Money', 'MoMo', 'MTN', 'MobileMoney', 'momo', '8199', '162', '164', '165',
+  'M-Money',
+  'MoMo',
+  'MTN',
+  'MobileMoney',
+  'momo',
+  '8199',
+  '162',
+  '164',
+  '165',
 ];
 
 const _momoKeywords = [
-  'RWF', 'Balance:', 'transferred to', 'received', 'payment of',
-  'transaction of', 'FT Id',
+  'RWF',
+  'Balance:',
+  'transferred to',
+  'received',
+  'payment of',
+  'transaction of',
+  'FT Id',
 ];
 
 const _incomeKeywords = [
-  'received', 'You have received', 'has been deposited', 'Cash In',
+  'received',
+  'You have received',
+  'has been deposited',
+  'Cash In',
 ];
 
 // ─── Mirrored helpers ─────────────────────────────────────────────────────────
@@ -85,7 +101,8 @@ void main() {
 
   group('_isMomoMessage — body keyword matching', () {
     test('RWF in body marks as MoMo', () {
-      expect(_isMomoMessage(address: 'UNKNOWN', body: '5,000 RWF sent'), isTrue);
+      expect(
+          _isMomoMessage(address: 'UNKNOWN', body: '5,000 RWF sent'), isTrue);
     });
 
     test('"Balance:" in body marks as MoMo', () {
@@ -116,9 +133,11 @@ void main() {
       );
     });
 
-    test('bundle expiry SMS is NOT MoMo', () {
+    test('bundle expiry SMS from unknown sender is NOT MoMo', () {
+      // Uses a non-MoMo sender so only body keywords are tested.
+      // 'MTN Promo' would match because 'MTN' is in sender list.
       expect(
-        _isMomoMessage(address: 'MTN Promo', body: _bundleSms),
+        _isMomoMessage(address: 'PROMO', body: _bundleSms),
         isFalse,
       );
     });

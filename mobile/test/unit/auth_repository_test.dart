@@ -19,6 +19,7 @@ import 'package:finguide/features/auth/data/repositories/auth_repository_impl.da
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 class MockAuthRemoteDataSource extends Mock implements AuthRemoteDataSource {}
+
 class MockAuthLocalDataSource extends Mock implements AuthLocalDataSource {}
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -58,6 +59,9 @@ void main() {
       remoteDataSource: mockRemote,
       localDataSource: mockLocal,
     );
+
+    // mocktail requires fallback values for non-core types used with any()
+    registerFallbackValue(kUserModel);
 
     // Default stubs so we don't get null pointer errors in test setup
     when(() => mockLocal.saveToken(any())).thenAnswer((_) async {});
@@ -109,7 +113,8 @@ void main() {
             otpCode: any(named: 'otpCode'),
           )).thenAnswer((_) async => kOtpToken);
 
-      final result = await repo.verifyOtp(phoneNumber: kPhone, otpCode: kOtpCode);
+      final result =
+          await repo.verifyOtp(phoneNumber: kPhone, otpCode: kOtpCode);
 
       expect(result, const Right(kOtpToken));
     });
@@ -120,7 +125,8 @@ void main() {
             otpCode: any(named: 'otpCode'),
           )).thenThrow(const ServerException(message: 'Invalid code'));
 
-      final result = await repo.verifyOtp(phoneNumber: kPhone, otpCode: '000000');
+      final result =
+          await repo.verifyOtp(phoneNumber: kPhone, otpCode: '000000');
 
       expect(result.isLeft(), true);
       expect(result.fold((l) => l, (r) => null), isA<ServerFailure>());
@@ -132,7 +138,8 @@ void main() {
             otpCode: any(named: 'otpCode'),
           )).thenThrow(Exception('Timeout'));
 
-      final result = await repo.verifyOtp(phoneNumber: kPhone, otpCode: kOtpCode);
+      final result =
+          await repo.verifyOtp(phoneNumber: kPhone, otpCode: kOtpCode);
 
       expect(result.isLeft(), true);
       expect(result.fold((l) => l, (r) => null), isA<UnknownFailure>());
@@ -189,7 +196,8 @@ void main() {
       expect(result.fold((l) => l, (_) => null), isA<ServerFailure>());
     });
 
-    test('returns Left(CacheFailure) when saveToken throws CacheException', () async {
+    test('returns Left(CacheFailure) when saveToken throws CacheException',
+        () async {
       stubRemoteRegister();
       when(() => mockLocal.saveToken(any()))
           .thenThrow(const CacheException(message: 'Storage full'));
@@ -228,7 +236,8 @@ void main() {
       verify(() => mockLocal.saveUser(kUserModel)).called(1);
     });
 
-    test('returns Left(AuthFailure) on ServerException — not ServerFailure', () async {
+    test('returns Left(AuthFailure) on ServerException — not ServerFailure',
+        () async {
       when(() => mockRemote.login(
             phoneNumber: any(named: 'phoneNumber'),
             password: any(named: 'password'),
@@ -268,7 +277,8 @@ void main() {
 
     test('returns Right(user) when token valid and API succeeds', () async {
       when(() => mockLocal.getToken()).thenAnswer((_) async => kAccessToken);
-      when(() => mockRemote.getCurrentUser()).thenAnswer((_) async => kUserModel);
+      when(() => mockRemote.getCurrentUser())
+          .thenAnswer((_) async => kUserModel);
 
       final result = await repo.checkAuth();
 
@@ -289,7 +299,8 @@ void main() {
       expect(result.fold((_) => null, (u) => u)?.id, 1);
     });
 
-    test('returns Left(AuthFailure) when API fails and no cached user', () async {
+    test('returns Left(AuthFailure) when API fails and no cached user',
+        () async {
       when(() => mockLocal.getToken()).thenAnswer((_) async => kAccessToken);
       when(() => mockRemote.getCurrentUser())
           .thenThrow(const ServerException(message: 'Offline'));
@@ -314,7 +325,8 @@ void main() {
       verify(() => mockLocal.clearAll()).called(1);
     });
 
-    test('returns Left(CacheFailure) when clearAll throws CacheException', () async {
+    test('returns Left(CacheFailure) when clearAll throws CacheException',
+        () async {
       when(() => mockLocal.clearAll())
           .thenThrow(const CacheException(message: 'Cannot clear storage'));
 
