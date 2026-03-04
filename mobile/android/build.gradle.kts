@@ -15,20 +15,15 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
-subprojects {
-    project.evaluationDependsOn(":app")
-}
-
 // Fix for pub packages that predate the AGP namespace requirement (e.g. telephony 0.2.0).
-// Reads the package attribute from each library's AndroidManifest.xml and sets it as
-// the namespace so AGP 7.3+ does not reject the build.
+// pluginManager.withPlugin fires when the Android library plugin is applied (configuration
+// phase), before AGP's finalizeDsl validates the namespace — avoiding the
+// "Cannot run afterEvaluate when already evaluated" error.
 subprojects {
-    afterEvaluate {
-        if (project.plugins.hasPlugin("com.android.library")) {
-            val libExt = project.extensions
-                .findByType(com.android.build.gradle.LibraryExtension::class.java)
-            if (libExt != null && libExt.namespace == null) {
-                val manifest = project.file("src/main/AndroidManifest.xml")
+    pluginManager.withPlugin("com.android.library") {
+        extensions.findByType(com.android.build.gradle.LibraryExtension::class.java)?.let { libExt ->
+            if (libExt.namespace == null) {
+                val manifest = file("src/main/AndroidManifest.xml")
                 if (manifest.exists()) {
                     val pkg = Regex("""package\s*=\s*"([^"]+)"""")
                         .find(manifest.readText())
@@ -40,6 +35,10 @@ subprojects {
             }
         }
     }
+}
+
+subprojects {
+    project.evaluationDependsOn(":app")
 }
 
 tasks.register<Delete>("clean") {
