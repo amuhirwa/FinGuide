@@ -42,7 +42,7 @@ class _DashboardPageState extends State<DashboardPage> {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8F9FD),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: _buildBody(),
         bottomNavigationBar: _buildBottomNav(),
       ),

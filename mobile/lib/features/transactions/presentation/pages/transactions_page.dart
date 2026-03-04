@@ -18,6 +18,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:intl/intl.dart';
 
+import '../../../../core/di/injection.dart';
+import '../../../../core/services/sms_service.dart';
 import '../../../../core/theme/app_theme.dart';
 
 import '../../data/models/transaction_model.dart';
@@ -813,9 +815,13 @@ class _TransactionTile extends StatelessWidget {
     final isIncome = transaction.transactionType == TransactionType.income;
     final isTransfer = transaction.transactionType == TransactionType.transfer;
 
-    // MoKash withdrawal: savings + transfer type = money coming back from savings
-    final isMoKashReturn =
-        isTransfer && transaction.category == TransactionCategory.savings;
+    // MoKash direction — distinguished by description stored at parse time
+    final isMoKashWithdrawal = isTransfer &&
+        transaction.category == TransactionCategory.savings &&
+        transaction.description == 'MoKash withdrawal';
+    final isMoKashDeposit = isTransfer &&
+        transaction.category == TransactionCategory.savings &&
+        transaction.description == 'MoKash deposit';
 
     final isSavingsOrInvestment = const {
       TransactionCategory.savings,
@@ -883,10 +889,12 @@ class _TransactionTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isMoKashReturn
+                    isMoKashWithdrawal
                         ? 'MoKash Withdrawal'
-                        : (transaction.description ??
-                            transaction.categoryDisplay),
+                        : isMoKashDeposit
+                            ? 'To MoKash Savings'
+                            : (transaction.description ??
+                                transaction.categoryDisplay),
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
@@ -899,37 +907,39 @@ class _TransactionTile extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        isMoKashReturn
-                            ? 'MoKash Withdrawal'
-                            : (isTransfer
-                                ? 'Transfer'
-                                : transaction.categoryDisplay),
+                        isMoKashWithdrawal
+                            ? 'From Savings'
+                            : isMoKashDeposit
+                                ? 'To Savings'
+                                : (isTransfer
+                                    ? 'Transfer'
+                                    : transaction.categoryDisplay),
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           color: Colors.grey[500],
                         ),
                       ),
-                      if (!transaction.isVerified) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.shade100,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'Unverified',
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.orange.shade700,
-                            ),
-                          ),
-                        ),
-                      ],
+                      // if (!transaction.isVerified) ...[
+                      //   const SizedBox(width: 8),
+                      //   Container(
+                      //     padding: const EdgeInsets.symmetric(
+                      //       horizontal: 6,
+                      //       vertical: 2,
+                      //     ),
+                      //     decoration: BoxDecoration(
+                      //       color: Colors.orange.shade100,
+                      //       borderRadius: BorderRadius.circular(4),
+                      //     ),
+                      //     child: Text(
+                      //       'Unverified',
+                      //       style: GoogleFonts.inter(
+                      //         fontSize: 10,
+                      //         fontWeight: FontWeight.w500,
+                      //         color: Colors.orange.shade700,
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ],
                       // if (isSavingsOrInvestment) ...[
                       //   const SizedBox(width: 6),
                       //   Container(
@@ -2090,8 +2100,12 @@ class TransactionDetailPage extends StatelessWidget {
 
     final isIncome = transaction.transactionType == TransactionType.income;
     final isTransfer = transaction.transactionType == TransactionType.transfer;
-    final isMoKashReturn =
-        isTransfer && transaction.category == TransactionCategory.savings;
+    final isMoKashWithdrawal = isTransfer &&
+        transaction.category == TransactionCategory.savings &&
+        transaction.description == 'MoKash withdrawal';
+    final isMoKashDeposit = isTransfer &&
+        transaction.category == TransactionCategory.savings &&
+        transaction.description == 'MoKash deposit';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FD),
@@ -2145,7 +2159,6 @@ class TransactionDetailPage extends StatelessWidget {
         child: Column(
           children: [
             // Amount Card
-
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -2167,11 +2180,13 @@ class TransactionDetailPage extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    isMoKashReturn
+                    isMoKashWithdrawal
                         ? 'MoKash Withdrawal'
-                        : (isTransfer
-                            ? 'Transfer'
-                            : (isIncome ? 'Income' : 'Expense')),
+                        : isMoKashDeposit
+                            ? 'MoKash Deposit'
+                            : (isTransfer
+                                ? 'Transfer'
+                                : (isIncome ? 'Income' : 'Expense')),
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       color: (isIncome || isTransfer)
@@ -2247,13 +2262,13 @@ class TransactionDetailPage extends StatelessWidget {
                       value: transaction.reference!,
                     ),
                   ],
-                  const Divider(height: 24),
-                  _DetailRow(
-                    label: 'Status',
-                    value: transaction.isVerified ? 'Verified' : 'Unverified',
-                    valueColor:
-                        transaction.isVerified ? Colors.green : Colors.orange,
-                  ),
+                  // const Divider(height: 24),
+                  // _DetailRow(
+                  //   label: 'Status',
+                  //   value: transaction.isVerified ? 'Verified' : 'Unverified',
+                  //   valueColor:
+                  //       transaction.isVerified ? Colors.green : Colors.orange,
+                  // ),
                   if (transaction.counterparty != null) ...[
                     const Divider(height: 24),
                     GestureDetector(
@@ -3271,7 +3286,7 @@ class _SmsImportPageState extends State<SmsImportPage> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _requestPermission,
+                        onPressed: _isLoading ? null : _requestPermission,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -3279,7 +3294,16 @@ class _SmsImportPageState extends State<SmsImportPage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text('Grant Permission & Scan'),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('Grant Permission & Scan'),
                       ),
                     ),
                   ],
@@ -3375,15 +3399,60 @@ class _SmsImportPageState extends State<SmsImportPage> {
     );
   }
 
-  void _requestPermission() {
-    // In a real app, request SMS permission here
+  Future<void> _requestPermission() async {
+    setState(() => _isLoading = true);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('SMS permission would be requested here'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    try {
+      final smsService = getIt<SmsService>();
+
+      final granted = await smsService.requestPermission();
+      if (!granted) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'SMS permission denied. You can enable it in device Settings.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Permission granted — import all historical MoMo messages.
+      final count = await smsService.importHistoricalMessages();
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              count > 0
+                  ? 'Imported $count MoMo transaction${count == 1 ? '' : 's'}!'
+                  : 'No MoMo messages found on this device.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        // Reload the transaction list so newly imported data shows up.
+        context.read<TransactionBloc>().add(LoadTransactions());
+
+        if (count > 0) Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error scanning SMS: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _parseSampleMessages() {

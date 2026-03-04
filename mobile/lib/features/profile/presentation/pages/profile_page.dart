@@ -12,6 +12,7 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/theme_cubit.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/domain/entities/user.dart';
 import 'edit_profile_page.dart';
 import 'notification_settings_page.dart';
 
@@ -22,11 +23,18 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
-        if (state is! AuthAuthenticated) {
-          return const Center(child: CircularProgressIndicator());
+        // Extract user from any state that carries one
+        User? user;
+        if (state is AuthAuthenticated) {
+          user = state.user;
+        } else if (state is AuthProfileUpdated) {
+          user = state.user;
         }
 
-        final user = state.user;
+        if (user == null) {
+          // AuthLoading / AuthProfileUpdating / AuthInitial / AuthError
+          return const Center(child: CircularProgressIndicator());
+        }
 
         return SafeArea(
           child: SingleChildScrollView(
@@ -38,7 +46,7 @@ class ProfilePage extends StatelessWidget {
                 Text(
                   'Profile & Settings',
                   style: AppTypography.headlineMedium.copyWith(
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
@@ -169,6 +177,8 @@ class ProfilePage extends StatelessWidget {
                 BlocBuilder<ThemeCubit, ThemeMode>(
                   builder: (context, themeMode) {
                     final isDark = themeMode == ThemeMode.dark;
+                    // NOTE: Do NOT add onTap to this tile — Switch.onChanged already handles
+                    // all taps. Adding onTap as well causes a double-toggle (no visible effect).
                     return _SettingsTile(
                       icon: isDark ? Icons.dark_mode : Icons.light_mode,
                       title: 'Dark Mode',
@@ -178,7 +188,6 @@ class ProfilePage extends StatelessWidget {
                         onChanged: (_) => context.read<ThemeCubit>().toggle(),
                         activeColor: AppColors.primary,
                       ),
-                      onTap: () => context.read<ThemeCubit>().toggle(),
                     );
                   },
                 ),
@@ -442,12 +451,14 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        boxShadow: AppShadows.small,
+        boxShadow: isDark ? null : AppShadows.small,
       ),
       child: ListTile(
         leading: Container(
@@ -466,22 +477,22 @@ class _SettingsTile extends StatelessWidget {
         title: Text(
           title,
           style: AppTypography.bodyLarge.copyWith(
-            color: textColor ?? AppColors.textPrimary,
+            color: textColor ?? cs.onSurface,
           ),
         ),
         subtitle: subtitle != null
             ? Text(
                 subtitle!,
                 style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: cs.onSurfaceVariant,
                 ),
               )
             : null,
         trailing: trailing ??
             (onTap != null
-                ? const Icon(
+                ? Icon(
                     Icons.chevron_right,
-                    color: AppColors.textTertiary,
+                    color: cs.onSurfaceVariant,
                   )
                 : null),
         onTap: onTap,

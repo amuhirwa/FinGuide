@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../bloc/sms_consent_bloc.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
 
 class SmsConsentPage extends StatelessWidget {
   const SmsConsentPage({super.key});
@@ -23,6 +24,10 @@ class SmsConsentPage extends StatelessWidget {
         if (state is SmsConsentComplete) {
           _showImportResult(context, state.transactionsImported);
         } else if (state is SmsConsentSkipped) {
+          // Re-check auth so AuthBloc emits AuthAuthenticated(user) — without
+          // this, the auth state remains AuthShowSmsConsent and the dashboard
+          // shows "User" instead of the real name.
+          context.read<AuthBloc>().add(AuthCheckRequested());
           context.go(Routes.dashboard);
         } else if (state is SmsConsentPermissionDenied) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -34,14 +39,20 @@ class SmsConsentPage extends StatelessWidget {
           );
           // Still navigate forward — the app works without SMS
           Future.delayed(const Duration(seconds: 2), () {
-            if (context.mounted) context.go(Routes.dashboard);
+            if (context.mounted) {
+              context.read<AuthBloc>().add(AuthCheckRequested());
+              context.go(Routes.dashboard);
+            }
           });
         } else if (state is SmsConsentError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Import error: ${state.message}')),
           );
           Future.delayed(const Duration(seconds: 2), () {
-            if (context.mounted) context.go(Routes.dashboard);
+            if (context.mounted) {
+              context.read<AuthBloc>().add(AuthCheckRequested());
+              context.go(Routes.dashboard);
+            }
           });
         }
       },
@@ -84,6 +95,7 @@ class SmsConsentPage extends StatelessWidget {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
+              context.read<AuthBloc>().add(AuthCheckRequested());
               context.go(Routes.dashboard);
             },
             child: const Text('Continue'),

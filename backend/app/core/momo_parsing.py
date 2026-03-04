@@ -97,19 +97,6 @@ def parse_momo_sms(sms_text: str):
             data["mokash_ref"] = m_ref.group(1)
         return data
 
-    # ── PATTERN 0B: MOKASH DEPOSIT CONFIRMATION ───────────────────────
-    # "RWF 100000 transferred to your Mokash account on 1:08 AM at 07/02/2026.
-    #  Your new Mokash account balance is RWF 250000.Ref 25928379434"
-    # This is the MoKash side confirmation when the user deposits.
-    # Pattern 4 ("Your payment of X RWF to Mokash Savings...") from the MoMo
-    # debit SMS already records the same event as an expense/savings.
-    # We return None here to avoid double-counting.
-    if re.search(
-        r'RWF [\d,]+ transferred to your Mokash account',
-        clean, re.IGNORECASE
-    ):
-        return None
-
     # ── PATTERN 1: RECEIVED (Income) ─────────────────────────────────
     # "You have received 20000 RWF from MUTONI BRICE QUERCY (*********726) at ..."
     # "You have received 796000 RWF from NEXVENTURES Ltd  (*********500) at ..."
@@ -125,6 +112,10 @@ def parse_momo_sms(sms_text: str):
         phone = re.sub(r'[^\d]', '', m.group(3))
         if len(phone) >= 9:
             data["party_phone"] = "0" + phone[-9:] if not phone.startswith("07") else phone
+        elif phone:
+            # Masked partial number (e.g. "726" from "*****726").
+            # Store it so the self-transfer detector can still compare suffix digits.
+            data["party_phone"] = phone
         data["date"] = m.group(4)
         m_bal = re.search(r'Balance:\s*([\d,]+)', clean)
         if m_bal:
@@ -200,11 +191,31 @@ def parse_momo_sms(sms_text: str):
         pl = party.lower()
         if "mokash" in pl:
             data["category"] = "savings"
+            # Saving to MoKash is a transfer between the user's own accounts,
+            # not a real expense. Mark it as transfer so it is excluded from
+            # expense totals and the piggybank can count it as a deposit.
+            data["type"] = "transfer"
+            data["is_mokash_deposit"] = True
         elif "ejo heza" in pl:
             data["category"] = "ejo_heza"
         else:
             data["category"] = "other"
         return data
+
+    # ── PATTERN 0B: MOKASH DEPOSIT CONFIRMATION ───────────────────────
+    # Standalone: "RWF 100000 transferred to your Mokash account on 1:08 AM at 07/02/2026.
+    #              Your new Mokash account balance is RWF 250000. Ref 25928379434"
+    # This SMS is the MoKash-side echo of a deposit that Pattern 4 already captures
+    # from the MoMo debit SMS ("Your payment of X RWF to Mokash Savings...").
+    # IMPORTANT: this check must come AFTER Pattern 4 so that compound SMS messages
+    # (which contain BOTH "Your payment of X to Mokash Savings" AND
+    # "RWF X transferred to your Mokash account" in the same body) are correctly
+    # recorded as a transfer/savings by Pattern 4 above rather than silenced here.
+    if re.search(
+        r'RWF [\d,]+ transferred to your Mokash account',
+        clean, re.IGNORECASE
+    ):
+        return None
 
     return None  # unrecognised format
 

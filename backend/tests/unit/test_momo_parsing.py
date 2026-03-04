@@ -246,6 +246,26 @@ class TestPattern4Payment:
         assert result is not None
         assert result["category"] == "savings"
         assert result["amount"] == 300000.0
+        # Savings deposit is a transfer between the user's own accounts, not an expense
+        assert result["type"] == "transfer"
+        assert result.get("is_mokash_deposit") is True
+
+    def test_mokash_savings_compound_sms_recorded_once(self):
+        """Compound SMS (USSD wrapper + MoKash echo) must produce exactly one transfer record."""
+        sms = (
+            "*162*TxId:26483098648*S*"
+            "Your payment of 10000 RWF to Mokash Savings with token  "
+            "and ET Id: 20260304000000007561448690 was completed at 2026-03-04 16:09:39. "
+            "Fee 0 RWF. Balance: 81423 RWF . "
+            "Message: - Y'ello. RWF 10000 transferred to your Mokash account on 4:09 PM "
+            "at 04/03/2026. Your new Mokash account balance is RWF 10408.Ref 26483098648. *EN#"
+        )
+        result = parse_momo_sms(sms)
+        assert result is not None, "Compound savings SMS must not return None"
+        assert result["type"] == "transfer"
+        assert result["category"] == "savings"
+        assert result["amount"] == 10000.0
+        assert result.get("is_mokash_deposit") is True
 
     def test_ejo_heza_categorised(self):
         sms = (
@@ -352,6 +372,17 @@ class TestAmountEdgeCases:
         assert result is not None
         assert result["balance"] == 0.0
 
+    def test_income_masked_phone_stores_partial_digits(self):
+        """Masked sender (*****726) must store '726' so self-transfer detection works."""
+        sms = (
+            "You have received 20000 RWF from MUTONI BRICE QUERCY (*****726) "
+            "at 2026-02-28 11:30:00. Balance: 100000 RWF."
+        )
+        result = parse_momo_sms(sms)
+        assert result is not None
+        assert result["type"] == "income"
+        assert result["party_phone"] == "726"
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # MoKash SMS patterns (Pattern 0A / 0B)
@@ -426,12 +457,49 @@ class TestMoKashMessages:
     # ── Pattern 0B: deposit confirmation ──────────────────────────────────
 
     def test_mokash_deposit_confirm_returns_none(self):
-        """Deposit confirmation must be silenced to avoid double-counting Pattern 4."""
+        """Standalone MoKash deposit echo must be silenced (Pattern 4 already captured it)."""
         result = parse_momo_sms(self.DEPOSIT_CONFIRM_SMS)
         assert result is None
 
     def test_mokash_deposit_non_withdrawal_no_flag(self):
         """Deposit confirmation must NOT have is_mokash_withdrawal flag."""
-        result = parse_momo_sms(self.DEPOSIT_CONFIRM_SMS)
         # result is None, so the flag can't possibly be True — assertion is implicit
+        result = parse_momo_sms(self.DEPOSIT_CONFIRM_SMS)
         assert result is None
+
+    # ── Compound savings SMS (Pattern 4 must win over Pattern 0B) ─────
+
+    COMPOUND_SAVINGS_SMS = (
+        "*162*TxId:26483098648*S*Your payment of 10000 RWF to Mokash Savings "
+        "with token  and ET Id: 20260304000000007561448690 was completed at "
+        "2026-03-04 16:09:39. Fee 0 RWF. Balance: 81423 RWF . Message: - "
+        "Y'ello. RWF 10000 transferred to your Mokash account on 4:09 PM at "
+        "04/03/2026. Your new Mokash account balance is RWF 10408."
+        "Ref 26483098648. *EN#"
+    )
+
+    def test_compound_savings_sms_is_expense(self):
+        """Compound SMS (MoMo debit + embedded MoKash echo) must parse as expense."""
+        result = parse_momo_sms(self.COMPOUND_SAVINGS_SMS)
+        assert result is not None
+        assert result["type"] == "expense"
+
+    def test_compound_savings_sms_category_is_savings(self):
+        result = parse_momo_sms(self.COMPOUND_SAVINGS_SMS)
+        assert result is not None
+        assert result["category"] == "savings"
+
+    def test_compound_savings_sms_amount(self):
+        result = parse_momo_sms(self.COMPOUND_SAVINGS_SMS)
+        assert result is not None
+        assert result["amount"] == 10000.0
+
+    def test_compound_savings_sms_balance(self):
+        result = parse_momo_sms(self.COMPOUND_SAVINGS_SMS)
+        assert result is not None
+        assert result["balance"] == 81423.0
+
+    def test_compound_savings_sms_date(self):
+        result = parse_momo_sms(self.COMPOUND_SAVINGS_SMS)
+        assert result is not None
+        assert result["date"] == "2026-03-04 16:09:39"

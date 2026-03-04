@@ -163,6 +163,7 @@ def _send_sms(phone_number: str, code: str) -> None:
         "api_username": settings.SMS_USERNAME,
         "api_password": settings.SMS_PASSWORD
     }
+    print(requests.post(settings.SMS_AUTH, data=json.dumps(login_payload)).__dict__)
     access_token = json.loads(requests.post(settings.SMS_AUTH, data=json.dumps(login_payload)).text)
 
     sms_payload = {

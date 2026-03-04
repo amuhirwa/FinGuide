@@ -1352,13 +1352,13 @@ class TransactionDetailPage extends StatelessWidget {
                       value: transaction.reference!,
                     ),
                   ],
-                  const Divider(height: 24),
-                  _DetailRow(
-                    label: 'Status',
-                    value: transaction.isVerified ? 'Verified' : 'Unverified',
-                    valueColor:
-                        transaction.isVerified ? Colors.green : Colors.orange,
-                  ),
+                  // const Divider(height: 24),
+                  // _DetailRow(
+                  //   label: 'Status',
+                  //   value: transaction.isVerified ? 'Verified' : 'Unverified',
+                  //   valueColor:
+                  //       transaction.isVerified ? Colors.green : Colors.orange,
+                  // ),
                 ],
               ),
             ),

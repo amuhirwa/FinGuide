@@ -209,23 +209,21 @@ async def get_piggybank(
     """
     user_id = int(current_user.sub)
 
+    # Savings deposits: MoKash payment transactions (type=TRANSFER, description="MoKash deposit")
     contributions = db.query(Transaction).filter(
         Transaction.user_id == user_id,
         Transaction.category == ModelCategory.SAVINGS,
-        Transaction.transaction_type == ModelTxType.EXPENSE,
+        Transaction.transaction_type == ModelTxType.TRANSFER,
+        Transaction.description == "MoKash deposit",
     ).order_by(Transaction.transaction_date.desc()).all()
 
-    savings_counterparties = {
-        tx.counterparty for tx in contributions if tx.counterparty
-    }
-
-    withdrawals = []
-    if savings_counterparties:
-        withdrawals = db.query(Transaction).filter(
-            Transaction.user_id == user_id,
-            Transaction.transaction_type == ModelTxType.INCOME,
-            Transaction.counterparty.in_(savings_counterparties),
-        ).order_by(Transaction.transaction_date.desc()).all()
+    # Savings withdrawals: MoKash withdrawal transactions (type=TRANSFER, description="MoKash withdrawal")
+    withdrawals = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.category == ModelCategory.SAVINGS,
+        Transaction.transaction_type == ModelTxType.TRANSFER,
+        Transaction.description == "MoKash withdrawal",
+    ).order_by(Transaction.transaction_date.desc()).all()
 
     total_in = sum(tx.amount for tx in contributions)
     total_out = sum(tx.amount for tx in withdrawals)
@@ -233,14 +231,14 @@ async def get_piggybank(
 
     by_party: dict = {}
     for tx in contributions:
-        key = tx.counterparty_name or tx.counterparty or "Savings"
+        key = tx.counterparty_name or tx.counterparty or "MoKash Savings"
         by_party.setdefault(key, {"name": key, "total_in": 0.0, "total_out": 0.0, "tx_count": 0})
         by_party[key]["total_in"] += tx.amount
         by_party[key]["tx_count"] += 1
     for tx in withdrawals:
-        key = tx.counterparty_name or tx.counterparty or "Savings"
-        if key in by_party:
-            by_party[key]["total_out"] += tx.amount
+        key = tx.counterparty_name or tx.counterparty or "MoKash Savings"
+        by_party.setdefault(key, {"name": key, "total_in": 0.0, "total_out": 0.0, "tx_count": 0})
+        by_party[key]["total_out"] += tx.amount
 
     return {
         "balance": balance,

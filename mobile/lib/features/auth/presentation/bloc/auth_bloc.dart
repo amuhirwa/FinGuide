@@ -227,7 +227,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await _authRepository.updateProfile(event.data);
     result.fold(
       (failure) => emit(AuthProfileUpdateError(failure.message)),
-      (user) => emit(AuthProfileUpdated(user)),
+      (user) {
+        // Emit AuthProfileUpdated first so EditProfilePage listener can react
+        // (show toast / pop), then immediately restore AuthAuthenticated so every
+        // other page that depends on the auth state (e.g. ProfilePage) keeps
+        // rendering without an infinite spinner.
+        emit(AuthProfileUpdated(user));
+        emit(AuthAuthenticated(user));
+      },
     );
   }
 

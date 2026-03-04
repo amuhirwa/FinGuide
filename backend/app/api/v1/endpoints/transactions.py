@@ -127,7 +127,11 @@ def _adapt_parsed(result: dict, raw_sms: str) -> dict:
         "amount": result.get("amount", 0.0),
         "counterparty": party_phone or party_name,
         "counterparty_name": party_name,
-        "description": party_name,
+        "description": (
+            "MoKash withdrawal" if result.get("is_mokash_withdrawal")
+            else "MoKash deposit" if result.get("is_mokash_deposit")
+            else party_name
+        ),
         "category": category,
         "need_want": need_want,
         "reference": reference,
