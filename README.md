@@ -189,6 +189,87 @@ Run **Part 3** cells (93–117) to train the 7-day aggregate BiLSTM model. Expor
 
 ---
 
+## Installing the App on Android (APK Sideload)
+
+> These steps are for installing the FinGuide APK directly on an Android device — without using the Google Play Store.
+
+### Step 1 — Download the APK
+
+1. Get the latest `finguide.apk` file from the project team or the repository's Releases page.
+2. Transfer it to your Android device (via USB cable, Google Drive, WhatsApp, or any file-sharing method).
+
+### Step 2 — Pause / Disable Google Play Protect
+
+Play Protect may block or warn against installing apps from outside the Play Store. Pause it temporarily while you install:
+
+1. Open the **Google Play Store** app.
+2. Tap your **profile picture** (top-right corner).
+3. Tap **Play Protect**.
+4. Tap the **settings gear icon** (top-right).
+5. Toggle **"Scan apps with Play Protect"** OFF.
+6. Confirm by tapping **Turn off** when prompted.
+
+> **Remember to re-enable Play Protect** after the app is installed by repeating the steps above and toggling the setting back ON.
+
+### Step 3 — Allow Installation from Unknown Sources
+
+Android blocks apps not downloaded from the Play Store by default. You need to grant permission to the app or file manager you are using to install the APK:
+
+**Android 8.0 and later (most devices):**
+
+1. Go to **Settings → Apps** (or **Settings → Apps & notifications**).
+2. Tap the **three-dot menu** or find **Special app access**.
+3. Select **Install unknown apps**.
+4. Find and tap the app you will use to open the APK (e.g. **Files**, **My Files**, or **Chrome**).
+5. Toggle **"Allow from this source"** ON.
+
+**Older Android (below 8.0):**
+
+1. Go to **Settings → Security**.
+2. Enable **"Unknown sources"**.
+3. Confirm the warning dialog by tapping **OK**.
+
+### Step 4 — Install the APK
+
+1. Open your **file manager** app (e.g. Files by Google, My Files).
+2. Navigate to the folder where you saved `finguide.apk` (commonly **Downloads**).
+3. Tap the APK file.
+4. Tap **Install** on the confirmation screen.
+5. Wait for the installation to complete, then tap **Open** or find **FinGuide** in your app drawer.
+
+> If you see a Play Protect warning during installation, tap **"Install anyway"** to proceed.
+
+### Step 5 — Grant Required Permissions
+
+On first launch FinGuide will request the following permissions. Grant all of them for full functionality:
+
+| Permission | Purpose |
+|-----------|---------|
+| **Read SMS** | Parse MoMo transaction messages automatically |
+| **Notifications** | Send savings nudges and budget alerts |
+
+### Step 6 — Configure the Backend URL (if self-hosting)
+
+If you are running the backend on your own machine or a server, update the API base URL before building the APK:
+
+1. Open `mobile/lib/core/network/` and locate the API client configuration file.
+2. Set the `baseUrl` to your server address, for example:
+   - Android emulator accessing localhost: `http://10.0.2.2:8000`
+   - Physical device on the same Wi-Fi: `http://192.168.x.x:8000`
+   - Deployed server: `https://your-server-domain.com`
+
+### Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| "App not installed" error | Uninstall any previous version of FinGuide first, then retry |
+| Play Protect keeps removing the app | Make sure "Scan apps with Play Protect" is still OFF during installation |
+| SMS transactions not loading | Go to **Settings → Apps → FinGuide → Permissions** and enable **SMS** |
+| Cannot connect to backend | Confirm the backend is running and the base URL is set correctly |
+| "Blocked by Play Protect" popup | Tap **More details → Install anyway** |
+
+---
+
 ## Designs
 
 ### Figma Mockups
@@ -227,9 +308,9 @@ The design system follows these brand guidelines:
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                      MOBILE APP (Flutter)                    │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐ │
-│  │   Auth   │  │Dashboard │  │  Goals   │  │ Transactions │ │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └──────┬───────┘ │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐  │
+│  │   Auth   │  │Dashboard │  │  Goals   │  │ Transactions │  │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └──────┬───────┘  │
 │       └──────────────┼────────────┼────────────────┘         │
 │                      │    Dio HTTP Client                    │
 └──────────────────────┼───────────────────────────────────────┘
@@ -246,15 +327,15 @@ The design system follows these brand guidelines:
 │           └──────────┬──────────┘                            │
 │      ┌───────────────┼───────────────┐                       │
 │      ▼               ▼               ▼                       │
-│  ┌────────┐   ┌────────────┐   ┌───────────┐                │
-│  │SQLite/ │   │ BiLSTM     │   │  MoMo SMS │                │
-│  │Postgres│   │ Inference  │   │  Parser   │                │
-│  └────────┘   └─────┬──────┘   └───────────┘                │
+│  ┌────────┐   ┌────────────┐   ┌───────────┐                 │
+│  │SQLite/ │   │ BiLSTM     │   │  MoMo SMS │                 │
+│  │Postgres│   │ Inference  │   │  Parser   │                 │
+│  └────────┘   └─────┬──────┘   └───────────┘                 │
 │                     │                                        │
 └─────────────────────┼────────────────────────────────────────┘
                       │  Loads .h5 + .joblib
 ┌─────────────────────┼────────────────────────────────────────┐
-│              ML MODELS (Trained Offline)                      │
+│              ML MODELS                                       │
 │  ┌──────────────────────────────────────────────────┐        │
 │  │  finguide_bilstm_production.h5                   │        │
 │  │  + amount_scaler, feature_scaler,                │        │

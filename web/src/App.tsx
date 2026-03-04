@@ -166,7 +166,7 @@ export default function App() {
           </h1>
 
           <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
-            FinGuide transforms your raw MoMo SMS history into a powerful financial compass. Forecast expenses, track goals, and build wealth—designed exclusively for irregular income earners.
+            FinGuide transforms your raw MoMo SMS history into a powerful financial compass. Forecast expenses, track goals, and build wealth—designed with irregular income earners in mind.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
@@ -339,7 +339,7 @@ export default function App() {
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 pt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm font-bold uppercase tracking-widest">
           <p>© {new Date().getFullYear()} FinGuide</p>
-          <p className="mt-2 md:mt-0 text-[var(--color-primary)]">Open Source Academic Project</p>
+          <p className="mt-2 md:mt-0 text-[var(--color-primary)]">Academic Project</p>
         </div>
       </footer>
     </div>
