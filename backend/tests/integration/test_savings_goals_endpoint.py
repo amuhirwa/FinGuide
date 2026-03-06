@@ -74,11 +74,11 @@ def _add_expense(db, user, amount=20_000.0, weeks_ago=1):
 def _add_savings_tx(db, user, amount=10_000.0, counterparty="MyBank"):
     tx = Transaction(
         user_id=user.id,
-        transaction_type=TransactionType.EXPENSE,
+        transaction_type=TransactionType.TRANSFER,
         category=TransactionCategory.SAVINGS,
         need_want=NeedWantCategory.SAVINGS,
         amount=amount,
-        description="Savings deposit",
+        description="MoKash deposit",
         counterparty=counterparty,
         transaction_date=datetime.now() - timedelta(days=1),
         confidence_score=1.0,
@@ -389,14 +389,14 @@ class TestPiggybank:
         self, client, auth_headers, db, test_user
     ):
         _add_savings_tx(db, test_user, amount=20_000.0, counterparty="BK Savings")
-        # Simulate withdrawal: INCOME from same counterparty
+        # Simulate withdrawal: MoKash withdrawal (matches piggybank endpoint filter)
         withdrawal = Transaction(
             user_id=test_user.id,
-            transaction_type=TransactionType.INCOME,
-            category=TransactionCategory.OTHER_INCOME,
-            need_want=NeedWantCategory.UNCATEGORIZED,
+            transaction_type=TransactionType.TRANSFER,
+            category=TransactionCategory.SAVINGS,
+            need_want=NeedWantCategory.SAVINGS,
             amount=5_000.0,
-            description="Withdrawal from savings",
+            description="MoKash withdrawal",
             counterparty="BK Savings",
             transaction_date=datetime.now(),
             confidence_score=1.0,

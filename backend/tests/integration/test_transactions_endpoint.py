@@ -75,7 +75,7 @@ class TestListTransactions:
             ))
         db.commit()
 
-        resp = client.get(f"{BASE}?limit=3", headers=auth_headers)
+        resp = client.get(f"{BASE}?page_size=3", headers=auth_headers)
         assert len(resp.json()["transactions"]) <= 3
 
 
