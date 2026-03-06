@@ -127,6 +127,7 @@ class RecommendationResponse(BaseModel):
     trigger_type: Optional[str] = None
     is_viewed: bool = False
     is_acted_upon: bool = False
+    is_dismissed: bool = False
     created_at: datetime
 
     class Config:
