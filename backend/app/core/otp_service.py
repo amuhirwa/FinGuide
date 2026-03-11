@@ -98,6 +98,15 @@ def verify_otp_code(db: Session, phone_number: str, otp_code: str) -> bool:
     Returns True and marks the record as used if valid.
     Returns False for unknown, expired, or already-used codes.
     """
+    # # Dev bypass: allow a fixed code so you can test on any device without SMS.
+    # # Never active in production.
+    # if (
+    #     settings.ENVIRONMENT != "production"
+    #     and settings.DEV_OTP_BYPASS
+    #     and otp_code == settings.DEV_OTP_BYPASS
+    # ):
+    #     return True
+
     record = db.query(OTPCode).filter(
         OTPCode.phone_number == phone_number,
         OTPCode.code == otp_code,
@@ -163,8 +172,8 @@ def _send_sms(phone_number: str, code: str) -> None:
         "api_username": settings.SMS_USERNAME,
         "api_password": settings.SMS_PASSWORD
     }
-    print(requests.post(settings.SMS_AUTH, data=json.dumps(login_payload)).__dict__)
-    access_token = json.loads(requests.post(settings.SMS_AUTH, data=json.dumps(login_payload)).text)
+
+    access_token = json.loads(requests.post(settings.SMS_AUTH, json=login_payload).text)
 
     sms_payload = {
         "msisdn": _format_phone(phone_number),
@@ -173,7 +182,7 @@ def _send_sms(phone_number: str, code: str) -> None:
         "sender_id": "NLA"
     }
 
-    send_sms = requests.post(settings.SMS_SEND, json.dumps(sms_payload), headers={"Authorization": "Bearer " + access_token["access_token"]})
+    send_sms = requests.post(settings.SMS_SEND, json=sms_payload, headers={"Authorization": "Bearer " + access_token["access_token"]})
 
     if send_sms.status_code != 200:
         raise TwilioRestException(send_sms.text)
