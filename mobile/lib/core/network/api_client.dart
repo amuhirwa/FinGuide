@@ -20,7 +20,7 @@ class ApiClient {
   // 'http://10.0.2.2:8000/api/v1'; // Android emulator
   // static const String baseUrl = 'http://localhost:8000/api/v1'; // iOS simulator
   // static const String baseUrl =
-  //     'http://192.168.1.64:8000/api/v1'; // iOS simulator
+  //     'http://192.168.1.66:8000/api/v1'; // iOS simulator
   static const String baseUrl = 'http://173.249.25.80:10000/api/v1';
 
   // ==================== Auth Endpoints ====================
