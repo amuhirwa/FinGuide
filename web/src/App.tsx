@@ -13,6 +13,7 @@ import {
   BrainCircuit,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 const APK_URL = "https://github.com/amuhirwa/FinGuide/releases/latest/download/finguide.apk";
 const GITHUB_URL = "https://github.com/amuhirwa/FinGuide";
@@ -325,14 +326,14 @@ export default function App() {
             <h4 className="font-bold uppercase tracking-widest text-sm mb-6 text-black">Legal</h4>
             <ul className="space-y-4 text-gray-600 font-medium">
               <li>
-                <a href="#" className="hover:text-[var(--color-primary)] transition-colors flex items-center gap-2">
+                <Link to="/privacy" className="hover:text-[var(--color-primary)] transition-colors flex items-center gap-2">
                   <ArrowRight size={14} /> Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-[var(--color-primary)] transition-colors flex items-center gap-2">
+                <Link to="/eula" className="hover:text-[var(--color-primary)] transition-colors flex items-center gap-2">
                   <ArrowRight size={14} /> Terms of Use
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
