@@ -21,6 +21,15 @@ class ValidationConstants {
   static const int phoneNumberLength = 10;
 }
 
+/// Legal / web URL constants
+class LegalUrls {
+  LegalUrls._();
+
+  static const String _base = 'https://amuhirwa.github.io/FinGuide/#';
+  static const String privacyPolicy = '$_base/privacy';
+  static const String eula = '$_base/eula';
+}
+
 /// Rwanda-specific constants
 class RwandaConstants {
   RwandaConstants._();

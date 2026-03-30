@@ -49,6 +49,34 @@ async def get_current_user_profile(
     return UserResponse.model_validate(user)
 
 
+@router.delete(
+    "/me",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete current user account",
+    description="Permanently delete the authenticated user's account and all associated data."
+)
+async def delete_current_user(
+    current_user: TokenPayload = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> None:
+    """
+    Delete the current authenticated user and all their data.
+
+    Cascades to: transactions, goals, investments, predictions, recommendations,
+    health scores, and counterparty mappings.
+    """
+    user = db.query(User).filter(User.id == int(current_user.sub)).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    db.delete(user)
+    db.commit()
+
+
 @router.patch(
     "/me",
     response_model=UserResponse,

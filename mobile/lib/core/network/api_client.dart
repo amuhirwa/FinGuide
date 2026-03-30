@@ -520,4 +520,9 @@ class ApiClient {
     final response = await _dio.patch('/users/me', data: data);
     return response.data;
   }
+
+  /// Permanently delete the authenticated user's account and all data
+  Future<void> deleteAccount() async {
+    await _dio.delete('/users/me');
+  }
 }

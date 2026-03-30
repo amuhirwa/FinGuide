@@ -83,6 +83,19 @@ class AuthProfileUpdated extends AuthState {
   List<Object?> get props => [user];
 }
 
+/// Account deletion in progress
+class AuthAccountDeleting extends AuthState {}
+
+/// Account deletion failed
+class AuthAccountDeleteError extends AuthState {
+  final String message;
+
+  const AuthAccountDeleteError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
 /// Profile update failed
 class AuthProfileUpdateError extends AuthState {
   final String message;

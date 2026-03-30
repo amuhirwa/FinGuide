@@ -4,10 +4,13 @@
  * 3-page swipeable introduction explaining key features
  */
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -24,6 +27,7 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  bool _termsAccepted = false;
 
   final List<OnboardingItem> _items = [
     OnboardingItem(
@@ -74,9 +78,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _completeOnboarding() async {
+    if (!_termsAccepted) return;
     await getIt<AuthLocalDataSource>().setOnboardingSeen();
     if (mounted) {
       context.go(Routes.login);
+    }
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
@@ -93,29 +105,34 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            // Skip Button
-            Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: TextButton(
-                  onPressed: _completeOnboarding,
-                  child: Text(
-                    'Skip',
-                    style: AppTypography.labelLarge.copyWith(
-                      color: AppColors.textSecondary,
+            // Skip Button — jumps to last page where terms must be accepted
+            if (_currentPage < _items.length - 1)
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: TextButton(
+                    onPressed: () => _pageController.animateToPage(
+                      _items.length - 1,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOut,
+                    ),
+                    child: Text(
+                      'Skip',
+                      style: AppTypography.labelLarge.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
+              )
+            else
+              const SizedBox(height: AppSpacing.md + 48),
 
             // Page View
             Expanded(
@@ -149,11 +166,25 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
                   const SizedBox(height: AppSpacing.xl),
 
+                  // Terms acceptance — shown only on last page
+                  if (_currentPage == _items.length - 1) ...[
+                    _TermsCheckbox(
+                      accepted: _termsAccepted,
+                      onChanged: (val) =>
+                          setState(() => _termsAccepted = val ?? false),
+                      onPrivacyTap: () => _openUrl(LegalUrls.privacyPolicy),
+                      onEulaTap: () => _openUrl(LegalUrls.eula),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
+
                   // Next/Get Started Button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _nextPage,
+                      onPressed: _currentPage == _items.length - 1
+                          ? (_termsAccepted ? _nextPage : null)
+                          : _nextPage,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 18),
                       ),
@@ -189,6 +220,65 @@ class OnboardingItem {
     required this.description,
     required this.gradient,
   });
+}
+
+/// Terms & conditions acceptance checkbox with tappable policy links
+class _TermsCheckbox extends StatelessWidget {
+  final bool accepted;
+  final ValueChanged<bool?> onChanged;
+  final VoidCallback onPrivacyTap;
+  final VoidCallback onEulaTap;
+
+  const _TermsCheckbox({
+    required this.accepted,
+    required this.onChanged,
+    required this.onPrivacyTap,
+    required this.onEulaTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Checkbox(
+          value: accepted,
+          onChanged: onChanged,
+          activeColor: AppColors.primary,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              children: [
+                const TextSpan(text: 'I have read and agree to the '),
+                TextSpan(
+                  text: 'Privacy Policy',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.primary,
+                    decoration: TextDecoration.underline,
+                  ),
+                  recognizer: TapGestureRecognizer()..onTap = onPrivacyTap,
+                ),
+                const TextSpan(text: ' and '),
+                TextSpan(
+                  text: 'EULA',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.primary,
+                    decoration: TextDecoration.underline,
+                  ),
+                  recognizer: TapGestureRecognizer()..onTap = onEulaTap,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 /// Individual onboarding page item widget

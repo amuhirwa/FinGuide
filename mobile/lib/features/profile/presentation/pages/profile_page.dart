@@ -8,6 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/theme_cubit.dart';
@@ -21,8 +24,31 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthAccountDeleteError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete account: ${state.message}'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      },
+      child: BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
+        if (state is AuthAccountDeleting) {
+          return const Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Deleting your account…'),
+              ],
+            ),
+          );
+        }
         // Extract user from any state that carries one
         User? user;
         if (state is AuthAuthenticated) {
@@ -251,6 +277,13 @@ class ProfilePage extends StatelessWidget {
                   onTap: () => _showClearDataDialog(context),
                   textColor: AppColors.warning,
                 ),
+                _SettingsTile(
+                  icon: Icons.delete_forever_outlined,
+                  title: 'Delete My Data',
+                  subtitle: 'Permanently erase your account and all data',
+                  onTap: () => _showDeleteAccountDialog(context),
+                  textColor: AppColors.error,
+                ),
                 const SizedBox(height: AppSpacing.xl),
 
                 // About Section
@@ -276,16 +309,12 @@ class ProfilePage extends StatelessWidget {
                 _SettingsTile(
                   icon: Icons.privacy_tip_outlined,
                   title: 'Privacy Policy',
-                  onTap: () {
-                    // TODO: Navigate to privacy policy
-                  },
+                  onTap: () => _openUrl(LegalUrls.privacyPolicy),
                 ),
                 _SettingsTile(
                   icon: Icons.description_outlined,
                   title: 'Terms of Service',
-                  onTap: () {
-                    // TODO: Navigate to terms
-                  },
+                  onTap: () => _openUrl(LegalUrls.eula),
                 ),
                 const SizedBox(height: AppSpacing.xl),
 
@@ -314,6 +343,7 @@ class ProfilePage extends StatelessWidget {
           ),
         );
       },
+    ),
     );
   }
 
@@ -349,6 +379,59 @@ class ProfilePage extends StatelessWidget {
               foregroundColor: Colors.white,
             ),
             child: Text('Logout', style: AppTypography.labelLarge),
+          ),
+        ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          'Delete My Data',
+          style: AppTypography.titleLarge.copyWith(color: AppColors.error),
+        ),
+        content: Text(
+          'This will permanently delete your account, all transactions, goals, investments, and AI insights. '
+          'This action cannot be undone.\n\n'
+          'Your data will be removed from our servers within 30 days, '
+          'in accordance with our Privacy Policy.',
+          style: AppTypography.bodyLarge,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Cancel',
+              style: AppTypography.labelLarge.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context
+                  .read<AuthBloc>()
+                  .add(AuthDeleteAccountRequested());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Delete Everything', style: AppTypography.labelLarge),
           ),
         ],
         shape: RoundedRectangleBorder(

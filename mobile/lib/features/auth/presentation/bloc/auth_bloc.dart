@@ -77,6 +77,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthOtpResendRequested>(_onOtpResendRequested);
     on<AuthLogoutRequested>(_onLogoutRequested);
     on<AuthProfileUpdateRequested>(_onProfileUpdateRequested);
+    on<AuthDeleteAccountRequested>(_onDeleteAccountRequested);
   }
 
   // ── Handlers ─────────────────────────────────────────────────────────────
@@ -234,6 +235,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // rendering without an infinite spinner.
         emit(AuthProfileUpdated(user));
         emit(AuthAuthenticated(user));
+      },
+    );
+  }
+
+  /// Handle account deletion
+  Future<void> _onDeleteAccountRequested(
+    AuthDeleteAccountRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthAccountDeleting());
+    final result = await _authRepository.deleteAccount();
+    result.fold(
+      (failure) => emit(AuthAccountDeleteError(failure.message)),
+      (_) {
+        _clearPending();
+        emit(AuthUnauthenticated());
       },
     );
   }

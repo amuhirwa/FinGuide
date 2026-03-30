@@ -42,6 +42,9 @@ abstract class AuthRemoteDataSource {
 
   /// Update user profile
   Future<UserModel> updateProfile(Map<String, dynamic> data);
+
+  /// Permanently delete the current user's account and all data
+  Future<void> deleteAccount();
 }
 
 /// Auth remote data source implementation
@@ -129,6 +132,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       final response = await _apiClient.updateProfile(data);
       return UserModel.fromJson(response);
+    } catch (e) {
+      throw ServerException(message: _extractErrorMessage(e));
+    }
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    try {
+      await _apiClient.deleteAccount();
     } catch (e) {
       throw ServerException(message: _extractErrorMessage(e));
     }

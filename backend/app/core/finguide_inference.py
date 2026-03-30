@@ -77,9 +77,9 @@ class FinGuidePredictor:
             lambda x: 1 if x in [1, 2, 28, 29, 30, 15] else 0
         )
         
-        # 3. Essential Logic
-        essential_cats = ['Groceries', 'Utilities', 'Transport', 'Rent']
-        df_daily['Is_Essential'] = df_daily['category'].apply(
+        # 3. Essential Logic — matches categories in finguide.db / training notebook
+        essential_cats = {'UTILITIES', 'AIRTIME_DATA'}
+        df_daily['Is_Essential'] = df_daily['category'].str.upper().apply(
             lambda x: 1 if x in essential_cats else 0
         )
         

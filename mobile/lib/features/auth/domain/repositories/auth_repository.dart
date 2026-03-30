@@ -48,4 +48,7 @@ abstract class AuthRepository {
 
   /// Update user profile
   Future<Either<Failure, User>> updateProfile(Map<String, dynamic> data);
+
+  /// Permanently delete the current user's account and all associated data
+  Future<Either<Failure, void>> deleteAccount();
 }

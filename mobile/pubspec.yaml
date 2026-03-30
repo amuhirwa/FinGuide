@@ -51,6 +51,9 @@ dependencies:
   # Local Notifications (nudges)
   flutter_local_notifications: ^18.0.0
 
+  # External Links
+  url_launcher: ^6.3.0
+
   # File Sharing & Export
   share_plus: ^10.1.0
   path_provider: ^2.1.5

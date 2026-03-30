@@ -64,6 +64,9 @@ class AuthOtpResendRequested extends AuthEvent {}
 /// Logout request
 class AuthLogoutRequested extends AuthEvent {}
 
+/// Permanently delete the current user's account and all data
+class AuthDeleteAccountRequested extends AuthEvent {}
+
 /// Update profile fields (fullName, ubudeheCategory, incomeFrequency)
 class AuthProfileUpdateRequested extends AuthEvent {
   final Map<String, dynamic> data;

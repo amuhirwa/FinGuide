@@ -61,6 +61,10 @@ class Settings(BaseSettings):
 
     OTP_EXPIRE_MINUTES: int = 5  # OTP validity window in minutes
 
+    # Dev-only: set to a fixed code (e.g. "000000") to bypass real OTP verification.
+    # Ignored when ENVIRONMENT=production.
+    DEV_OTP_BYPASS: str = ""
+
     # Environment
     ENVIRONMENT: str = "development"
     
