@@ -201,9 +201,19 @@ class GoalsBloc extends Bloc<GoalsEvent, GoalsState> {
       note: event.note,
     );
 
-    result.fold(
-      (error) => emit(GoalsError(error)),
-      (goal) => emit(ContributionSuccess(goal)),
+    await result.fold(
+      (error) async => emit(GoalsError(error)),
+      (goal) async {
+        final goalsResult = await _repository.getGoals();
+        await goalsResult.fold(
+          (error) async => emit(GoalsError(error)),
+          (goals) async {
+            final piggyResult = await _repository.getPiggybank();
+            final piggy = piggyResult.fold((l) => null, (r) => r);
+            emit(GoalsLoaded(goals, piggybank: piggy));
+          },
+        );
+      },
     );
   }
 }
