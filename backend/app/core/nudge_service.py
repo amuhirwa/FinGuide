@@ -379,6 +379,169 @@ Generate 1-2 nudges appropriate for this trigger. Return a JSON array like:
     return created
 
 
+# ─── Context-payload nudge generation (privacy-first) ────────────────────────
+
+def generate_nudges_from_context(
+    user_id: int,
+    db: Session,
+    pre_computed_context: dict,
+    trigger_type: str = "manual",
+    income_amount: Optional[float] = None,
+    income_source: Optional[str] = None,
+) -> list[Recommendation]:
+    """
+    Like generate_nudges() but accepts a pre-computed financial context dict
+    from the mobile client instead of querying the backend DB for transactions.
+
+    The mobile device computes all aggregates (income totals, expense
+    breakdowns, estimated balance) locally and sends only the summary.
+    Raw transaction data never reaches the backend.
+
+    User nudge preferences (interaction history) are still read from the
+    backend DB — they don't contain transaction details.
+    """
+    if not settings.ANTHROPIC_API_KEY:
+        logger.warning("ANTHROPIC_API_KEY not set — skipping AI nudge generation")
+        return []
+
+    # Deactivate stale nudges of the same trigger type
+    stale_cutoff = datetime.now() - timedelta(hours=24)
+    db.query(Recommendation).filter(
+        Recommendation.user_id == user_id,
+        Recommendation.trigger_type == trigger_type,
+        Recommendation.is_dismissed == False,
+        Recommendation.created_at <= stale_cutoff,
+    ).update({"is_active": False})
+    db.commit()
+
+    # Use the pre-computed context directly — no DB transaction queries
+    context = pre_computed_context
+
+    # Preferences are still learned from past interactions (server-side only)
+    preferences = _analyze_nudge_preferences(user_id, db)
+
+    # Build trigger description
+    if trigger_type == "income":
+        if income_amount:
+            trigger_desc = (
+                f"User just received income of RWF {income_amount:,.0f}"
+                + (f" from {income_source}" if income_source else "")
+            )
+        else:
+            trigger_desc = "User just received income" + (
+                f" from {income_source}" if income_source else ""
+            )
+    elif trigger_type == "daily":
+        trigger_desc = "Daily savings quota check — remind user of today's savings progress"
+    elif trigger_type == "weekly":
+        trigger_desc = "Weekly financial review — broader savings + investment overview"
+    else:
+        trigger_desc = "User opened the app — show relevant personalized recommendations"
+
+    system_prompt = """You are FinGuide, a friendly and smart financial advisor built for Rwandan youth with irregular income.
+Your job is to generate short, personalized nudge notifications to encourage saving and investing.
+
+Guidelines:
+- Write in clear, conversational English. You may sprinkle in Kinyarwanda words for warmth (e.g. "Murakoze", "Muraho", "Ego").
+- Keep each message under 120 characters so it fits on a phone notification.
+- Be specific — use ONLY real amounts and dates taken directly from the trigger description or financial context. NEVER invent amounts.
+- For income triggers: the EXACT amount received is in the trigger description — use it. Do not use context averages.
+- Adapt your tone to what has worked for this user (their preference history is provided).
+- Never be preachy or guilt-tripping. Be encouraging and action-oriented.
+- For income triggers: create urgency — this is the perfect moment to save/invest NOW.
+- For daily/weekly: celebrate progress if any, gently nudge if behind.
+- Be time-aware: use the current date in the context to acknowledge timing (e.g. "end of month", "payday").
+- Return ONLY a valid JSON array, no extra text."""
+
+    user_prompt = f"""Today's date: {datetime.now().strftime('%A, %B %d, %Y')}
+Trigger: {trigger_desc}
+
+User financial context (pre-computed on device):
+{json.dumps(context, indent=2)}
+
+User nudge preference history (what has worked / not worked):
+{json.dumps(preferences, indent=2)}
+
+Generate 1-2 nudges appropriate for this trigger. Return a JSON array like:
+[
+  {{
+    "title": "Short title (max 50 chars)",
+    "message": "Notification body (max 120 chars)",
+    "recommendation_type": "savings" | "investment" | "spending",
+    "action_type": "save" | "invest" | "reduce_spending" | "view_goals",
+    "action_amount": <number or null>,
+    "urgency": "low" | "normal" | "high",
+    "reason": "Brief internal reason (not shown to user)",
+    "tone": "friendly" | "motivational" | "analytical" | "urgent"
+  }}
+]"""
+
+    try:
+        client = _get_client()
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=512,
+            messages=[{"role": "user", "content": user_prompt}],
+            system=system_prompt,
+        )
+
+        raw = response.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        nudge_data = json.loads(raw)
+
+    except json.JSONDecodeError as e:
+        logger.error("Failed to parse Claude nudge JSON: %s", e)
+        return []
+    except anthropic.APIError as e:
+        logger.error("Anthropic API error during nudge generation: %s", e)
+        return []
+    except Exception as e:
+        logger.error("Unexpected error during nudge generation: %s", e)
+        return []
+
+    created = []
+    valid_until = datetime.now() + timedelta(hours=48)
+
+    for item in nudge_data[:2]:
+        try:
+            rec = Recommendation(
+                user_id=user_id,
+                title=str(item.get("title", ""))[:100],
+                message=str(item.get("message", ""))[:500],
+                recommendation_type=item.get("recommendation_type", "savings"),
+                action_type=item.get("action_type", "save"),
+                action_amount=item.get("action_amount"),
+                urgency=item.get("urgency", "normal"),
+                reason=item.get("reason", "")[:255],
+                trigger_type=trigger_type,
+                nudge_metadata={
+                    "tone": item.get("tone", "friendly"),
+                    "generated_at": datetime.now().isoformat(),
+                    "income_trigger_amount": income_amount,
+                    "context_source": "mobile_device",
+                },
+                valid_until=valid_until,
+                is_active=True,
+            )
+            db.add(rec)
+            created.append(rec)
+        except Exception as e:
+            logger.error("Failed to save nudge record: %s", e)
+
+    db.commit()
+    for r in created:
+        db.refresh(r)
+
+    logger.info(
+        "Generated %d nudge(s) for user %d (trigger=%s, context_source=mobile)",
+        len(created), user_id, trigger_type,
+    )
+    return created
+
+
 # ─── Finance Advisor Chat ─────────────────────────────────────────────────────
 
 def chat_with_advisor(

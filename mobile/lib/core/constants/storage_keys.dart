@@ -31,4 +31,8 @@ class StorageKeys {
 
   // Background SMS queue (filled by background isolate, drained on foreground)
   static const String pendingBackgroundSms = 'pending_background_sms';
+
+  // One-time migration: set to true after backend transactions are fetched
+  // and stored locally. Never reset after the first successful migration.
+  static const String dataMigrationDone = 'data_migration_done';
 }

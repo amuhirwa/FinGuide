@@ -679,6 +679,66 @@ async def generate_nudges(
     return [RecommendationResponse.model_validate(r) for r in created]
 
 
+@router.post("/generate-nudges-v2", response_model=List[RecommendationResponse])
+async def generate_nudges_v2(
+    request: dict,
+    current_user: TokenPayload = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Privacy-first nudge generation (v2).
+
+    The mobile client sends a pre-computed financial context (income totals,
+    expense breakdowns, goals, etc.) instead of relying on the backend to
+    query its transaction DB.  Raw transaction data is never sent or stored.
+    """
+    user_id = int(current_user.sub)
+    created = nudge_service.generate_nudges_from_context(
+        user_id, db,
+        pre_computed_context=request.get("context", {}),
+        trigger_type=request.get("trigger_type", "manual"),
+        income_amount=request.get("income_amount"),
+        income_source=request.get("income_source"),
+    )
+    return [RecommendationResponse.model_validate(r) for r in created]
+
+
+@router.post("/forecast-7day")
+async def post_7day_forecast(
+    request: dict,
+    current_user: TokenPayload = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Privacy-first 7-day forecast (v2, POST).
+
+    The mobile client sends its own transaction records.  The backend runs the
+    BiLSTM model on the provided data and returns the forecast without storing
+    any transaction data.
+
+    Request body: {"transactions": [{date, amount, category, type}, ...]}
+    """
+    transaction_dicts = request.get("transactions", [])
+
+    if len(transaction_dicts) < 15:
+        return {
+            "status": "insufficient_data",
+            "message": f"Need at least 15 days of transactions. You have {len(transaction_dicts)}.",
+            "forecast": None,
+        }
+
+    try:
+        predictor = get_predictor()
+        result = predictor.predict_next_week(transaction_dicts)
+        return result
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Prediction failed: {str(e)}",
+            "forecast": None,
+        }
+
+
 @router.patch("/recommendations/{rec_id}", response_model=RecommendationResponse)
 async def update_recommendation(
     rec_id: int,

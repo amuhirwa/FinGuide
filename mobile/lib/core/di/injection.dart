@@ -12,6 +12,7 @@ import 'package:telephony/telephony.dart';
 
 import '../network/api_client.dart';
 import '../network/api_interceptor.dart';
+import '../database/app_database.dart';
 import '../services/nudge_notification_service.dart';
 import '../services/sms_service.dart';
 import '../services/report_service.dart';
@@ -27,6 +28,8 @@ import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 
 // Transactions
+import '../../features/transactions/data/datasources/transaction_local_datasource.dart';
+import '../../features/transactions/data/datasources/transaction_migration_datasource.dart';
 import '../../features/transactions/data/repositories/transaction_repository.dart';
 import '../../features/transactions/presentation/bloc/transaction_bloc.dart';
 
@@ -83,6 +86,21 @@ Future<void> configureDependencies() async {
 
   getIt.registerLazySingleton<ApiClient>(() => ApiClient(getIt<Dio>()));
 
+  // ==================== Local Database ====================
+  getIt.registerSingleton<AppDatabase>(AppDatabase());
+
+  getIt.registerLazySingleton<TransactionLocalDataSource>(
+    () => TransactionLocalDataSource(getIt<AppDatabase>()),
+  );
+
+  getIt.registerLazySingleton<TransactionMigrationDataSource>(
+    () => TransactionMigrationDataSource(
+      apiClient: getIt<ApiClient>(),
+      localDs: getIt<TransactionLocalDataSource>(),
+      prefs: getIt<SharedPreferences>(),
+    ),
+  );
+
   // ==================== Auth Feature ====================
   // Data Sources
   getIt.registerLazySingleton<AuthLocalDataSource>(
@@ -126,7 +144,7 @@ Future<void> configureDependencies() async {
 
   // ==================== Transactions Feature ====================
   getIt.registerLazySingleton<TransactionRepository>(
-    () => TransactionRepository(getIt<ApiClient>()),
+    () => TransactionRepository(getIt<TransactionLocalDataSource>()),
   );
 
   getIt.registerFactory<TransactionBloc>(
@@ -144,7 +162,10 @@ Future<void> configureDependencies() async {
 
   // ==================== Insights Feature ====================
   getIt.registerLazySingleton<InsightsRepository>(
-    () => InsightsRepository(getIt<ApiClient>()),
+    () => InsightsRepository(
+      getIt<ApiClient>(),
+      getIt<TransactionLocalDataSource>(),
+    ),
   );
 
   getIt.registerFactory<InsightsBloc>(
@@ -196,6 +217,7 @@ Future<void> configureDependencies() async {
       apiClient: getIt<ApiClient>(),
       prefs: getIt<SharedPreferences>(),
       nudgeService: getIt<NudgeNotificationService>(),
+      localDataSource: getIt<TransactionLocalDataSource>(),
     ),
   );
 
@@ -210,7 +232,14 @@ Future<void> configureDependencies() async {
   final smsService = getIt<SmsService>();
   if (smsService.hasConsented) {
     smsService.startListening();
-    // Import any MoMo SMS that arrived since the last time the app was open
+    // Parse and store any MoMo SMS that arrived since the last app open
     smsService.syncNewMessages();
+  }
+
+  // Run the one-time backend→local migration in the background.
+  // Safe to call every launch; exits immediately if already done.
+  final migration = getIt<TransactionMigrationDataSource>();
+  if (!migration.isMigrationDone) {
+    migration.migrateFromBackend();
   }
 }

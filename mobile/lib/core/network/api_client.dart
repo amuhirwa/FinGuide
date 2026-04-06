@@ -304,6 +304,43 @@ class ApiClient {
     return response.data as List<dynamic>;
   }
 
+  /// Privacy-first nudge generation: mobile sends pre-computed context.
+  /// No raw transaction data is stored on the backend.
+  Future<List<dynamic>> generateNudgesWithContext({
+    required String triggerType,
+    double? incomeAmount,
+    String? incomeSource,
+    required Map<String, dynamic> context,
+  }) async {
+    final response = await _dio.post(
+      '/insights/generate-nudges-v2',
+      data: {
+        'trigger_type': triggerType,
+        if (incomeAmount != null) 'income_amount': incomeAmount,
+        if (incomeSource != null) 'income_source': incomeSource,
+        'context': context,
+      },
+    );
+    return response.data as List<dynamic>;
+  }
+
+  /// Privacy-first 7-day forecast: mobile sends its own transaction records.
+  /// The backend runs the BiLSTM model and returns the forecast without
+  /// persisting any transaction data.
+  Future<Map<String, dynamic>> get7DayForecastWithData({
+    required List<Map<String, dynamic>> transactions,
+    Map<String, dynamic>? context,
+  }) async {
+    final response = await _dio.post(
+      '/insights/forecast-7day',
+      data: {
+        'transactions': transactions,
+        if (context != null) 'context': context,
+      },
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   /// Simulate investment
   Future<Map<String, dynamic>> simulateInvestment({
     required String investmentType,

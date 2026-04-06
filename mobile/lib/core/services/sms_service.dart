@@ -3,16 +3,17 @@
  * ===========
  * Reads existing MoMo SMS messages and listens for new ones in real-time.
  *
- * Uses the `telephony` package for SMS access on Android.
- * Messages are filtered to MoMo-related senders and parsed via the backend.
+ * All SMS parsing is done on-device via MomoParser. Raw SMS bodies are
+ * stored in the local Drift DB and never sent to the backend.
  *
- * Income detection: when new income SMS arrives, the backend generates an
- * AI nudge (via nudge_service.py). The mobile side then fetches and displays
- * that nudge as a local notification.
+ * Income detection: when new income SMS arrives, the device computes the
+ * user's financial context from the local DB and requests AI nudges from
+ * the backend (context payload only — no raw transactions).
  */
 
 import 'dart:async';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:telephony/telephony.dart';
@@ -21,17 +22,19 @@ import 'package:logger/logger.dart';
 
 import '../constants/storage_keys.dart';
 import '../network/api_client.dart';
+import '../database/app_database.dart';
+import 'momo_parser.dart';
 import 'nudge_notification_service.dart';
+import '../../features/transactions/data/datasources/transaction_local_datasource.dart';
 
 /// Known MoMo sender addresses / keywords used to filter SMS.
-/// MTN MoMo Rwanda sends from short-codes or addresses containing these strings.
 const List<String> _momoSenders = [
   'M-Money',
   'MoMo',
   'MTN',
   'MobileMoney',
   'momo',
-  '8199', // Common MTN MoMo short code in Rwanda
+  '8199',
   '162',
   '164',
   '165',
@@ -46,7 +49,6 @@ const List<String> _momoKeywords = [
   'payment of',
   'transaction of',
   'FT Id',
-  // MoKash (savings account) messages
   'Mokash',
   'from your Mokash account',
   'to your Mokash account',
@@ -61,8 +63,7 @@ const List<String> _incomeKeywords = [
 ];
 
 /// Extract the first RWF amount from an SMS string.
-/// Duplicated here at the top level because [SmsService._extractAmount] is an
-/// instance method and is not reachable from the background isolate.
+/// Top-level so it is reachable from the background isolate.
 double? _extractAmountBackground(String body) {
   final match =
       RegExp(r'([\d,]+)\s*RWF', caseSensitive: false).firstMatch(body);
@@ -70,26 +71,19 @@ double? _extractAmountBackground(String body) {
   return double.tryParse(match.group(1)!.replaceAll(',', ''));
 }
 
-/// Top-level background SMS handler required by the `telephony` package when
-/// [listenInBackground] is `true`.
+/// Top-level background SMS handler required by the `telephony` package.
 ///
-/// Android wakes this isolate (even when the app is killed) for every
-/// incoming SMS.  We:
-///   1. Initialize Flutter bindings so platform channels work.
-///   2. Persist the body to SharedPreferences so the foreground delta-sync
-///      can forward it to the backend for AI nudge generation.
-///   3. If the message is a significant MoMo transaction (≥ 40 000 RWF),
-///      fire an **immediate** local notification without contacting the
-///      backend.  The AI-personalised nudge is shown on the next resume.
+/// The background isolate cannot use Drift (FFI-backed SQLite is not
+/// isolate-safe). Instead we queue the SMS body to SharedPreferences and
+/// parse it on the main isolate when the app resumes.
 @pragma('vm:entry-point')
 Future<void> backgroundSmsHandler(SmsMessage message) async {
   final body = message.body ?? '';
   if (body.isEmpty) return;
 
-  // Initialize Flutter engine bindings so platform channels are available.
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Persist to queue for backend sync on next foreground.
+  // 1. Queue for local parsing on next foreground resume.
   final prefs = await SharedPreferences.getInstance();
   final pending = prefs.getStringList(StorageKeys.pendingBackgroundSms) ?? [];
   if (!pending.contains(body)) {
@@ -97,7 +91,7 @@ Future<void> backgroundSmsHandler(SmsMessage message) async {
     await prefs.setStringList(StorageKeys.pendingBackgroundSms, pending);
   }
 
-  // 2. Is this a MoMo message worth notifying on?
+  // 2. Is this a MoMo message worth notifying on immediately?
   final bodyLower = body.toLowerCase();
   final addressLower = (message.address ?? '').toLowerCase();
   final isMomo =
@@ -106,14 +100,13 @@ Future<void> backgroundSmsHandler(SmsMessage message) async {
   if (!isMomo) return;
 
   final amount = _extractAmountBackground(body);
-  // Only notify immediately for meaningful amounts (40 000 RWF baseline).
   if (amount == null || amount < 40000) return;
 
   final isIncome = _incomeKeywords.any(
     (k) => bodyLower.contains(k.toLowerCase()),
   );
 
-  // 3. Show immediate local notification (no backend call).
+  // 3. Show an immediate local notification (no backend / DB call).
   final plugin = FlutterLocalNotificationsPlugin();
   await plugin.initialize(
     const InitializationSettings(
@@ -159,18 +152,20 @@ Future<void> backgroundSmsHandler(SmsMessage message) async {
 }
 
 /// Service responsible for reading & listening to MoMo SMS messages.
+///
+/// SMS parsing is fully on-device. Parsed transactions are written to the
+/// local Drift DB. The backend is only contacted for AI nudge generation.
 class SmsService {
   final Telephony _telephony;
   final ApiClient _apiClient;
   final SharedPreferences _prefs;
   final NudgeNotificationService _nudgeService;
+  final TransactionLocalDataSource _localDs;
   final Logger _log = Logger();
 
-  /// Stream controller that broadcasts newly received MoMo messages.
   final StreamController<SmsMessage> _incomingController =
       StreamController<SmsMessage>.broadcast();
 
-  /// Public stream of incoming MoMo messages.
   Stream<SmsMessage> get onMomoReceived => _incomingController.stream;
 
   SmsService({
@@ -178,49 +173,41 @@ class SmsService {
     required ApiClient apiClient,
     required SharedPreferences prefs,
     required NudgeNotificationService nudgeService,
+    required TransactionLocalDataSource localDataSource,
   })  : _telephony = telephony,
         _apiClient = apiClient,
         _prefs = prefs,
-        _nudgeService = nudgeService;
+        _nudgeService = nudgeService,
+        _localDs = localDataSource;
 
   // ─── Permission helpers ────────────────────────────────────────────
 
-  /// Request SMS permissions from the OS.  Returns `true` if granted.
   Future<bool> requestPermission() async {
-    final granted = await _telephony.requestPhoneAndSmsPermissions ?? false;
-    return granted;
+    return await _telephony.requestPhoneAndSmsPermissions ?? false;
   }
 
-  /// Check whether SMS permissions have already been granted.
   Future<bool> get hasPermission async {
-    final granted = await _telephony.requestPhoneAndSmsPermissions ?? false;
-    return granted;
+    return await _telephony.requestPhoneAndSmsPermissions ?? false;
   }
 
   // ─── Consent persistence ──────────────────────────────────────────
 
-  /// Whether the user has already given SMS consent.
   bool get hasConsented => _prefs.getBool(StorageKeys.smsConsentGiven) ?? false;
 
-  /// Persist the user's consent choice.
   Future<void> setConsent(bool value) async {
     await _prefs.setBool(StorageKeys.smsConsentGiven, value);
   }
 
   // ─── Read historical SMS ─────────────────────────────────────────
 
-  /// Read all existing MoMo SMS from the device inbox.
-  ///
-  /// Returns a list of raw message bodies that matched MoMo patterns.
   Future<List<String>> readHistoricalMessages() async {
     try {
-      final List<SmsMessage> messages = await _telephony.getInboxSms(
+      final messages = await _telephony.getInboxSms(
         columns: [SmsColumn.ADDRESS, SmsColumn.BODY, SmsColumn.DATE],
         sortOrder: [OrderBy(SmsColumn.DATE, sort: Sort.DESC)],
       );
 
       final momoMessages = messages.where(_isMomoMessage).toList();
-
       _log.i('Found ${momoMessages.length} MoMo messages out of '
           '${messages.length} total SMS');
 
@@ -234,67 +221,70 @@ class SmsService {
     }
   }
 
-  /// Read historical MoMo messages and send them to the backend for parsing.
-  /// Returns the number of transactions successfully parsed.
+  /// Parse all historical MoMo SMS and store them locally.
+  /// Returns the number of new transactions saved to the local DB.
   Future<int> importHistoricalMessages() async {
     final bodies = await readHistoricalMessages();
     if (bodies.isEmpty) return 0;
 
     try {
-      int totalParsed = 0;
+      final userPhoneSuffix = _userPhoneSuffix;
+      final recentWithdrawals = await _localDs.getRecentMokashWithdrawals();
+      int totalInserted = 0;
       bool hasIncome = false;
 
-      // Send in batches of 50 to avoid huge payloads
       for (var i = 0; i < bodies.length; i += 50) {
         final batch = bodies.sublist(
           i,
-          i + 50 > bodies.length ? bodies.length : i + 50,
+          (i + 50) > bodies.length ? bodies.length : i + 50,
         );
-        final result = await _apiClient.parseSmsMessages(batch);
-        final parsed = result['parsed_count'] as int? ?? batch.length;
-        totalParsed += parsed;
 
-        // Check if any of the batch contained income SMS
-        if (!hasIncome) {
-          hasIncome = batch.any(_isIncomeSms);
+        final parsed = MomoParser.parseBatch(
+          batch,
+          userPhoneSuffix: userPhoneSuffix,
+          recentWithdrawals: recentWithdrawals,
+        );
+
+        for (final tx in parsed) {
+          // Apply saved counterparty mapping (user-defined category override)
+          final companion = await _applyCounterpartyMapping(
+            _parsedToCompanion(tx),
+            tx.partyPhone ?? tx.partyName,
+          );
+          if (await _localDs.insertTransaction(companion)) {
+            totalInserted++;
+            if (tx.transactionType == 'income') hasIncome = true;
+          }
         }
       }
 
       await _prefs.setBool(StorageKeys.smsInitialImportDone, true);
-      _log.i('Imported $totalParsed transactions from ${bodies.length} SMS');
+      _log.i(
+          'Imported $totalInserted new transactions from ${bodies.length} SMS');
 
-      // Nudges are triggered by the backend background task on income parse.
-      // Fetch and display any new income nudge after a short delay.
       if (hasIncome) {
         _showPendingIncomeNudge();
       }
 
-      return totalParsed;
+      return totalInserted;
     } catch (e) {
-      _log.e('Failed to import SMS to backend', error: e);
+      _log.e('Failed to import SMS', error: e);
       return 0;
     }
   }
 
-  // ─── Delta sync (new since last open) ──────────────────────────
+  // ─── Delta sync ───────────────────────────────────────────────────
 
-  /// Import only MoMo SMS that arrived after the last successful sync.
-  ///
-  /// Also drains any messages that were captured by [backgroundSmsHandler]
-  /// while the app was not in the foreground.
-  ///
-  /// Call this every time the app is foregrounded / opened so the user
-  /// always sees up-to-date transactions without re-scanning all history.
+  /// Parse and store any MoMo SMS that arrived since the last sync.
   Future<int> syncNewMessages() async {
-    // Process any SMS queued by the background isolate handler first.
     await _drainBackgroundQueue();
 
-    final lastTimestamp = _prefs.getInt(StorageKeys.lastSmsSyncTimestamp) ?? 0;
+    final lastTimestamp =
+        _prefs.getInt(StorageKeys.lastSmsSyncTimestamp) ?? 0;
     final now = DateTime.now().millisecondsSinceEpoch;
 
     try {
-      // Fetch only SMS newer than the stored timestamp
-      final List<SmsMessage> messages = await _telephony.getInboxSms(
+      final messages = await _telephony.getInboxSms(
         columns: [SmsColumn.ADDRESS, SmsColumn.BODY, SmsColumn.DATE],
         filter: SmsFilter.where(SmsColumn.DATE)
             .greaterThan(lastTimestamp.toString()),
@@ -312,86 +302,86 @@ class SmsService {
         return 0;
       }
 
-      _log.i('Delta sync: found ${newMomo.length} new MoMo SMS since '
-          '${DateTime.fromMillisecondsSinceEpoch(lastTimestamp)}');
+      _log.i('Delta sync: ${newMomo.length} new MoMo SMS');
 
-      bool hasIncome = newMomo.any(_isIncomeSms);
-      int totalParsed = 0;
+      final userPhoneSuffix = _userPhoneSuffix;
+      final recentWithdrawals = await _localDs.getRecentMokashWithdrawals();
+      final parsed = MomoParser.parseBatch(
+        newMomo,
+        userPhoneSuffix: userPhoneSuffix,
+        recentWithdrawals: recentWithdrawals,
+      );
 
-      for (var i = 0; i < newMomo.length; i += 50) {
-        final batch = newMomo.sublist(
-          i,
-          (i + 50) > newMomo.length ? newMomo.length : i + 50,
+      int totalInserted = 0;
+      double incomeTotal = 0;
+      ParsedTransaction? latestIncome;
+
+      for (final tx in parsed) {
+        final companion = await _applyCounterpartyMapping(
+          _parsedToCompanion(tx),
+          tx.partyPhone ?? tx.partyName,
         );
-        final result = await _apiClient.parseSmsMessages(batch);
-        totalParsed += result['parsed_count'] as int? ?? batch.length;
+        if (await _localDs.insertTransaction(companion)) {
+          totalInserted++;
+          if (tx.transactionType == 'income') {
+            incomeTotal += tx.amount;
+            latestIncome = tx;
+          }
+        }
       }
 
       await _prefs.setInt(StorageKeys.lastSmsSyncTimestamp, now);
-      _log.i('Delta sync complete: $totalParsed new transactions imported');
+      _log.i('Delta sync complete: $totalInserted new transactions');
 
-      // Show income nudge notification if significant income was detected
-      if (hasIncome) {
-        final threshold = await _getSignificantThreshold();
-        final bigIncome = newMomo.any((sms) {
-          final amt = _extractAmount(sms);
-          return _isIncomeSms(sms) && amt != null && amt >= threshold;
-        });
-        if (bigIncome) {
-          _showSignificantIncomeNudge(
-            newMomo
-                .where(_isIncomeSms)
-                .map(_extractAmount)
-                .whereType<double>()
-                .fold(0.0, (a, b) => a + b),
-          );
+      if (latestIncome != null) {
+        final threshold = 40000.0;
+        if (incomeTotal >= threshold) {
+          _showSignificantIncomeNudge(incomeTotal,
+              source: latestIncome.partyName);
         } else {
           _showPendingIncomeNudge();
         }
       }
 
-      return totalParsed;
+      return totalInserted;
     } catch (e) {
       _log.e('Delta SMS sync failed', error: e);
       return 0;
     }
   }
 
-  // ─── Background queue drain ─────────────────────────────────────────
+  // ─── Background queue drain ──────────────────────────────────────
 
-  /// Send any SMS bodies that were queued by [backgroundSmsHandler] to the
-  /// backend and clear the queue.
   Future<void> _drainBackgroundQueue() async {
     final pending =
         _prefs.getStringList(StorageKeys.pendingBackgroundSms) ?? [];
     if (pending.isEmpty) return;
 
-    // Clear immediately so a crash doesn't reprocess stale entries.
     await _prefs.remove(StorageKeys.pendingBackgroundSms);
     _log.i('Draining ${pending.length} background-queued SMS');
 
     try {
-      for (var i = 0; i < pending.length; i += 50) {
-        final batch = pending.sublist(
-          i,
-          (i + 50) > pending.length ? pending.length : i + 50,
+      final userPhoneSuffix = _userPhoneSuffix;
+      final recentWithdrawals = await _localDs.getRecentMokashWithdrawals();
+      final parsed = MomoParser.parseBatch(
+        pending,
+        userPhoneSuffix: userPhoneSuffix,
+        recentWithdrawals: recentWithdrawals,
+      );
+      for (final tx in parsed) {
+        final companion = await _applyCounterpartyMapping(
+          _parsedToCompanion(tx),
+          tx.partyPhone ?? tx.partyName,
         );
-        await _apiClient.parseSmsMessages(batch);
+        await _localDs.insertTransaction(companion);
       }
     } catch (e) {
       _log.e('Failed to drain background SMS queue', error: e);
     }
   }
 
-  // ─── Real-time listener ───────────────────────────────────────────
+  // ─── Real-time listener ──────────────────────────────────────────
 
-  /// Start listening for new incoming MoMo SMS in the foreground.
-  ///
-  /// Note: [listenInBackground] is intentionally `false`.  The `telephony`
-  /// package (v0.2.0) does not properly annotate its background channel
-  /// entry point for AOT compilation and crashes the engine when enabled.
-  /// Missed messages are caught by [syncNewMessages] every time the app is
-  /// foregrounded via the [WidgetsBindingObserver] in main.dart.
   void startListening() {
     _telephony.listenIncomingSms(
       onNewMessage: _onNewSms,
@@ -400,96 +390,67 @@ class SmsService {
     _log.i('SMS listener started (foreground only)');
   }
 
-  /// Handle an incoming SMS.
   void _onNewSms(SmsMessage message) {
-    if (_isMomoMessage(message)) {
-      _log.i('New MoMo SMS detected from ${message.address}');
-      _incomingController.add(message);
+    if (!_isMomoMessage(message)) return;
 
-      final body = message.body;
-      if (body != null && body.isNotEmpty) {
-        final isIncome = _isIncomeSms(body);
-        final amount = _extractAmount(body);
-        _apiClient.parseSmsMessages([body]).then((_) async {
-          // Check if this is significant enough to trigger a nudge
-          final threshold = await _getSignificantThreshold();
-          if (amount != null && amount >= threshold) {
-            if (isIncome) {
-              _showSignificantIncomeNudge(amount);
-            } else {
-              _showBigExpenseNudge(amount);
-            }
-          } else if (isIncome) {
-            _showPendingIncomeNudge();
-          }
-        }).catchError((Object e) {
-          _log.e('Failed to push live SMS to backend', error: e);
-        });
+    _log.i('New MoMo SMS from ${message.address}');
+    _incomingController.add(message);
+
+    final body = message.body;
+    if (body == null || body.isEmpty) return;
+
+    final tx = MomoParser.parse(body);
+    if (tx == null) return;
+
+    () async {
+      final companion = await _applyCounterpartyMapping(
+        _parsedToCompanion(tx, smsSender: message.address),
+        tx.partyPhone ?? tx.partyName,
+      );
+      await _localDs.insertTransaction(companion);
+
+      if (tx.transactionType == 'income' && tx.amount >= 40000) {
+        _showSignificantIncomeNudge(tx.amount, source: tx.partyName);
+      } else if (tx.transactionType == 'income') {
+        _showPendingIncomeNudge();
+      } else if (tx.transactionType == 'expense' && tx.amount >= 40000) {
+        _showBigExpenseNudge(tx.amount);
       }
-    }
+    }();
   }
 
-  // ─── Nudge helper ─────────────────────────────────────────────────
+  // ─── Nudge helpers ────────────────────────────────────────────────
 
-  /// After the backend has had a moment to generate an income nudge,
-  /// fetch the latest recommendations and display them as local notifications.
+  /// Compute local context and request an AI nudge for income events.
   Future<void> _showPendingIncomeNudge() async {
     try {
-      // Small delay so the backend background task can complete
-      await Future.delayed(const Duration(seconds: 3));
-      final nudges = await _apiClient.generateNudges('income');
+      await Future.delayed(const Duration(seconds: 2));
+      final nudges = await _apiClient.generateNudgesWithContext(
+        triggerType: 'income',
+        context: await _buildContextJson(),
+      );
       for (final nudge in nudges) {
-        final id = nudge['id'] as int? ?? nudge.hashCode;
-        final title = nudge['title'] as String? ?? 'FinGuide Nudge';
-        final message = nudge['message'] as String? ?? '';
-        final type = nudge['recommendation_type'] as String? ?? 'savings';
         await _nudgeService.showNudge(
-          id: id,
-          title: title,
-          body: message,
-          type: type,
+          id: nudge['id'] as int? ?? nudge.hashCode,
+          title: nudge['title'] as String? ?? 'FinGuide Nudge',
+          body: nudge['message'] as String? ?? '',
+          type: nudge['recommendation_type'] as String? ?? 'savings',
         );
       }
     } catch (e) {
-      _log.e('Failed to show income nudge notification', error: e);
+      _log.e('Failed to show income nudge', error: e);
     }
   }
 
-  // ─── Significant transaction nudges ──────────────────────────────
-
-  /// Returns the threshold (in RWF) above which a transaction is considered
-  /// "significant" and warrants a nudge notification.
-  ///
-  /// = max(40_000, 5% of average monthly income).
-  /// The average is derived from the last summary call; falls back to 40k.
-  Future<double> _getSignificantThreshold() async {
+  Future<void> _showSignificantIncomeNudge(double amount,
+      {String? source}) async {
     try {
-      final summary = await _apiClient.getTransactionSummary();
-      final avgIncome =
-          (summary['average_monthly_income'] as num?)?.toDouble() ??
-              (summary['total_income'] as num?)?.toDouble() ??
-              0.0;
-      return (avgIncome * 0.05).clamp(40000, double.infinity);
-    } catch (_) {
-      return 40000;
-    }
-  }
-
-  /// Extract the first RWF amount from an SMS body (e.g. "20,000 RWF").
-  double? _extractAmount(String body) {
-    final match =
-        RegExp(r'([\d,]+)\s*RWF', caseSensitive: false).firstMatch(body);
-    if (match == null) return null;
-    return double.tryParse(match.group(1)!.replaceAll(',', ''));
-  }
-
-  /// Show a nudge for a significant income event — prompt to save or invest.
-  Future<void> _showSignificantIncomeNudge(double amount) async {
-    try {
-      await Future.delayed(const Duration(seconds: 3));
-      final nudges = await _apiClient.generateNudges(
-        'income',
+      await Future.delayed(const Duration(seconds: 2));
+      final nudges = await _apiClient.generateNudgesWithContext(
+        triggerType: 'income',
         incomeAmount: amount,
+        incomeSource: source,
+        context: await _buildContextJson(),
       );
       if (nudges.isNotEmpty) {
         final nudge = nudges.first;
@@ -500,17 +461,14 @@ class SmsService {
           type: nudge['recommendation_type'] as String? ?? 'savings',
         );
       } else {
-        // Fallback generic nudge
         final fmt = amount >= 1000000
             ? '${(amount / 1000000).toStringAsFixed(1)}M'
-            : amount >= 1000
-                ? '${(amount / 1000).toStringAsFixed(0)}k'
-                : amount.toStringAsFixed(0);
+            : '${(amount / 1000).toStringAsFixed(0)}k';
         await _nudgeService.showNudge(
           id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           title: '💰 RWF $fmt received!',
           body:
-              'Great timing — consider moving 20% into savings or your Ejo Heza goal before spending.',
+              'Great timing — consider moving 20% into savings or your Ejo Heza goal.',
           type: 'savings',
         );
       }
@@ -519,17 +477,14 @@ class SmsService {
     }
   }
 
-  /// Show a nudge after a big expense — remind the user of their situation.
   Future<void> _showBigExpenseNudge(double amount) async {
     try {
       await Future.delayed(const Duration(seconds: 2));
       final fmt = amount >= 1000000
           ? '${(amount / 1000000).toStringAsFixed(1)}M'
-          : amount >= 1000
-              ? '${(amount / 1000).toStringAsFixed(0)}k'
-              : amount.toStringAsFixed(0);
-      final safe = await _apiClient.getSafeToSpend();
-      final remaining = (safe['safe_to_spend'] as num?)?.toDouble() ?? 0.0;
+          : '${(amount / 1000).toStringAsFixed(0)}k';
+      final context = await _localDs.computeFinancialContext();
+      final remaining = context.estimatedBalance;
       final remainFmt = remaining >= 1000
           ? '${(remaining / 1000).toStringAsFixed(0)}k'
           : remaining.toStringAsFixed(0);
@@ -537,8 +492,8 @@ class SmsService {
         id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         title: '📊 RWF $fmt just left your wallet',
         body: remaining > 0
-            ? 'You have RWF $remainFmt safe to spend for the rest of the month. Stay on track!'
-            : 'This is a big spend for your budget — check your FinGuide safe-to-spend before your next purchase.',
+            ? 'You have RWF $remainFmt estimated balance. Stay on track!'
+            : 'Big spend alert — check your FinGuide safe-to-spend.',
         type: 'spending',
       );
     } catch (e) {
@@ -546,30 +501,70 @@ class SmsService {
     }
   }
 
+  // ─── Context building ─────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> _buildContextJson() async {
+    final ctx = await _localDs.computeFinancialContext();
+    return ctx.toJson();
+  }
+
   // ─── Helpers ──────────────────────────────────────────────────────
 
-  /// Check whether an SMS is a MoMo transaction message.
+  /// Last 3 digits of the authenticated user's phone (for self-transfer detect)
+  String get _userPhoneSuffix {
+    final phone = _prefs.getString(StorageKeys.userPhone) ?? '';
+    return phone.length >= 3 ? phone.substring(phone.length - 3) : '';
+  }
+
   bool _isMomoMessage(SmsMessage message) {
     final address = (message.address ?? '').toLowerCase();
     final body = (message.body ?? '').toLowerCase();
-
-    final senderMatch = _momoSenders.any(
-      (s) => address.contains(s.toLowerCase()),
-    );
-    final bodyMatch = _momoKeywords.any(
-      (k) => body.contains(k.toLowerCase()),
-    );
-
-    return senderMatch || bodyMatch;
+    return _momoSenders.any((s) => address.contains(s.toLowerCase())) ||
+        _momoKeywords.any((k) => body.contains(k.toLowerCase()));
   }
 
-  /// Check whether an SMS body indicates incoming money.
   bool _isIncomeSms(String body) {
     final lower = body.toLowerCase();
     return _incomeKeywords.any((k) => lower.contains(k.toLowerCase()));
   }
 
-  /// Clean up resources.
+  /// Convert a [ParsedTransaction] to a Drift companion for DB insertion.
+  TransactionsCompanion _parsedToCompanion(
+    ParsedTransaction tx, {
+    String? smsSender,
+  }) {
+    return TransactionsCompanion(
+      transactionType: Value(tx.transactionType),
+      category: Value(tx.category),
+      needWant: Value(tx.needWant),
+      amount: Value(tx.amount),
+      description: Value(tx.partyName),
+      counterparty: Value(tx.partyPhone ?? tx.partyName),
+      counterpartyName: Value(tx.partyName),
+      reference: Value(tx.reference),
+      transactionDate: Value(tx.date ?? DateTime.now()),
+      balanceAfter: Value(tx.balance),
+      confidenceScore: const Value(0.85),
+      rawSms: Value(tx.rawSms),
+      smsSender: Value(smsSender),
+    );
+  }
+
+  /// Apply a saved counterparty mapping to override the parser's category.
+  Future<TransactionsCompanion> _applyCounterpartyMapping(
+    TransactionsCompanion companion,
+    String? counterpartyKey,
+  ) async {
+    if (counterpartyKey == null) return companion;
+    final mapping =
+        await _localDs.getCounterpartyMapping(counterpartyKey);
+    if (mapping == null) return companion;
+    return companion.copyWith(
+      category: Value(mapping.category),
+      needWant: Value(mapping.needWant),
+    );
+  }
+
   void dispose() {
     _incomingController.close();
   }
