@@ -3,6 +3,11 @@
  * =========
  * State management for authentication with Twilio SMS-OTP verification.
  *
+ * TEMP: the OTP step is currently DISABLED. Login / register call the API
+ * directly with an empty otp_token (the backend's otp_token check is commented
+ * out to match). The OTP flow described below is preserved in commented-out
+ * blocks in _onLoginRequested / _onRegisterRequested — uncomment to restore.
+ *
  * Flow for login / register:
  *   1. LoginRequested / RegisterRequested
  *       → send-otp API  → emit AuthOtpPending
@@ -109,52 +114,74 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
   }
 
-  /// Login request – sends OTP first, then waits for device SMS auto-read
+  /// Login request
+  ///
+  /// TEMP: OTP step disabled – goes straight to the login API with an empty
+  /// otp_token. Restore the commented-out block below to bring OTP back.
   Future<void> _onLoginRequested(
     AuthLoginRequested event,
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
 
-    final result = await _sendOtpUseCase(
-      SendOtpParams(phoneNumber: event.phoneNumber),
-    );
+    _pendingPhone = event.phoneNumber;
+    _pendingIsLogin = true;
+    _pendingPassword = event.password;
 
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
-      (_) {
-        // Store credentials for use after OTP is verified
-        _pendingPhone = event.phoneNumber;
-        _pendingIsLogin = true;
-        _pendingPassword = event.password;
-        emit(AuthOtpPending(phoneNumber: event.phoneNumber));
-      },
-    );
+    await _completePendingLogin('', emit);
+
+    // --- OTP FLOW (disabled) -------------------------------------------------
+    // final result = await _sendOtpUseCase(
+    //   SendOtpParams(phoneNumber: event.phoneNumber),
+    // );
+    //
+    // result.fold(
+    //   (failure) => emit(AuthError(failure.message)),
+    //   (_) {
+    //     // Store credentials for use after OTP is verified
+    //     _pendingPhone = event.phoneNumber;
+    //     _pendingIsLogin = true;
+    //     _pendingPassword = event.password;
+    //     emit(AuthOtpPending(phoneNumber: event.phoneNumber));
+    //   },
+    // );
   }
 
-  /// Register request – sends OTP first, then waits for device SMS auto-read
+  /// Register request
+  ///
+  /// TEMP: OTP step disabled – see [_onLoginRequested].
   Future<void> _onRegisterRequested(
     AuthRegisterRequested event,
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
 
-    final result = await _sendOtpUseCase(
-      SendOtpParams(phoneNumber: event.phoneNumber),
-    );
+    _pendingPhone = event.phoneNumber;
+    _pendingIsLogin = false;
+    _pendingRegPassword = event.password;
+    _pendingFullName = event.fullName;
+    _pendingUbudehe = event.ubudeheCategory;
+    _pendingIncomeFreq = event.incomeFrequency;
 
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
-      (_) {
-        _pendingPhone = event.phoneNumber;
-        _pendingIsLogin = false;
-        _pendingRegPassword = event.password;
-        _pendingFullName = event.fullName;
-        _pendingUbudehe = event.ubudeheCategory;
-        _pendingIncomeFreq = event.incomeFrequency;
-        emit(AuthOtpPending(phoneNumber: event.phoneNumber));
-      },
-    );
+    await _completePendingRegister('', emit);
+
+    // --- OTP FLOW (disabled) -------------------------------------------------
+    // final result = await _sendOtpUseCase(
+    //   SendOtpParams(phoneNumber: event.phoneNumber),
+    // );
+    //
+    // result.fold(
+    //   (failure) => emit(AuthError(failure.message)),
+    //   (_) {
+    //     _pendingPhone = event.phoneNumber;
+    //     _pendingIsLogin = false;
+    //     _pendingRegPassword = event.password;
+    //     _pendingFullName = event.fullName;
+    //     _pendingUbudehe = event.ubudeheCategory;
+    //     _pendingIncomeFreq = event.incomeFrequency;
+    //     emit(AuthOtpPending(phoneNumber: event.phoneNumber));
+    //   },
+    // );
   }
 
   /// OTP auto-detected via SMS – verify it and complete the pending auth action
@@ -270,7 +297,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
 
     await result.fold(
-      (failure) async => emit(AuthOtpError(failure.message)),
+      // TEMP: AuthError (not AuthOtpError) while the OTP page is skipped, so the
+      // login page surfaces the failure.
+      (failure) async => emit(AuthError(failure.message)),
       (user) async {
         _clearPending();
         final hasSmsConsent = await _localDataSource.hasSmsConsentCompleted();
@@ -299,7 +328,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
 
     await result.fold(
-      (failure) async => emit(AuthOtpError(failure.message)),
+      // TEMP: see note in _completePendingLogin.
+      (failure) async => emit(AuthError(failure.message)),
       (user) async {
         _clearPending();
         final hasSmsConsent = await _localDataSource.hasSmsConsentCompleted();

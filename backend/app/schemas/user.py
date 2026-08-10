@@ -112,8 +112,9 @@ class UserCreate(UserBase):
         default=IncomeFrequency.IRREGULAR,
         description="How frequently the user receives income"
     )
+    # TEMP: OTP disabled – optional so clients can register without verifying.
     otp_token: str = Field(
-        ...,
+        default="",
         description="Short-lived OTP verification token obtained from /auth/verify-otp"
     )
 
@@ -140,8 +141,9 @@ class UserLogin(BaseModel):
         ...,
         description="Account password"
     )
+    # TEMP: OTP disabled – optional so clients can log in without verifying.
     otp_token: str = Field(
-        ...,
+        default="",
         description="Short-lived OTP verification token obtained from /auth/verify-otp"
     )
 

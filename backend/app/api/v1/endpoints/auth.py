@@ -137,25 +137,26 @@ async def register(
         HTTPException 400: If the otp_token is invalid/expired, phone mismatch,
                            or phone is already registered.
     """
-    # Verify OTP token – proves the caller received the SMS on this number
-    try:
-        verified_phone = verify_otp_token(user_data.otp_token)
-    except ValueError as exc:
-        print(f"[register] otp_token decode FAILED: {exc}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        )
-
-    print(f"[register] verified_phone={repr(verified_phone)} | user_data.phone_number={repr(user_data.phone_number)}")
-
-    if verified_phone != user_data.phone_number:
-        detail = "OTP token phone number does not match registration phone number."
-        print(f"[register] MISMATCH → {detail}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=detail,
-        )
+    # TEMP: OTP verification DISABLED. Uncomment the block below to restore it.
+    # # Verify OTP token – proves the caller received the SMS on this number
+    # try:
+    #     verified_phone = verify_otp_token(user_data.otp_token)
+    # except ValueError as exc:
+    #     print(f"[register] otp_token decode FAILED: {exc}")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail=str(exc),
+    #     )
+    #
+    # print(f"[register] verified_phone={repr(verified_phone)} | user_data.phone_number={repr(user_data.phone_number)}")
+    #
+    # if verified_phone != user_data.phone_number:
+    #     detail = "OTP token phone number does not match registration phone number."
+    #     print(f"[register] MISMATCH → {detail}")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail=detail,
+    #     )
 
     # Check uniqueness
     existing_user = db.query(User).filter(
@@ -219,25 +220,26 @@ async def login(
         HTTPException 401: If credentials are wrong.
         HTTPException 403: If account is deactivated.
     """
-    # Verify OTP token
-    try:
-        verified_phone = verify_otp_token(credentials.otp_token)
-    except ValueError as exc:
-        print(f"[login] otp_token decode FAILED: {exc}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        )
-
-    print(f"[login] verified_phone={repr(verified_phone)} | credentials.phone_number={repr(credentials.phone_number)}")
-
-    if verified_phone != credentials.phone_number:
-        detail = "OTP token phone number does not match login phone number."
-        print(f"[login] MISMATCH → {detail}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=detail,
-        )
+    # TEMP: OTP verification DISABLED. Uncomment the block below to restore it.
+    # # Verify OTP token
+    # try:
+    #     verified_phone = verify_otp_token(credentials.otp_token)
+    # except ValueError as exc:
+    #     print(f"[login] otp_token decode FAILED: {exc}")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail=str(exc),
+    #     )
+    #
+    # print(f"[login] verified_phone={repr(verified_phone)} | credentials.phone_number={repr(credentials.phone_number)}")
+    #
+    # if verified_phone != credentials.phone_number:
+    #     detail = "OTP token phone number does not match login phone number."
+    #     print(f"[login] MISMATCH → {detail}")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail=detail,
+    #     )
 
     # Find user
     user = db.query(User).filter(
