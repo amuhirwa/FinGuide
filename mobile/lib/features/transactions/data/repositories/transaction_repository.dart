@@ -9,6 +9,7 @@ import 'package:dartz/dartz.dart';
 import 'package:drift/drift.dart' show Value;
 
 import '../../../../core/database/app_database.dart';
+import '../../../../core/services/momo_parser.dart';
 import '../datasources/transaction_local_datasource.dart';
 import '../models/transaction_model.dart';
 
@@ -199,6 +200,38 @@ class TransactionRepository {
       return Right(summary);
     } catch (e) {
       return Left(e.toString());
+    }
+  }
+
+  /// Parse raw MoMo SMS bodies locally, persist any new transactions to the
+  /// Drift DB and return the stored rows.
+  ///
+  /// Parsing moved off the backend in the local-DB refactor; this mirrors the
+  /// path [SmsService] uses for historical import.
+  Future<Either<String, List<TransactionModel>>> parseSmsMessages(
+    List<String> messages,
+  ) async {
+    try {
+      final recentWithdrawals = await _localDs.getRecentMokashWithdrawals();
+      final parsed = MomoParser.parseBatch(
+        messages,
+        recentWithdrawals: recentWithdrawals,
+      );
+      if (parsed.isEmpty) return const Right([]);
+
+      var inserted = 0;
+      for (final tx in parsed) {
+        if (await _localDs.insertTransaction(parsedToCompanion(tx))) {
+          inserted++;
+        }
+      }
+      if (inserted == 0) return const Right([]);
+
+      // Re-read so callers get rows carrying their assigned DB ids.
+      final stored = await _localDs.getTransactions(pageSize: inserted);
+      return Right(stored);
+    } catch (e) {
+      return Left('Failed to parse SMS messages: $e');
     }
   }
 }

@@ -37,17 +37,25 @@ jobs:
         working-directory: mobile
         run: flutter pub get
 
-      # ── 5. Build release APK ─────────────────────────────
+      # ── 5. Generate Drift/json_serializable code ─────────
+      #    *.g.dart is gitignored, so the generated sources
+      #    (e.g. app_database.g.dart) do not exist on a fresh
+      #    checkout and must be built before compiling.
+      - name: Run build_runner
+        working-directory: mobile
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # ── 6. Build release APK ─────────────────────────────
       - name: Build release APK
         working-directory: mobile
         run: flutter build apk --release
 
-      # ── 6. Rename for a clean download filename ──────────
+      # ── 7. Rename for a clean download filename ──────────
       - name: Rename APK
         run: |
           cp mobile/build/app/outputs/flutter-apk/app-release.apk finguide.apk
 
-      # ── 7. Upload APK as artifact (for traceability) ─────
+      # ── 8. Upload APK as artifact (for traceability) ─────
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -55,7 +63,7 @@ jobs:
           path: finguide.apk
           retention-days: 30
 
-      # ── 8. Publish to a rolling "latest" GitHub Release ──
+      # ── 9. Publish to a rolling "latest" GitHub Release ──
       #    The `latest` tag is force-updated on every push to
       #    main so the download URL is always stable:
       #    .../releases/latest/download/finguide.apk

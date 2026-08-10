@@ -16,7 +16,9 @@ import 'dart:async';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:telephony/telephony.dart';
+// `hide Value` – telephony exports its own `Value`, which collides with
+// drift's `Value` wrapper used for building companions below.
+import 'package:telephony/telephony.dart' hide Value;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
 
