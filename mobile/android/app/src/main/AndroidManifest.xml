@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for all backend API calls. The Flutter template only declares
+         this in the debug/ and profile/ manifests (for the dev tooling), so
+         without it here release builds ship with no network access at all. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <!-- SMS Permissions for MoMo transaction reading and OTP auto-detection -->
     <uses-permission android:name="android.permission.READ_SMS"/>
     <uses-permission android:name="android.permission.RECEIVE_SMS"/>

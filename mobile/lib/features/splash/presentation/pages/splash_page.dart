@@ -26,9 +26,26 @@ class _SplashPageState extends State<SplashPage>
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
 
+  /// True once the 2s splash delay has passed. Until then navigation is
+  /// deferred; afterwards any auth state change routes immediately.
+  bool _splashDelayElapsed = false;
+  bool _navigated = false;
+
   @override
   void initState() {
     super.initState();
+
+    // Read the *current* state after the splash delay rather than relying on
+    // BlocListener alone. AuthCheckRequested is dispatched when the bloc is
+    // created in main(), so it can settle before this page ever subscribes -
+    // a race that release builds lose more often than debug ones, because AOT
+    // startup reaches the first frame sooner. When that happened the listener
+    // never fired and the app sat on the splash screen forever.
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      _splashDelayElapsed = true;
+      _navigateBasedOnState(context.read<AuthBloc>().state);
+    });
 
     _controller = AnimationController(
       vsync: this,
@@ -59,27 +76,32 @@ class _SplashPageState extends State<SplashPage>
   }
 
   void _navigateBasedOnState(AuthState state) {
-    if (state is AuthShowOnboarding) {
-      context.go(Routes.onboarding);
-    } else if (state is AuthShowSmsConsent) {
-      context.go(Routes.smsConsent);
-    } else if (state is AuthAuthenticated) {
-      context.go(Routes.dashboard);
-    } else if (state is AuthUnauthenticated) {
-      context.go(Routes.login);
-    }
+    if (_navigated) return;
+
+    // Only latch once a state actually routes somewhere - transient states
+    // (AuthInitial, AuthLoading) must not consume the one navigation.
+    final String? target = switch (state) {
+      AuthShowOnboarding() => Routes.onboarding,
+      AuthShowSmsConsent() => Routes.smsConsent,
+      AuthAuthenticated() => Routes.dashboard,
+      AuthUnauthenticated() => Routes.login,
+      _ => null,
+    };
+    if (target == null) return;
+
+    _navigated = true;
+    context.go(target);
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        // Add delay for splash screen effect
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            _navigateBasedOnState(state);
-          }
-        });
+        // The splash delay is owned by the timer in initState; here we only
+        // handle states that arrive after it has already elapsed.
+        if (_splashDelayElapsed) {
+          _navigateBasedOnState(state);
+        }
       },
       child: Scaffold(
         backgroundColor: AppColors.background,
