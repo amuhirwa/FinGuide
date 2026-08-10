@@ -4,6 +4,7 @@
  * GetIt service locator setup with Injectable
  */
 
+import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -205,7 +206,14 @@ Future<void> configureDependencies() async {
 
   // ==================== Nudge Notification Service ====================
   final nudgeNotificationService = NudgeNotificationService();
-  await nudgeNotificationService.initialize();
+  // Notifications are a nice-to-have; never let their setup block startup.
+  // A throw here (e.g. PlatformException(invalid_icon)) previously propagated
+  // out of main() before runApp, leaving only the bare Android window.
+  try {
+    await nudgeNotificationService.initialize();
+  } catch (e) {
+    debugPrint('Notification init failed, continuing without it: $e');
+  }
   getIt.registerSingleton<NudgeNotificationService>(nudgeNotificationService);
 
   // ==================== SMS Service ====================

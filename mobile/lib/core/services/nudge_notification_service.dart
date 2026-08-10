@@ -25,8 +25,11 @@ class NudgeNotificationService {
 
   /// Initialise the plugin. Must be called before [showNudge].
   Future<void> initialize() async {
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    // Must name a res/drawable entry: the plugin resolves it with
+    // getIdentifier(name, "drawable", package), so "@mipmap/ic_launcher"
+    // resolves to 0 and throws PlatformException(invalid_icon), which used to
+    // abort configureDependencies() and leave the app on a blank window.
+    const androidSettings = AndroidInitializationSettings('ic_notification');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -75,7 +78,7 @@ class NudgeNotificationService {
       importance: Importance.high,
       priority: Priority.high,
       color: color,
-      icon: '@mipmap/ic_launcher',
+      icon: 'ic_notification',
       styleInformation: BigTextStyleInformation(body),
     );
 
