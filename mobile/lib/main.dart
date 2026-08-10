@@ -12,8 +12,18 @@ import 'features/auth/presentation/bloc/auth_bloc.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize dependency injection
-  await configureDependencies();
+  // Anything thrown before runApp() leaves the engine without a first frame,
+  // so Android keeps showing NormalTheme's window background - a blank white
+  // or (in dark mode) black screen with no clue as to what failed. Catch it
+  // and render the error instead, so a release build on a real device reports
+  // its own startup failures without needing a logcat attached.
+  try {
+    // Initialize dependency injection
+    await configureDependencies();
+  } catch (error, stackTrace) {
+    runApp(_StartupErrorApp(error: error, stackTrace: stackTrace));
+    return;
+  }
 
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
@@ -36,6 +46,56 @@ void main() async {
   await themeCubit.init();
 
   runApp(FinGuideApp(themeCubit: themeCubit));
+}
+
+/// Shown when startup fails, in place of an unexplained blank window.
+class _StartupErrorApp extends StatelessWidget {
+  final Object error;
+  final StackTrace stackTrace;
+
+  const _StartupErrorApp({required this.error, required this.stackTrace});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'FinGuide failed to start',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SelectableText(
+                  '$error',
+                  style: const TextStyle(fontSize: 14, color: Colors.red),
+                ),
+                const SizedBox(height: 16),
+                SelectableText(
+                  '$stackTrace',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'SpaceMono',
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Main application widget
