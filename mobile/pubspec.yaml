@@ -81,6 +81,12 @@ dev_dependencies:
   # the newer Parser.DartMappable enum case), which broke `build_runner build`.
   # drift_dev is the only generator this project actually needs.
   drift_dev: ^2.21.0
+  # Pin analyzer to 7.x. source_gen 3.1.0 declares `analyzer: >=7.4.0 <9.0.0`
+  # but calls DartObjectImpl.getInvocation(), which analyzer 8 removed, so the
+  # build script fails to compile on analyzer 8.x. retrofit_generator used to
+  # hold analyzer below 8 as a side effect; with it gone the constraint has to
+  # be explicit. Lift this once drift_dev pulls source_gen >=4.2.0.
+  analyzer: ^7.7.1
   mocktail: ^1.0.4
   bloc_test: ^10.0.0
   flutter_launcher_icons: ^0.14.3
