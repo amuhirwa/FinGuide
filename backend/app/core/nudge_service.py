@@ -216,6 +216,176 @@ def _analyze_nudge_preferences(user_id: int, db: Session) -> dict:
     }
 
 
+# ─── Rule-based fallback nudges ───────────────────────────────────────────────
+
+# Share of incoming money we suggest putting aside when we have no model to ask.
+_FALLBACK_SAVINGS_RATE = 0.10
+
+
+def _round_amount(value: float) -> int:
+    """Round a suggested amount to a friendly figure (nearest 100 RWF, min 500)."""
+    if value <= 0:
+        return 0
+    return max(500, int(round(value / 100.0) * 100))
+
+
+def _fmt(value: float) -> str:
+    return f"{value:,.0f}"
+
+
+def _fallback_nudges(
+    context: dict,
+    trigger_type: str,
+    income_amount: Optional[float] = None,
+    income_source: Optional[str] = None,
+) -> list[dict]:
+    """
+    Build deterministic nudges for when Claude is unavailable — no API key,
+    exhausted credit, or any API/network failure.
+
+    Uses only figures already present in `context`, so the messages stay
+    truthful without the model. Returns the same dict shape the Claude path
+    produces, so the persistence code downstream is unchanged.
+    """
+    income = float(context.get("income_30d") or 0)
+    expenses = float(context.get("expenses_30d") or 0)
+    balance = float(context.get("estimated_balance") or 0)
+    saved_this_month = float(context.get("savings_this_month") or 0)
+    goals = context.get("active_goals") or []
+    top_cats = context.get("top_expense_categories") or []
+
+    nudges: list[dict] = []
+
+    def add(title, message, rec_type, action, amount, urgency, reason, tone="friendly"):
+        nudges.append({
+            "title": title[:50],
+            "message": message[:120],
+            "recommendation_type": rec_type,
+            "action_type": action,
+            "action_amount": amount,
+            "urgency": urgency,
+            "reason": reason,
+            "tone": tone,
+            "source": "rule_based",
+        })
+
+    if trigger_type == "income":
+        if income_amount and income_amount > 0:
+            target = _round_amount(income_amount * _FALLBACK_SAVINGS_RATE)
+            src = f" from {income_source}" if income_source else ""
+            add(
+                "Money just landed — save a bit",
+                f"You received RWF {_fmt(income_amount)}{src}. Set aside RWF {_fmt(target)} (10%) now.",
+                "savings", "save", target, "high",
+                "Fallback: 10% of the income just received", "motivational",
+            )
+        else:
+            add(
+                "Murakoze! Income received",
+                "Save 10% of what just came in before it gets spent.",
+                "savings", "save", None, "high",
+                "Fallback: income received, amount unknown", "motivational",
+            )
+
+    elif trigger_type == "daily":
+        goal = goals[0] if goals else None
+        daily_target = float(goal.get("daily_target") or 0) if goal else 0
+        if daily_target > 0:
+            amt = _round_amount(daily_target)
+            name = str(goal.get("name") or "your goal")
+            add(
+                f"Today's target: RWF {_fmt(amt)}",
+                f'Put RWF {_fmt(amt)} toward "{name}" today to stay on track.',
+                "savings", "save", amt, "normal",
+                "Fallback: goal daily target",
+            )
+        elif saved_this_month <= 0:
+            add(
+                "Start small today",
+                "Nothing saved this month yet. Even RWF 500 today builds the habit.",
+                "savings", "save", 500, "normal",
+                "Fallback: nothing saved this month", "motivational",
+            )
+        else:
+            add(
+                "You're saving — keep going",
+                f"RWF {_fmt(saved_this_month)} saved this month. Add a little more today.",
+                "savings", "save", None, "low",
+                "Fallback: positive reinforcement",
+            )
+
+    elif trigger_type == "weekly":
+        if income > 0 and expenses > income:
+            gap = expenses - income
+            add(
+                "Spending above income",
+                f"You spent RWF {_fmt(gap)} more than you earned recently. Trim one expense this week.",
+                "spending", "reduce_spending", None, "high",
+                "Fallback: expenses exceed income", "analytical",
+            )
+        elif income > 0:
+            surplus = _round_amount((income - expenses) * _FALLBACK_SAVINGS_RATE)
+            if surplus > 0:
+                add(
+                    "Weekly check-in",
+                    f"Earned RWF {_fmt(income)}, spent RWF {_fmt(expenses)}. Save RWF {_fmt(surplus)} this week.",
+                    "savings", "save", surplus, "normal",
+                    "Fallback: 10% of weekly surplus", "analytical",
+                )
+
+    else:  # "manual" and anything unrecognised
+        if top_cats:
+            top = top_cats[0]
+            cat = str(top.get("category") or "spending").replace("_", " ")
+            amt = float(top.get("amount") or 0)
+            add(
+                f"Top spend: {cat}"[:50],
+                f"{cat.capitalize()} is your biggest expense at RWF {_fmt(amt)}. Trim it by 10%?",
+                "spending", "reduce_spending", None, "normal",
+                "Fallback: top expense category", "analytical",
+            )
+        elif balance > 0:
+            target = _round_amount(balance * _FALLBACK_SAVINGS_RATE)
+            add(
+                "Put some aside",
+                f"You have about RWF {_fmt(balance)}. Move RWF {_fmt(target)} into savings.",
+                "savings", "save", target, "normal",
+                "Fallback: 10% of estimated balance",
+            )
+
+    # Second nudge: goal progress, when there's room and a goal worth mentioning
+    if len(nudges) < 2 and goals:
+        g = goals[0]
+        name = str(g.get("name") or "your goal")
+        pct = float(g.get("progress_pct") or 0)
+        remaining = max(0.0, float(g.get("target") or 0) - float(g.get("saved") or 0))
+        if pct >= 100:
+            add(
+                f"{name}: complete!"[:50],
+                f"You reached your {name} goal. Time to set the next one.",
+                "savings", "view_goals", None, "low",
+                "Fallback: goal complete", "motivational",
+            )
+        elif remaining > 0:
+            add(
+                f"{name}: {pct:.0f}% there"[:50],
+                f"RWF {_fmt(remaining)} left to reach {name}. Every bit counts.",
+                "savings", "save", None, "low",
+                "Fallback: goal progress", "motivational",
+            )
+
+    # Never return nothing — a brand-new user with no data still gets a starter
+    if not nudges:
+        add(
+            "Start your savings habit",
+            "Set a savings goal and start with whatever you can spare this week.",
+            "savings", "view_goals", None, "low",
+            "Fallback: no financial data yet",
+        )
+
+    return nudges[:2]
+
+
 # ─── Main generation function ─────────────────────────────────────────────────
 
 def generate_nudges(
@@ -238,10 +408,6 @@ def generate_nudges(
     Returns:
         List of newly created Recommendation records.
     """
-    if not settings.ANTHROPIC_API_KEY:
-        logger.warning("ANTHROPIC_API_KEY not set — skipping AI nudge generation")
-        return []
-
     # Deactivate stale nudges of the same trigger type (older than 24h)
     stale_cutoff = datetime.now() - timedelta(hours=24)
     db.query(Recommendation).filter(
@@ -312,32 +478,38 @@ Generate 1-2 nudges appropriate for this trigger. Return a JSON array like:
   }}
 ]"""
 
-    try:
-        client = _get_client()
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=512,
-            messages=[{"role": "user", "content": user_prompt}],
-            system=system_prompt,
-        )
+    fallback_args = (context, trigger_type, income_amount, income_source)
 
-        raw = response.content[0].text.strip()
-        # Strip markdown code fences if present
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        nudge_data = json.loads(raw)
+    if not settings.ANTHROPIC_API_KEY:
+        logger.warning("ANTHROPIC_API_KEY not set — using rule-based fallback nudges")
+        nudge_data = _fallback_nudges(*fallback_args)
+    else:
+        try:
+            client = _get_client()
+            response = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=512,
+                messages=[{"role": "user", "content": user_prompt}],
+                system=system_prompt,
+            )
 
-    except json.JSONDecodeError as e:
-        logger.error("Failed to parse Claude nudge JSON: %s", e)
-        return []
-    except anthropic.APIError as e:
-        logger.error("Anthropic API error during nudge generation: %s", e)
-        return []
-    except Exception as e:
-        logger.error("Unexpected error during nudge generation: %s", e)
-        return []
+            raw = response.content[0].text.strip()
+            # Strip markdown code fences if present
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+            nudge_data = json.loads(raw)
+
+        except json.JSONDecodeError as e:
+            logger.error("Failed to parse Claude nudge JSON — using fallback: %s", e)
+            nudge_data = _fallback_nudges(*fallback_args)
+        except anthropic.APIError as e:
+            logger.warning("Anthropic API unavailable — using fallback nudges: %s", e)
+            nudge_data = _fallback_nudges(*fallback_args)
+        except Exception as e:
+            logger.error("Unexpected error during nudge generation — using fallback: %s", e)
+            nudge_data = _fallback_nudges(*fallback_args)
 
     # Persist nudges to DB
     created = []
@@ -359,6 +531,7 @@ Generate 1-2 nudges appropriate for this trigger. Return a JSON array like:
                     "tone": item.get("tone", "friendly"),
                     "generated_at": datetime.now().isoformat(),
                     "income_trigger_amount": income_amount,
+                    "source": item.get("source", "claude"),
                 },
                 valid_until=valid_until,
                 is_active=True,
@@ -400,10 +573,6 @@ def generate_nudges_from_context(
     User nudge preferences (interaction history) are still read from the
     backend DB — they don't contain transaction details.
     """
-    if not settings.ANTHROPIC_API_KEY:
-        logger.warning("ANTHROPIC_API_KEY not set — skipping AI nudge generation")
-        return []
-
     # Deactivate stale nudges of the same trigger type
     stale_cutoff = datetime.now() - timedelta(hours=24)
     db.query(Recommendation).filter(
@@ -476,31 +645,37 @@ Generate 1-2 nudges appropriate for this trigger. Return a JSON array like:
   }}
 ]"""
 
-    try:
-        client = _get_client()
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=512,
-            messages=[{"role": "user", "content": user_prompt}],
-            system=system_prompt,
-        )
+    fallback_args = (context, trigger_type, income_amount, income_source)
 
-        raw = response.content[0].text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        nudge_data = json.loads(raw)
+    if not settings.ANTHROPIC_API_KEY:
+        logger.warning("ANTHROPIC_API_KEY not set — using rule-based fallback nudges")
+        nudge_data = _fallback_nudges(*fallback_args)
+    else:
+        try:
+            client = _get_client()
+            response = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=512,
+                messages=[{"role": "user", "content": user_prompt}],
+                system=system_prompt,
+            )
 
-    except json.JSONDecodeError as e:
-        logger.error("Failed to parse Claude nudge JSON: %s", e)
-        return []
-    except anthropic.APIError as e:
-        logger.error("Anthropic API error during nudge generation: %s", e)
-        return []
-    except Exception as e:
-        logger.error("Unexpected error during nudge generation: %s", e)
-        return []
+            raw = response.content[0].text.strip()
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+            nudge_data = json.loads(raw)
+
+        except json.JSONDecodeError as e:
+            logger.error("Failed to parse Claude nudge JSON — using fallback: %s", e)
+            nudge_data = _fallback_nudges(*fallback_args)
+        except anthropic.APIError as e:
+            logger.warning("Anthropic API unavailable — using fallback nudges: %s", e)
+            nudge_data = _fallback_nudges(*fallback_args)
+        except Exception as e:
+            logger.error("Unexpected error during nudge generation — using fallback: %s", e)
+            nudge_data = _fallback_nudges(*fallback_args)
 
     created = []
     valid_until = datetime.now() + timedelta(hours=48)
@@ -522,6 +697,7 @@ Generate 1-2 nudges appropriate for this trigger. Return a JSON array like:
                     "generated_at": datetime.now().isoformat(),
                     "income_trigger_amount": income_amount,
                     "context_source": "mobile_device",
+                    "source": item.get("source", "claude"),
                 },
                 valid_until=valid_until,
                 is_active=True,
