@@ -258,6 +258,8 @@ class SmsService {
             if (tx.transactionType == 'income') hasIncome = true;
           }
         }
+
+        await _reportRnitPurchases(parsed);
       }
 
       await _prefs.setBool(StorageKeys.smsInitialImportDone, true);
@@ -332,6 +334,8 @@ class SmsService {
         }
       }
 
+      await _reportRnitPurchases(parsed);
+
       await _prefs.setInt(StorageKeys.lastSmsSyncTimestamp, now);
       _log.i('Delta sync complete: $totalInserted new transactions');
 
@@ -377,6 +381,8 @@ class SmsService {
         );
         await _localDs.insertTransaction(companion);
       }
+
+      await _reportRnitPurchases(parsed);
     } catch (e) {
       _log.e('Failed to drain background SMS queue', error: e);
     }
@@ -410,6 +416,7 @@ class SmsService {
         tx.partyPhone ?? tx.partyName,
       );
       await _localDs.insertTransaction(companion);
+      await _reportRnitPurchases([tx]);
 
       if (tx.transactionType == 'income' && tx.amount >= 40000) {
         _showSignificantIncomeNudge(tx.amount, source: tx.partyName);
@@ -531,25 +538,34 @@ class SmsService {
   }
 
   /// Convert a [ParsedTransaction] to a Drift companion for DB insertion.
+  /// Delegates to the shared mapper so the SMS import path and the manual
+  /// parse path can't drift apart (notably on the savings descriptions the
+  /// piggybank balance keys on).
   TransactionsCompanion _parsedToCompanion(
     ParsedTransaction tx, {
     String? smsSender,
   }) {
-    return TransactionsCompanion(
-      transactionType: Value(tx.transactionType),
-      category: Value(tx.category),
-      needWant: Value(tx.needWant),
-      amount: Value(tx.amount),
-      description: Value(tx.partyName),
-      counterparty: Value(tx.partyPhone ?? tx.partyName),
-      counterpartyName: Value(tx.partyName),
-      reference: Value(tx.reference),
-      transactionDate: Value(tx.date ?? DateTime.now()),
-      balanceAfter: Value(tx.balance),
-      confidenceScore: const Value(0.85),
-      rawSms: Value(tx.rawSms),
-      smsSender: Value(smsSender),
-    );
+    return parsedToCompanion(tx, smsSender: smsSender);
+  }
+
+  /// Report any RNIT purchases in a parsed batch to the backend.
+  ///
+  /// Detection happens on-device, but units depend on the NAV for the purchase
+  /// date and the NAV cache lives server-side — so valuation stays there. The
+  /// endpoint is idempotent, so re-scanning the same SMS is harmless.
+  Future<void> _reportRnitPurchases(Iterable<ParsedTransaction> parsed) async {
+    for (final tx in parsed.where((t) => t.isRnit)) {
+      try {
+        await _apiClient.createRnitPurchase(
+          purchaseDate: tx.date ?? DateTime.now(),
+          amountRwf: tx.amount,
+          rawSms: tx.rawSms,
+        );
+      } catch (e) {
+        // Non-fatal: the transaction itself is already stored locally.
+        _log.w('Failed to report RNIT purchase: $e');
+      }
+    }
   }
 
   /// Apply a saved counterparty mapping to override the parser's category.

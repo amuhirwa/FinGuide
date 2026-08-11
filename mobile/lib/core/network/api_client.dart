@@ -521,6 +521,23 @@ class ApiClient {
     return response.data;
   }
 
+  /// Record an RNIT purchase detected from an SMS on-device.
+  ///
+  /// The backend fills in NAV and units from its NAV cache. Idempotent, so
+  /// re-scanning the same SMS will not create duplicates.
+  Future<Map<String, dynamic>> createRnitPurchase({
+    required DateTime purchaseDate,
+    required double amountRwf,
+    String? rawSms,
+  }) async {
+    final response = await _dio.post('/rnit/purchases', data: {
+      'purchase_date': purchaseDate.toIso8601String(),
+      'amount_rwf': amountRwf,
+      if (rawSms != null) 'raw_sms': rawSms,
+    });
+    return response.data;
+  }
+
   /// Force-refresh RNIT NAV cache from rnit.rw
   Future<Map<String, dynamic>> refreshRnitNav() async {
     final response = await _dio.post('/rnit/refresh-nav');

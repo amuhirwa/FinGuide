@@ -18,9 +18,11 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../transactions/presentation/bloc/transaction_bloc.dart';
 import '../../../transactions/presentation/pages/transactions_page.dart';
 import '../../../transactions/data/models/transaction_model.dart';
+import '../../../transactions/data/datasources/transaction_local_datasource.dart';
 import '../../../goals/presentation/bloc/goals_bloc.dart';
 import '../../../goals/presentation/pages/goals_page.dart';
 import '../../../insights/presentation/bloc/insights_bloc.dart';
+import '../../../insights/data/repositories/insights_repository.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
 
 /// Dashboard page widget
@@ -322,6 +324,7 @@ class _BalanceCard extends StatefulWidget {
 
 class _BalanceCardState extends State<_BalanceCard> {
   final ApiClient _api = getIt<ApiClient>();
+  final TransactionLocalDataSource _localDs = getIt<TransactionLocalDataSource>();
   Map<String, dynamic>? _data;
 
   @override
@@ -332,7 +335,14 @@ class _BalanceCardState extends State<_BalanceCard> {
 
   Future<void> _load() async {
     try {
-      final data = await _api.getSafeToSpend();
+      // Transactions live on-device, so safe-to-spend is computed locally.
+      // Goals are still server-side and feed the amount reserved for them.
+      final goals = await _api
+          .getSavingsGoals(status: 'active')
+          .catchError((_) => <dynamic>[]);
+      final data = await _localDs.computeSafeToSpend(
+        activeGoals: goals.cast<Map<String, dynamic>>(),
+      );
       if (mounted) setState(() => _data = data);
     } catch (_) {}
   }
@@ -896,10 +906,11 @@ class _InvestmentAndSavingsRow extends StatefulWidget {
 
 class _InvestmentAndSavingsRowState extends State<_InvestmentAndSavingsRow> {
   final ApiClient _api = getIt<ApiClient>();
+  final TransactionLocalDataSource _localDs = getIt<TransactionLocalDataSource>();
 
   Map<String, dynamic>? _investmentSummary;
   Map<String, dynamic>? _rnitPortfolio;
-  Map<String, dynamic>? _txSummary;
+  TransactionSummary? _txSummary;
   List<dynamic>? _goals;
   bool _loading = true;
 
@@ -913,20 +924,22 @@ class _InvestmentAndSavingsRowState extends State<_InvestmentAndSavingsRow> {
     try {
       final now = DateTime.now();
       final monthStart = DateTime(now.year, now.month, 1);
+      // Investments, RNIT and goals stay server-side; the month summary is
+      // computed from the local DB where transactions now live.
       final results = await Future.wait([
         _api.getInvestmentSummary().catchError((_) => <String, dynamic>{}),
         _api.getRnitPortfolio().catchError((_) => <String, dynamic>{}),
-        _api
-            .getTransactionSummary(startDate: monthStart)
-            .catchError((_) => <String, dynamic>{}),
         _api.getSavingsGoals(status: 'active').catchError((_) => <dynamic>[]),
       ]);
+      final txSummary = await _localDs.getTransactionSummary(
+        startDate: monthStart,
+      );
       if (mounted) {
         setState(() {
           _investmentSummary = results[0] as Map<String, dynamic>?;
           _rnitPortfolio = results[1] as Map<String, dynamic>?;
-          _txSummary = results[2] as Map<String, dynamic>?;
-          _goals = results[3] as List<dynamic>?;
+          _goals = results[2] as List<dynamic>?;
+          _txSummary = txSummary;
           _loading = false;
         });
       }
@@ -1118,11 +1131,10 @@ class _InvestmentAndSavingsRowState extends State<_InvestmentAndSavingsRow> {
   Widget _buildSavingsCard() {
     double savingsThisMonth = 0;
     if (_txSummary != null) {
-      final breakdown =
-          (_txSummary!['category_breakdown'] as Map<String, dynamic>?) ?? {};
-      savingsThisMonth += (breakdown['savings'] as num? ?? 0).toDouble();
-      savingsThisMonth += (breakdown['ejo_heza'] as num? ?? 0).toDouble();
-      savingsThisMonth += (breakdown['investment'] as num? ?? 0).toDouble();
+      final breakdown = _txSummary!.categoryBreakdown;
+      savingsThisMonth += breakdown['savings'] ?? 0.0;
+      savingsThisMonth += breakdown['ejo_heza'] ?? 0.0;
+      savingsThisMonth += breakdown['investment'] ?? 0.0;
     }
 
     double totalSaved = 0;
@@ -1240,6 +1252,7 @@ class _AIInsightsSection extends StatefulWidget {
 
 class _AIInsightsSectionState extends State<_AIInsightsSection> {
   final ApiClient _api = getIt<ApiClient>();
+  final InsightsRepository _insights = getIt<InsightsRepository>();
 
   List<Map<String, dynamic>> _nudges = [];
   bool _loading = true;
@@ -1250,9 +1263,16 @@ class _AIInsightsSectionState extends State<_AIInsightsSection> {
     _loadNudges();
   }
 
-  Future<void> _loadNudges() async {
+  /// Generation always goes through [InsightsRepository], which sends the
+  /// on-device financial context. The backend can't build a useful context
+  /// itself any more — raw transactions never reach it.
+  Future<void> _loadNudges({bool generateIfEmpty = true}) async {
     try {
-      final data = await _api.getRecommendations();
+      var data = await _api.getRecommendations();
+      if (data.isEmpty && generateIfEmpty) {
+        await _insights.generateNudges(triggerType: 'manual');
+        data = await _api.getRecommendations();
+      }
       if (mounted) {
         setState(() {
           _nudges = data.cast<Map<String, dynamic>>();
@@ -1267,8 +1287,8 @@ class _AIInsightsSectionState extends State<_AIInsightsSection> {
   Future<void> _refresh() async {
     setState(() => _loading = true);
     try {
-      await _api.generateNudges('manual');
-      await _loadNudges();
+      await _insights.generateNudges(triggerType: 'manual');
+      await _loadNudges(generateIfEmpty: false);
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -1614,7 +1634,7 @@ class _RecentTransactionsSection extends StatefulWidget {
 
 class _RecentTransactionsSectionState
     extends State<_RecentTransactionsSection> {
-  final ApiClient _api = getIt<ApiClient>();
+  final TransactionLocalDataSource _localDs = getIt<TransactionLocalDataSource>();
   List<Map<String, dynamic>> _transactions = [];
   bool _loading = true;
 
@@ -1626,9 +1646,8 @@ class _RecentTransactionsSectionState
 
   Future<void> _load() async {
     try {
-      final data = await _api.getTransactions(pageSize: 5);
-      final items =
-          (data['transactions'] as List? ?? []).cast<Map<String, dynamic>>();
+      final rows = await _localDs.getTransactions(pageSize: 5);
+      final items = rows.map((t) => t.toJson()).toList();
       if (mounted)
         setState(() {
           _transactions = items;
@@ -1969,8 +1988,8 @@ class _InsightsContentState extends State<_InsightsContent> {
 
   Future<void> _loadScore() async {
     try {
-      final raw = await getIt<ApiClient>().getTransactionSummary();
-      final summary = TransactionSummary.fromJson(raw);
+      final summary =
+          await getIt<TransactionLocalDataSource>().getTransactionSummary();
       final income = summary.totalIncome;
       final expenses = summary.totalExpenses;
       double score = 0;

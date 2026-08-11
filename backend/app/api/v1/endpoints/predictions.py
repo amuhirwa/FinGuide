@@ -639,20 +639,17 @@ async def get_recommendations(
         )
     ).order_by(Recommendation.created_at.desc()).limit(5).all()
 
-    # Generate fresh nudges if none exist or all are older than 24 hours
-    newest = recommendations[0] if recommendations else None
-    stale = newest is None or (datetime.now() - newest.created_at.replace(tzinfo=None)).total_seconds() > 86400
-
-    if stale:
-        fresh = nudge_service.generate_nudges(user_id, db, trigger_type="manual")
-        if fresh:
-            recommendations = fresh
-        elif not recommendations:
-            # Fallback: return whatever is in DB (even if old)
-            recommendations = db.query(Recommendation).filter(
-                Recommendation.user_id == user_id,
-                Recommendation.is_dismissed == False,
-            ).order_by(Recommendation.created_at.desc()).limit(5).all()
+    # This endpoint no longer generates nudges. Transactions live on the user's
+    # device, so any context built here would be empty and would produce
+    # generic, useless nudges — and would overwrite good ones. The client
+    # generates via /generate-nudges-v2, which carries the on-device context.
+    if not recommendations:
+        # Nothing active: fall back to the most recent non-dismissed nudges
+        # rather than returning an empty list.
+        recommendations = db.query(Recommendation).filter(
+            Recommendation.user_id == user_id,
+            Recommendation.is_dismissed == False,
+        ).order_by(Recommendation.created_at.desc()).limit(5).all()
 
     return [RecommendationResponse.model_validate(r) for r in recommendations]
 

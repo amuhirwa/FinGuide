@@ -11,6 +11,13 @@ import '../../../../core/database/app_database.dart';
 import '../models/transaction_model.dart';
 import '../../domain/models/financial_context.dart';
 
+/// Canonical descriptions for savings movements.
+///
+/// The piggybank balance identifies deposits/withdrawals by these exact
+/// strings, so the parser and the aggregation must agree on them.
+const String kMokashDepositDescription = 'MoKash deposit';
+const String kMokashWithdrawalDescription = 'MoKash withdrawal';
+
 class TransactionLocalDataSource {
   final AppDatabase _db;
 
@@ -253,6 +260,252 @@ class TransactionLocalDataSource {
     );
   }
 
+  // ─── Dashboard aggregates ─────────────────────────────────────────────────
+  //
+  // Ported from the backend endpoints so the dashboard can be served entirely
+  // from the local DB. Both return the same JSON shape their HTTP counterparts
+  // did, so callers only swap the call site.
+
+  /// Piggybank balance — mirrors `GET /goals/piggybank`.
+  ///
+  /// Savings deposits minus withdrawals returned to the main wallet.
+  Future<Map<String, dynamic>> computePiggybank() async {
+    final rows = await (_db.transactions.select()
+          ..where((t) =>
+              t.category.equals('savings') &
+              t.transactionType.equals('transfer'))
+          ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)]))
+        .get();
+
+    final contributions =
+        rows.where((r) => r.description == kMokashDepositDescription).toList();
+    final withdrawals = rows
+        .where((r) => r.description == kMokashWithdrawalDescription)
+        .toList();
+
+    final totalIn = contributions.fold<double>(0, (s, r) => s + r.amount);
+    final totalOut = withdrawals.fold<double>(0, (s, r) => s + r.amount);
+
+    final byParty = <String, Map<String, dynamic>>{};
+    void accumulate(Transaction r, String field) {
+      final key = r.counterpartyName ?? r.counterparty ?? 'MoKash Savings';
+      final entry = byParty.putIfAbsent(
+        key,
+        () => <String, dynamic>{
+          'name': key,
+          'total_in': 0.0,
+          'total_out': 0.0,
+          'tx_count': 0,
+        },
+      );
+      entry[field] = (entry[field] as double) + r.amount;
+      if (field == 'total_in') {
+        entry['tx_count'] = (entry['tx_count'] as int) + 1;
+      }
+    }
+
+    for (final r in contributions) {
+      accumulate(r, 'total_in');
+    }
+    for (final r in withdrawals) {
+      accumulate(r, 'total_out');
+    }
+
+    return {
+      'balance': (totalIn - totalOut).clamp(0.0, double.infinity),
+      'total_contributed': totalIn,
+      'total_withdrawn': totalOut,
+      'contribution_count': contributions.length,
+      'withdrawal_count': withdrawals.length,
+      'by_party': byParty.values.toList(),
+      'recent_contributions': contributions
+          .take(10)
+          .map((r) => {
+                'date': r.transactionDate.toIso8601String(),
+                'amount': r.amount,
+                'party':
+                    r.counterpartyName ?? r.counterparty ?? 'Savings',
+              })
+          .toList(),
+    };
+  }
+
+  /// Safe-to-spend — mirrors `GET /insights/safe-to-spend`.
+  ///
+  /// [activeGoals] comes from the backend (goals are still server-side); pass
+  /// the raw goal JSON list. Everything else is computed from local rows.
+  Future<Map<String, dynamic>> computeSafeToSpend({
+    List<Map<String, dynamic>> activeGoals = const [],
+  }) async {
+    final now = DateTime.now();
+    final eightWeeksAgo = now.subtract(const Duration(days: 56));
+
+    final expenses = (await _filteredRows(startDate: eightWeeksAgo, endDate: now))
+        .where((r) => r.transactionType == 'expense')
+        .toList();
+
+    // Weighting: needs count fully, wants are ~30% trimmable, savings aren't a
+    // drain, and uncategorized sits in between with outliers dropped.
+    const wantWeight = 0.70;
+    const uncatWeight = 0.85;
+
+    final uncategorizedRaw = expenses
+        .where((r) => r.needWant != 'need' && r.needWant != 'want' && r.needWant != 'savings')
+        .map((r) => r.amount)
+        .toList()
+      ..sort();
+    final outlierThreshold = uncategorizedRaw.isEmpty
+        ? double.infinity
+        : _median(uncategorizedRaw) * 2.5;
+
+    final weeklyTotals = <int, double>{};
+    for (final r in expenses) {
+      final weekKey =
+          r.transactionDate.difference(eightWeeksAgo).inDays ~/ 7;
+      final double weighted;
+      if (r.needWant == 'savings') {
+        // Savings aren't a drain — they're wealth-building.
+        continue;
+      } else if (r.needWant == 'need') {
+        weighted = r.amount;
+      } else if (r.needWant == 'want') {
+        weighted = r.amount * wantWeight;
+      } else {
+        // Uncategorized: drop probable one-offs before weighting.
+        if (r.amount > outlierThreshold) continue;
+        weighted = r.amount * uncatWeight;
+      }
+      weeklyTotals[weekKey] = (weeklyTotals[weekKey] ?? 0.0) + weighted;
+    }
+
+    final nonZero = weeklyTotals.values.where((v) => v > 0).toList()..sort();
+    double avgWeeklyExpense = 0;
+    if (nonZero.isNotEmpty) {
+      // Trimmed mean once there's enough history to drop the extremes.
+      final trimmed =
+          nonZero.length >= 4 ? nonZero.sublist(1, nonZero.length - 1) : nonZero;
+      avgWeeklyExpense = trimmed.reduce((a, b) => a + b) / trimmed.length;
+    }
+
+    // Balance: latest SMS balance, else this month's net flow.
+    final monthStart = DateTime(now.year, now.month, 1);
+    final latestBalance = await (_db.transactions.select()
+          ..where((t) => t.balanceAfter.isNotNull())
+          ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)])
+          ..limit(1))
+        .getSingleOrNull();
+
+    double totalBalance;
+    if (latestBalance?.balanceAfter != null) {
+      totalBalance = latestBalance!.balanceAfter!;
+    } else {
+      final monthRows = await _filteredRows(startDate: monthStart);
+      final income = monthRows
+          .where((r) => r.transactionType == 'income')
+          .fold<double>(0, (s, r) => s + r.amount);
+      final spent = monthRows
+          .where((r) => r.transactionType == 'expense')
+          .fold<double>(0, (s, r) => s + r.amount);
+      totalBalance = income - spent;
+    }
+
+    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+    final daysRemaining = (daysInMonth - now.day) < 1 ? 1 : daysInMonth - now.day;
+    final weeksRemaining = daysRemaining / 7.0;
+
+    // Reserve each goal's actual shortfall, capped at its weekly pace.
+    double reservedForGoals = 0;
+    for (final g in activeGoals) {
+      final remaining = (g['remaining_amount'] as num?)?.toDouble() ??
+          (((g['target_amount'] as num?)?.toDouble() ?? 0) -
+              ((g['current_amount'] as num?)?.toDouble() ?? 0));
+      final paceCap =
+          ((g['weekly_target'] as num?)?.toDouble() ?? 0) * weeksRemaining;
+      reservedForGoals += remaining < paceCap ? remaining : paceCap;
+    }
+
+    final reservedForExpenses = avgWeeklyExpense * weeksRemaining;
+    final emergencyBuffer = avgWeeklyExpense * 2.0;
+
+    // Spent today / this calendar week.
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
+    final expensesToday = expenses
+        .where((r) => !r.transactionDate.isBefore(todayStart))
+        .fold<double>(0, (s, r) => s + r.amount);
+    final expensesThisWeek = expenses
+        .where((r) => !r.transactionDate.isBefore(weekStart))
+        .fold<double>(0, (s, r) => s + r.amount);
+
+    // Expected income still to come: median of the last 3 months' income
+    // (median, so one unusual month doesn't skew it), minus what already landed.
+    final threeMonthsAgo = DateTime(now.year, now.month - 3, 1);
+    final histIncome = (await _filteredRows(
+      startDate: threeMonthsAgo,
+      endDate: monthStart,
+    ))
+        .where((r) => r.transactionType == 'income');
+
+    final monthlyBuckets = <String, double>{};
+    for (final r in histIncome) {
+      final key = '${r.transactionDate.year}-${r.transactionDate.month}';
+      monthlyBuckets[key] = (monthlyBuckets[key] ?? 0) + r.amount;
+    }
+    final monthlyTotals = monthlyBuckets.values.toList()..sort();
+    final medianMonthlyIncome =
+        monthlyTotals.isEmpty ? 0.0 : _median(monthlyTotals);
+
+    final incomeThisMonth = (await _filteredRows(startDate: monthStart))
+        .where((r) => r.transactionType == 'income')
+        .fold<double>(0, (s, r) => s + r.amount);
+
+    // 0.85 = conservative discount for income variability.
+    final expectedIncomeRemaining =
+        ((medianMonthlyIncome - incomeThisMonth) * 0.85)
+            .clamp(0.0, double.infinity);
+
+    final safeToSpend = (totalBalance +
+            expectedIncomeRemaining -
+            reservedForGoals -
+            emergencyBuffer)
+        .clamp(0.0, double.infinity);
+
+    final incomeNote = expectedIncomeRemaining > 0
+        ? ' + RWF ${expectedIncomeRemaining.toStringAsFixed(0)} expected income'
+        : '';
+    final explanation = avgWeeklyExpense > 0
+        ? 'Based on your ${nonZero.length}-week weighted spending average '
+            '(needs 100%, wants 70%) of RWF ${avgWeeklyExpense.toStringAsFixed(0)}/week'
+            '$incomeNote, with $daysRemaining days remaining this month'
+        : 'Not enough expense history yet.${incomeNote.isNotEmpty ? ' ${incomeNote.trim()}' : ''} '
+            'Add more transactions to get an accurate safe-to-spend figure.';
+
+    return {
+      'safe_to_spend': safeToSpend,
+      'total_balance': totalBalance,
+      'reserved_for_expenses': reservedForExpenses,
+      'reserved_for_goals': reservedForGoals,
+      'emergency_buffer': emergencyBuffer,
+      'explanation': explanation,
+      'safe_per_day': safeToSpend / daysRemaining,
+      'safe_per_week': safeToSpend / weeksRemaining,
+      'weeks_remaining': weeksRemaining,
+      'days_remaining': daysRemaining,
+      'avg_weekly_expense': avgWeeklyExpense,
+      'expected_income_remaining': expectedIncomeRemaining,
+      'expenses_today': expensesToday,
+      'expenses_this_week': expensesThisWeek,
+    };
+  }
+
+  /// Median of an already-sorted list.
+  double _median(List<double> sorted) {
+    if (sorted.isEmpty) return 0;
+    final n = sorted.length;
+    if (n.isOdd) return sorted[n ~/ 2];
+    return (sorted[n ~/ 2 - 1] + sorted[n ~/ 2]) / 2.0;
+  }
+
   // ─── Counterparty mappings ────────────────────────────────────────────────
 
   /// Look up the user's preferred category for a counterparty phone/name.
@@ -347,13 +600,23 @@ TransactionsCompanion parsedToCompanion(
 }) {
   // Import is done via the caller; this is a standalone function so it can
   // be used from sms_service.dart without a circular import.
+  // Savings deposits/withdrawals carry a canonical description so the
+  // piggybank balance can identify them. Everything else falls back to the
+  // counterparty name.
+  final String? description = (parsed.isMokashDeposit as bool? ?? false)
+      ? kMokashDepositDescription
+      : (parsed.isMokashWithdrawal as bool? ?? false)
+          ? kMokashWithdrawalDescription
+          : parsed.partyName as String?;
+
   return TransactionsCompanion(
     transactionType: Value(parsed.transactionType as String),
     category: Value(parsed.category as String),
     needWant: Value(parsed.needWant as String),
     amount: Value(parsed.amount as double),
-    description: Value(parsed.partyName as String?),
-    counterparty: Value(parsed.partyPhone as String?),
+    description: Value(description),
+    counterparty:
+        Value((parsed.partyPhone as String?) ?? parsed.partyName as String?),
     counterpartyName: Value(parsed.partyName as String?),
     reference: Value(parsed.reference as String?),
     transactionDate: Value(

@@ -5,7 +5,10 @@
  */
 
 import 'package:dartz/dartz.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/constants/storage_keys.dart';
+import '../../../../core/database/app_database.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
 import '../../domain/entities/user.dart';
@@ -17,12 +20,18 @@ import '../datasources/auth_remote_datasource.dart';
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource _remoteDataSource;
   final AuthLocalDataSource _localDataSource;
+  final AppDatabase _database;
+  final SharedPreferences _prefs;
 
   AuthRepositoryImpl({
     required AuthRemoteDataSource remoteDataSource,
     required AuthLocalDataSource localDataSource,
+    required AppDatabase database,
+    required SharedPreferences prefs,
   })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource;
+        _localDataSource = localDataSource,
+        _database = database,
+        _prefs = prefs;
 
   @override
   Future<Either<Failure, void>> sendOtp({required String phoneNumber}) async {
@@ -118,6 +127,14 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, void>> logout() async {
     try {
       await _localDataSource.clearAll();
+
+      // The Drift DB is device-scoped, not user-scoped. Without wiping it the
+      // next account signing in on this device sees the previous account's
+      // transactions. Clearing the migration flag lets the one-time backend
+      // import run again for whoever logs in next.
+      await _database.clearAllData();
+      await _prefs.remove(StorageKeys.dataMigrationDone);
+
       return const Right(null);
     } on CacheException catch (e) {
       return Left(CacheFailure(message: e.message));

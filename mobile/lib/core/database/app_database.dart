@@ -106,4 +106,17 @@ class AppDatabase extends _$AppDatabase {
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'finguide_local');
   }
+
+  /// Delete every locally-stored row.
+  ///
+  /// Called on logout: the local DB is device-scoped, not user-scoped, so
+  /// without this the next account to sign in on this device inherits the
+  /// previous account's transactions.
+  Future<void> clearAllData() async {
+    await transaction(() async {
+      for (final table in allTables) {
+        await delete(table).go();
+      }
+    });
+  }
 }

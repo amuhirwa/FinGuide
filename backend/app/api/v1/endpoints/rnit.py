@@ -149,6 +149,60 @@ async def get_nav_history_endpoint(
     return list(reversed(history))
 
 
+class RnitPurchaseIn(BaseModel):
+    purchase_date: datetime
+    amount_rwf: float
+    raw_sms: Optional[str] = None
+    reference: Optional[str] = None
+
+
+@router.post("/purchases", response_model=RnitPurchaseOut)
+async def create_rnit_purchase(
+    payload: RnitPurchaseIn,
+    current_user: TokenPayload = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Record an RNIT purchase detected from an SMS on the device.
+
+    Transactions are parsed on-device now, so the app reports RNIT purchases
+    here; the NAV lookup (and therefore units) stays server-side because the
+    NAV cache lives in the backend.
+
+    Idempotent per (user, purchase_date, amount) so re-scanning the same SMS
+    does not create duplicates.
+    """
+    user_id = int(current_user.sub)
+
+    if payload.amount_rwf <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="amount_rwf must be greater than zero",
+        )
+
+    existing = db.query(RnitPurchase).filter(
+        RnitPurchase.user_id == user_id,
+        RnitPurchase.purchase_date == payload.purchase_date,
+        RnitPurchase.amount_rwf == payload.amount_rwf,
+    ).first()
+    if existing:
+        return existing
+
+    nav = get_nav_on_date(db, payload.purchase_date)
+    purchase = RnitPurchase(
+        user_id=user_id,
+        purchase_date=payload.purchase_date,
+        amount_rwf=payload.amount_rwf,
+        nav_at_purchase=nav,
+        units=(payload.amount_rwf / nav) if nav else None,
+        raw_sms=(payload.raw_sms or "")[:500] or None,
+    )
+    db.add(purchase)
+    db.commit()
+    db.refresh(purchase)
+    return purchase
+
+
 @router.post("/refresh-nav")
 async def refresh_nav(
     current_user: TokenPayload = Depends(get_current_active_user),

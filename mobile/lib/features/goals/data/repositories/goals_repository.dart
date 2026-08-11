@@ -9,11 +9,13 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/network/api_client.dart';
 import '../models/savings_goal_model.dart';
 import '../../../investments/data/models/rnit_model.dart';
+import '../../../transactions/data/datasources/transaction_local_datasource.dart';
 
 class GoalsRepository {
   final ApiClient _apiClient;
+  final TransactionLocalDataSource _localDs;
 
-  GoalsRepository(this._apiClient);
+  GoalsRepository(this._apiClient, this._localDs);
 
   Future<Either<String, List<SavingsGoalModel>>> getGoals(
       {String? status}) async {
@@ -81,7 +83,9 @@ class GoalsRepository {
 
   Future<Either<String, PiggyBankModel>> getPiggybank() async {
     try {
-      final response = await _apiClient.getPiggybank();
+      // Computed from the local DB — savings transactions no longer reach
+      // the backend, so the server-side piggybank would always read zero.
+      final response = await _localDs.computePiggybank();
       return Right(PiggyBankModel.fromJson(response));
     } catch (e) {
       return Left(e.toString());

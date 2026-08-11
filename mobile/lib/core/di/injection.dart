@@ -120,6 +120,8 @@ Future<void> configureDependencies() async {
     () => AuthRepositoryImpl(
       remoteDataSource: getIt<AuthRemoteDataSource>(),
       localDataSource: getIt<AuthLocalDataSource>(),
+      database: getIt<AppDatabase>(),
+      prefs: getIt<SharedPreferences>(),
     ),
   );
 
@@ -154,7 +156,8 @@ Future<void> configureDependencies() async {
 
   // ==================== Goals Feature ====================
   getIt.registerLazySingleton<GoalsRepository>(
-    () => GoalsRepository(getIt<ApiClient>()),
+    () => GoalsRepository(
+        getIt<ApiClient>(), getIt<TransactionLocalDataSource>()),
   );
 
   getIt.registerFactory<GoalsBloc>(
