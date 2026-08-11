@@ -120,18 +120,36 @@ class InsightsRepository {
   // The following features still rely on server-side state (goals,
   // investments, health snapshots) and do not involve transaction storage.
 
+  /// Fetch the active goals the local aggregates need, tolerating failure —
+  /// they only affect the goal-reserve and goal-progress components.
+  Future<List<Map<String, dynamic>>> _activeGoals() async {
+    try {
+      final goals = await _apiClient.getSavingsGoals(status: 'active');
+      return goals.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Computed on-device. The backend holds no transactions, so its version
+  /// of this would report zero income, zero expenses and a zero savings rate.
   Future<Either<String, Map<String, dynamic>>> getHealthScore() async {
     try {
-      final response = await _apiClient.getHealthScore();
+      final response = await _localDs.computeHealthScore(
+        activeGoals: await _activeGoals(),
+      );
       return Right(response);
     } catch (e) {
       return Left(e.toString());
     }
   }
 
+  /// Computed on-device, for the same reason as [getHealthScore].
   Future<Either<String, Map<String, dynamic>>> getSafeToSpend() async {
     try {
-      final response = await _apiClient.getSafeToSpend();
+      final response = await _localDs.computeSafeToSpend(
+        activeGoals: await _activeGoals(),
+      );
       return Right(response);
     } catch (e) {
       return Left(e.toString());

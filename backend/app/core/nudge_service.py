@@ -221,6 +221,9 @@ def _analyze_nudge_preferences(user_id: int, db: Session) -> dict:
 # Share of incoming money we suggest putting aside when we have no model to ask.
 _FALLBACK_SAVINGS_RATE = 0.10
 
+# How recently income must have arrived for a nudge to still be about it.
+_RECENT_INCOME_DAYS = 3
+
 
 def _round_amount(value: float) -> int:
     """Round a suggested amount to a friendly figure (nearest 100 RWF, min 500)."""
@@ -254,6 +257,28 @@ def _fallback_nudges(
     goals = context.get("active_goals") or []
     top_cats = context.get("top_expense_categories") or []
 
+    # If income landed recently, talk about that specific money rather than
+    # giving generic advice — even outside an explicit income trigger.
+    last_income = context.get("last_income") or {}
+    last_income_amount = float(last_income.get("amount") or 0)
+    last_income_source = (last_income.get("source") or "").strip()
+    last_income_days_ago = last_income.get("days_ago")
+    recent_income = (
+        last_income_amount > 0
+        and isinstance(last_income_days_ago, (int, float))
+        and last_income_days_ago <= _RECENT_INCOME_DAYS
+    )
+
+    def _when(days_ago) -> str:
+        if days_ago is None:
+            return ""
+        days = int(days_ago)
+        if days <= 0:
+            return " today"
+        if days == 1:
+            return " yesterday"
+        return f" {days} days ago"
+
     nudges: list[dict] = []
 
     def add(title, message, rec_type, action, amount, urgency, reason, tone="friendly"):
@@ -279,6 +304,16 @@ def _fallback_nudges(
                 "savings", "save", target, "high",
                 "Fallback: 10% of the income just received", "motivational",
             )
+        elif recent_income:
+            # No amount on the trigger, but we know what last arrived.
+            target = _round_amount(last_income_amount * _FALLBACK_SAVINGS_RATE)
+            src = f" from {last_income_source}" if last_income_source else ""
+            add(
+                "Save from what you received",
+                f"RWF {_fmt(last_income_amount)} came in{src}. Put RWF {_fmt(target)} aside now.",
+                "savings", "save", target, "high",
+                "Fallback: 10% of most recent income", "motivational",
+            )
         else:
             add(
                 "Murakoze! Income received",
@@ -290,7 +325,17 @@ def _fallback_nudges(
     elif trigger_type == "daily":
         goal = goals[0] if goals else None
         daily_target = float(goal.get("daily_target") or 0) if goal else 0
-        if daily_target > 0:
+        if recent_income:
+            target = _round_amount(last_income_amount * _FALLBACK_SAVINGS_RATE)
+            src = f" from {last_income_source}" if last_income_source else ""
+            add(
+                "Money arrived — save some",
+                f"RWF {_fmt(last_income_amount)} came in{src}{_when(last_income_days_ago)}. "
+                f"Save RWF {_fmt(target)} before it goes.",
+                "savings", "save", target, "high",
+                "Fallback: 10% of most recent income", "motivational",
+            )
+        elif daily_target > 0:
             amt = _round_amount(daily_target)
             name = str(goal.get("name") or "your goal")
             add(
@@ -334,7 +379,19 @@ def _fallback_nudges(
                 )
 
     else:  # "manual" and anything unrecognised
-        if top_cats:
+        if recent_income:
+            # Money just arrived — that's the most useful thing to talk about,
+            # ahead of any standing spending advice.
+            target = _round_amount(last_income_amount * _FALLBACK_SAVINGS_RATE)
+            src = f" from {last_income_source}" if last_income_source else ""
+            add(
+                "Save from your latest income",
+                f"You received RWF {_fmt(last_income_amount)}{src}{_when(last_income_days_ago)}. "
+                f"Set aside RWF {_fmt(target)}.",
+                "savings", "save", target, "high",
+                "Fallback: 10% of most recent income", "motivational",
+            )
+        elif top_cats:
             top = top_cats[0]
             cat = str(top.get("category") or "spending").replace("_", " ")
             amt = float(top.get("amount") or 0)

@@ -17,6 +17,13 @@ class FinancialContext {
   final List<Map<String, dynamic>> investments;
   final Map<String, dynamic>? healthScore;
 
+  /// The most recent income, as `{amount, source, days_ago}`.
+  ///
+  /// Lets a nudge refer to money that actually arrived instead of falling
+  /// back to generic advice — the difference between "save 10% of what comes
+  /// in" and "you received RWF 45,000 from X on Tuesday; set aside 4,500".
+  final Map<String, dynamic>? lastIncome;
+
   const FinancialContext({
     required this.contextWindowDays,
     required this.income30d,
@@ -27,6 +34,7 @@ class FinancialContext {
     required this.activeGoals,
     required this.investments,
     this.healthScore,
+    this.lastIncome,
   });
 
   FinancialContext copyWith({
@@ -44,6 +52,7 @@ class FinancialContext {
       activeGoals: activeGoals ?? this.activeGoals,
       investments: investments ?? this.investments,
       healthScore: healthScore ?? this.healthScore,
+      lastIncome: lastIncome,
     );
   }
 
@@ -57,5 +66,6 @@ class FinancialContext {
         'active_goals': activeGoals,
         'investments': investments,
         if (healthScore != null) 'health_score': healthScore,
+        if (lastIncome != null) 'last_income': lastIncome,
       };
 }

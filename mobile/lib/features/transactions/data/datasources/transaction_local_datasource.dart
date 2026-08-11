@@ -5,6 +5,8 @@
  * Nothing in this file touches the network.
  */
 
+import 'dart:math' as math;
+
 import 'package:drift/drift.dart';
 
 import '../../../../core/database/app_database.dart';
@@ -17,6 +19,9 @@ import '../../domain/models/financial_context.dart';
 /// strings, so the parser and the aggregation must agree on them.
 const String kMokashDepositDescription = 'MoKash deposit';
 const String kMokashWithdrawalDescription = 'MoKash withdrawal';
+
+/// Categories that represent money set aside rather than money spent.
+const Set<String> _savingsCategories = {'savings', 'ejo_heza', 'investment'};
 
 class TransactionLocalDataSource {
   final AppDatabase _db;
@@ -184,6 +189,16 @@ class TransactionLocalDataSource {
             (categoryBreakdown[r.category] ?? 0) + r.amount;
         needWantBreakdown[r.needWant] =
             (needWantBreakdown[r.needWant] ?? 0) + r.amount;
+      } else if (r.transactionType == 'transfer' &&
+          _savingsCategories.contains(r.category)) {
+        // Money moved into savings (MoKash, Ejo Heza, investments) is a
+        // transfer, not an expense — so it must not inflate totalExpenses.
+        // It still belongs in the breakdowns, otherwise anything reading
+        // categoryBreakdown['savings'] sees nothing and reports no savings.
+        categoryBreakdown[r.category] =
+            (categoryBreakdown[r.category] ?? 0) + r.amount;
+        needWantBreakdown[r.needWant] =
+            (needWantBreakdown[r.needWant] ?? 0) + r.amount;
       }
     }
 
@@ -214,8 +229,6 @@ class TransactionLocalDataSource {
     double savingsThisMonth = 0;
     final categoryTotals = <String, double>{};
 
-    const savingsCategories = {'savings', 'ejo_heza', 'investment'};
-
     for (final r in rows30d) {
       if (r.transactionType == 'income') {
         income30d += r.amount;
@@ -224,7 +237,7 @@ class TransactionLocalDataSource {
         categoryTotals[r.category] =
             (categoryTotals[r.category] ?? 0) + r.amount;
       } else if (r.transactionType == 'transfer' &&
-          savingsCategories.contains(r.category)) {
+          _savingsCategories.contains(r.category)) {
         if (r.transactionDate.isAfter(monthStart)) {
           savingsThisMonth += r.amount;
         }
@@ -248,6 +261,24 @@ class TransactionLocalDataSource {
     final estimatedBalance = latestBalance?.balanceAfter ??
         (income30d - expenses30d).clamp(0, double.infinity);
 
+    // Most recent income, so nudges can name the money that actually arrived
+    // rather than offering generic advice.
+    final lastIncomeRow = await (_db.transactions.select()
+          ..where((t) => t.transactionType.equals('income'))
+          ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)])
+          ..limit(1))
+        .getSingleOrNull();
+
+    final lastIncome = lastIncomeRow == null
+        ? null
+        : {
+            'amount': lastIncomeRow.amount,
+            'source': lastIncomeRow.counterpartyName ??
+                lastIncomeRow.counterparty ??
+                '',
+            'days_ago': now.difference(lastIncomeRow.transactionDate).inDays,
+          };
+
     return FinancialContext(
       contextWindowDays: 30,
       income30d: income30d,
@@ -257,6 +288,7 @@ class TransactionLocalDataSource {
       topExpenseCategories: top5,
       activeGoals: const [], // filled in by InsightsRepository
       investments: const [], // filled in by InsightsRepository
+      lastIncome: lastIncome,
     );
   }
 
@@ -495,6 +527,138 @@ class TransactionLocalDataSource {
       'expected_income_remaining': expectedIncomeRemaining,
       'expenses_today': expensesToday,
       'expenses_this_week': expensesThisWeek,
+    };
+  }
+
+  /// Financial health score — mirrors `GET /insights/health-score`.
+  ///
+  /// The server version filled several components with `random.randint`
+  /// placeholders. Computing locally lets them be derived from real history
+  /// instead, so the numbers are stable between loads rather than shifting.
+  ///
+  /// [activeGoals] comes from the backend, as goals are still server-side.
+  Future<Map<String, dynamic>> computeHealthScore({
+    List<Map<String, dynamic>> activeGoals = const [],
+  }) async {
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+    final ninetyDaysAgo = now.subtract(const Duration(days: 90));
+
+    // Average over the calendar months that actually have activity, so a
+    // partial current month doesn't drag the average toward zero.
+    final recent = await _filteredRows(startDate: ninetyDaysAgo);
+    final incomeByMonth = <String, double>{};
+    final expenseByMonth = <String, double>{};
+    for (final r in recent) {
+      final key = '${r.transactionDate.year}-${r.transactionDate.month}';
+      if (r.transactionType == 'income') {
+        incomeByMonth[key] = (incomeByMonth[key] ?? 0.0) + r.amount;
+      } else if (r.transactionType == 'expense') {
+        expenseByMonth[key] = (expenseByMonth[key] ?? 0.0) + r.amount;
+      }
+    }
+
+    double avgOf(Map<String, double> byMonth) {
+      if (byMonth.isEmpty) return 0;
+      return byMonth.values.reduce((a, b) => a + b) / byMonth.length;
+    }
+
+    final monthlyIncomeAvg = avgOf(incomeByMonth);
+    final monthlyExpenseAvg = avgOf(expenseByMonth);
+
+    final savingsRate = monthlyIncomeAvg > 0
+        ? ((monthlyIncomeAvg - monthlyExpenseAvg) / monthlyIncomeAvg * 100)
+            .clamp(0.0, 100.0)
+        : 0.0;
+    final savingsRateScore = (savingsRate * 5).clamp(0.0, 100.0).toInt();
+
+    // Income stability: how consistent monthly income is. Low variation
+    // relative to the mean scores high.
+    int incomeStabilityScore;
+    final incomes = incomeByMonth.values.toList();
+    if (incomes.length < 2 || monthlyIncomeAvg <= 0) {
+      incomeStabilityScore = incomes.isEmpty ? 0 : 50;
+    } else {
+      final variance = incomes
+              .map((v) => (v - monthlyIncomeAvg) * (v - monthlyIncomeAvg))
+              .reduce((a, b) => a + b) /
+          incomes.length;
+      final stdDev = math.sqrt(variance);
+      final coefficientOfVariation = stdDev / monthlyIncomeAvg;
+      incomeStabilityScore =
+          ((1 - coefficientOfVariation) * 100).clamp(0.0, 100.0).toInt();
+    }
+
+    // Emergency buffer: how many days the current balance covers.
+    final safeToSpend = await computeSafeToSpend(activeGoals: activeGoals);
+    final balance = (safeToSpend['total_balance'] as num).toDouble();
+    final avgDailyExpense = monthlyExpenseAvg / 30.0;
+    final emergencyBufferDays =
+        avgDailyExpense > 0 ? (balance / avgDailyExpense).floor() : 0;
+    final emergencyBufferScore = (emergencyBufferDays * 5).clamp(0, 100);
+
+    // Spending discipline: the smaller the share of spending that is
+    // discretionary, the better.
+    final monthSummary = await getTransactionSummary(startDate: monthStart);
+    final needs = monthSummary.needWantBreakdown['need'] ?? 0.0;
+    final wants = monthSummary.needWantBreakdown['want'] ?? 0.0;
+    final classified = needs + wants;
+    final spendingDisciplineScore = classified > 0
+        ? ((1 - (wants / classified)) * 100).clamp(0.0, 100.0).toInt()
+        : 50;
+
+    final goalProgressScore = activeGoals.isEmpty
+        ? 50
+        : (activeGoals
+                    .map((g) =>
+                        (g['progress_percentage'] as num?)?.toDouble() ?? 0.0)
+                    .reduce((a, b) => a + b) /
+                activeGoals.length)
+            .clamp(0.0, 100.0)
+            .toInt();
+
+    final overallScore = (incomeStabilityScore * 0.2 +
+            savingsRateScore * 0.25 +
+            emergencyBufferScore * 0.2 +
+            goalProgressScore * 0.2 +
+            spendingDisciplineScore * 0.15)
+        .toInt();
+
+    final String grade;
+    final String summary;
+    if (overallScore >= 80) {
+      grade = 'A';
+      summary = 'Excellent! Your finances are in great shape.';
+    } else if (overallScore >= 65) {
+      grade = 'B';
+      summary = 'Good job! Minor improvements could boost your score.';
+    } else if (overallScore >= 50) {
+      grade = 'C';
+      summary = 'Fair. Focus on building your emergency buffer.';
+    } else if (overallScore >= 35) {
+      grade = 'D';
+      summary = 'Needs attention. Consider reducing discretionary spending.';
+    } else {
+      grade = 'F';
+      summary = "Critical. Let's work on stabilizing your finances.";
+    }
+
+    return {
+      'overall_score': overallScore,
+      'income_stability_score': incomeStabilityScore,
+      'savings_rate_score': savingsRateScore,
+      'emergency_buffer_score': emergencyBufferScore,
+      'goal_progress_score': goalProgressScore,
+      'spending_discipline_score': spendingDisciplineScore,
+      'monthly_income_avg': monthlyIncomeAvg,
+      'monthly_expense_avg': monthlyExpenseAvg,
+      'savings_rate': savingsRate,
+      'emergency_buffer_days': emergencyBufferDays,
+      // No local score history to compare against, so report no change rather
+      // than inventing a delta.
+      'score_change': 0,
+      'grade': grade,
+      'summary': summary,
     };
   }
 

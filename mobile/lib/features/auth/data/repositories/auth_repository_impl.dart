@@ -130,10 +130,17 @@ class AuthRepositoryImpl implements AuthRepository {
 
       // The Drift DB is device-scoped, not user-scoped. Without wiping it the
       // next account signing in on this device sees the previous account's
-      // transactions. Clearing the migration flag lets the one-time backend
-      // import run again for whoever logs in next.
+      // transactions.
       await _database.clearAllData();
+
+      // Wiping the tables is only half the job: the flags that record "this
+      // data has already been pulled in" have to go too. Leave them set and
+      // nothing ever refills the tables, so every aggregate reads zero for
+      // good. Clearing lastSmsSyncTimestamp is what does the real work —
+      // the startup delta sync then re-reads the whole SMS inbox.
       await _prefs.remove(StorageKeys.dataMigrationDone);
+      await _prefs.remove(StorageKeys.smsInitialImportDone);
+      await _prefs.remove(StorageKeys.lastSmsSyncTimestamp);
 
       return const Right(null);
     } on CacheException catch (e) {
